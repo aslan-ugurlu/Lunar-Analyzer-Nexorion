@@ -23,8 +23,10 @@ import numpy as np
 
 from backend.config import DATASETS, FRAME, KERNELS, R_MOON_KM, VALIDATION
 
-# Test locations: (1) example coordinate from the project docs, (2) highest DEM pixel
-# within 40 km of the pole found in LDEM_60S_240MPP_ADJ.TIF. Neither is an official candidate.
+# Test locations: (1) example coordinate from the project docs, (2) a ridge point with DEM height
+# 1950.3 m adjacent to the highest pixel within 40 km of the pole (1954.3 m at -89.4455, -137.3137;
+# the first search used a fractional raster window, hence the one-pixel offset).
+# Neither is an official candidate.
 SITES = [(-89.54, 0.0), (-89.4512, -137.1427)]
 
 

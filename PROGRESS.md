@@ -105,7 +105,7 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 | V-02 frame/koordinat | PASS | MOON_ME_DE440_ME421 (id 31009); PA→ME 103.9″ (2026-12-01); raster "Moon (2015) Sphere / Ocentric / South Polar", R 1737400, kutup (0,0), +90°E → +x |
 | V-03 UTC→ET | PASS | 4 tarih, bağımsız TT−UTC = 69.184 s ile < 0.01 s; 2035'e kadar yeni artık saniye olmadığı varsayımı |
 | V-04 Horizons | PASS (sınırlı) | = A-04 |
-| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0.0000° (eğrilik ≥3.3° düşürür); **135→200 km zirvede 0.457°, azimutların %7.1'i** → 135 km hızlı mod yüksek konumlarda yetersiz olabilir |
+| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0.0000° (eğrilik ≥3.3° düşürür); **135→200 km 1950 m sırt noktasında 0.457°, azimutların %7.1'i** → 135 km hızlı mod yüksek konumlarda yetersiz olabilir |
 | V-06 LOD/NoData | BLOCKED | NoData NaN olarak yayılıyor (sıfırla doldurma yok), 260 km kutusunda NaN piksel 0; LOD geçişi test edilemedi (yalnız 240 m var) |
 | V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı 27 ofset, maks hata 0.0028 (< 0.01); eğri arazi kapsanmadı |
 | V-08 ERR/clone | BLOCKED | ERR dosyası henüz inmedi; clone verisi yok → CLONE_NOT_PRECOMPUTED |
@@ -158,8 +158,9 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   Bu, örnek koordinatın bir çukurda olduğunu gösteren gerçek sonuçtur; aday önerisi değildir.
 - 09:12Z — **Faz 1 DONE**, commit 1199213 (build/lint/48 test).
 - 09:20Z — ERR indirmesi yavaş (~15 kB/s; sunucu kaynaklı olabilir). Bloklamıyor: ERR yokken `err` modu GRAY döner ve UI bunu söyler.
-- 09:30Z — İkinci test konumu DEM'den türetildi: kutba 40 km içindeki en yüksek piksel 1954.3 m @ (−89.4512°, −137.1427°)
-  (resmi aday değildir). Gerçek sonuç: f_sun %100, karanlık 0 sa; Dünya ufkun altında (DTE %0) → RED. Yeni 200 km ufuk ~2 sn.
+- 09:30Z — İkinci test konumu DEM'den türetildi: (−89.4512°, −137.1427°), DEM 1950.3 m (resmi aday değildir).
+  **Düzeltme (10:05Z):** ilk aramada kesirli raster penceresi ⅓ piksel kaydırdı; bu nokta en yüksek piksel değil, ona komşu.
+  Gerçek en yüksek piksel (40 km içinde) 1954.3 m @ (−89.4455°, −137.3137°). Kanıtlar −89.4512/−137.1427 ile üretildiği için korunuyor. Gerçek sonuç: f_sun %100, karanlık 0 sa; Dünya ufkun altında (DTE %0) → RED. Yeni 200 km ufuk ~2 sn.
 - 09:38Z — **Faz 3 DONE**: Sky View (gerçek /horizon, gerçek açısal boyutlu diskler, 0/360 sarma, ERR bandı yalnız varsa,
   eksik ışın işareti, Güneş/Dünya izleri, gövdeye yakınlaştırma eşit ölçekli), Timeline (f_sun + DTE, en uzun aralık vurgusu,
   tıklayarak seçim, klavye kaydırıcı, mühendis yükseklik grafiği, /scenarios/shift + polling, ebeveyn korunur).
