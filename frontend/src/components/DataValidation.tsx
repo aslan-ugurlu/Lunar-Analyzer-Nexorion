@@ -39,7 +39,9 @@ const LIMITATIONS = [
   'Güneş görünürlüğü (f_sun) geometrik disk payıdır; elektrik/güç üretimi değildir.',
   'DTE yalnızca Dünya merkezinin arazi ufku üstünde olmasıdır; RF bağlantı bütçesi, anten deseni veya veri hızı değildir.',
   'Eğim kısıtı ≤ 20 m DEM ister; 240 m DEM’den güvenli iniş sonucu çıkarılmaz (SLOPE_UNKNOWN → GRAY).',
-  'ERR ±k bir duyarlılık senaryosudur; istatistiksel güven aralığı değildir. DEM clone verisi olmadan clone modu GRAY döner.',
+  'ERR ±k bir duyarlılık senaryosudur; istatistiksel güven aralığı değildir.',
+  'DEM clone modu yalnız Site01 karosunda (100 PGDA clone) ve önceden hesaplanmış iki koordinatta çalışır; diğer konumlarda CLONE_NOT_PRECOMPUTED / GRAY döner. Yalnız gözlemcinin 5 m karosu klonlanır; 80 m / 240 m katmanlar nominal kalır.',
+  'CLONE-01: Site01 clone’larının yüzeyden sapması, PGDA belirsizlik haritasının (toterr) Gauss varsayımıyla beklenenden ≈ %8 büyüktür (|clone − surf| / toterr medyanı 0.726, beklenti 0.674). Ölçüt içindedir; clone yayılımı istatistiksel güven aralığı değildir.',
   '200 km tarama yarıçapı referans seçimdir; daha uzaktaki arazinin etkisi olmadığına dair kanıt değildir.',
   'Zaman serisi örneklenmiştir; geçiş anları adım (dk) içinde belirsizdir ve sertifikalı değildir.',
   'Ufuk 0.1° azimut ile örneklenir; bu tek başına %2 doğruluk garantisi değildir.',
@@ -101,7 +103,10 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
               <p>80 m ve EFFRES: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink> · 5 m site (Site01, 04, 07, 11, 23) ve DEM clone'ları: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/78">PGDA ürün 78</ExternalLink>; 20 m otomatik indirilmez. Site `_surf` dosyalarında boş pikseller enterpolasyonla doldurulmuştur (PGDA README). EFFRES yalnız veri kalitesi bilgisidir; ufku veya kararı değiştirmez.</p>
               <p>
                 DEM clone dosyaları: {health.clones ? Object.values(health.clones.sites).map((c) => `${c.site_tile} ${c.present}/${c.expected}`).join(' · ') : 'bilinmiyor'} ·
-                ön hesaplanmış profil seti: <span className="mono">{health.clones?.precomputed_profile_sets ?? health.clone_profiles ?? 'bilinmiyor'}</span>.
+                ön hesaplanmış profil seti: <span className="mono">{health.clones?.precomputed_profile_sets ?? health.clone_profiles ?? 'bilinmiyor'}</span>
+                {health.clones?.profile_sets && health.clones.profile_sets.length > 0 && (
+                  <> — clone modu yalnız şu koordinatlarda çalışır: <span className="mono">{health.clones.profile_sets.map((p) => `${p.site_tile} (${p.latitude}, ${p.longitude}) · ${p.observer_height_m.sun}/${p.observer_height_m.earth} m · ${p.radius_km} km`).join('; ')}</span></>
+                )}.
               </p>
             </div>
             {health.limits && mode === 'engineer' && (
@@ -121,7 +126,8 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
             <p className="text-xs text-muted">
               Kaynak: <span className="mono">{validation.data.source ?? 'kayıtlı koşu yok'}</span>
               {validation.data.generated_utc && <> · üretildi {formatUtc(validation.data.generated_utc)}</>}. {validation.data.note}.
-              Kayıtlı gerçek koşu yoksa durum NOT_RUN’dır.
+              Kayıtlı gerçek koşu yoksa durum NOT_RUN’dır. Bu sonuçlar proje ekibinin NASA verisiyle yaptığı kendi testleridir;
+              NASA tarafından onaylanmış veya sertifikalandırılmış değildir.
             </p>
             <ul className="space-y-2">
               {Object.entries(validation.data.tests).map(([id, t]) => (

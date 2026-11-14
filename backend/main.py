@@ -250,7 +250,7 @@ async def lifespan(app:FastAPI):
         # Do not wait for in-flight native work at shutdown; terminate it.
         _terminate_pool(app.state.pool)
 
-app=FastAPI(title='Lunar Mission Window Analyzer',version='1.1',debug=False,lifespan=lifespan)
+app=FastAPI(title='Lunar Mission Window Analyzer',version='1.3',debug=False,lifespan=lifespan)
 
 
 def _cors_origins()->list[str]:

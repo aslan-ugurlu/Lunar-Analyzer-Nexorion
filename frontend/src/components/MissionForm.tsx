@@ -46,9 +46,10 @@ function cloneHelp(health: Health | null, engineer: boolean): string {
       ? `Ön hesaplanmış clone profili yok${c ? ` (tam clone seti: ${complete.join(', ') || 'yok'}; profil seti: ${c.precomputed_profile_sets})` : ''} → CLONE_NOT_PRECOMPUTED / GRAY.`
       : 'Bu yöntem için NASA klon verisi henüz hazır değil; seçilirse sonuç “belirsiz” olur.';
   }
+  const where = (c.profile_sets ?? []).map((p) => `(${p.latitude}, ${p.longitude})`).join(', ');
   return engineer
-    ? `PGDA 100 DEM clone (${complete.join(', ')}); yalnız ön hesaplanmış konum/yükseklik/yarıçap için. İhtiyatlı = clone p95. Diğer konumlarda CLONE_NOT_PRECOMPUTED / GRAY.`
-    : `NASA’nın 100 farklı arazi haritası örneğiyle (${complete.join(', ')}) sınama. Yalnız önceden hazırlanmış konumlarda çalışır; diğerlerinde sonuç “belirsiz” olur.`;
+    ? `Kapsam yalnız ${complete.join(', ')} · ön hesaplanmış ${c.precomputed_profile_sets} koordinat: ${where || '—'} (panel/anten 4 m, 200 km). PGDA 100 DEM clone; ihtiyatlı = clone p95. Diğer konumlarda CLONE_NOT_PRECOMPUTED / GRAY.`
+    : `NASA’nın 100 farklı arazi haritası örneğiyle sınama. Şu an yalnız ${complete.join(', ')} karosunda, önceden hazırlanmış ${c.precomputed_profile_sets} koordinatta çalışır: ${where || '—'}. Diğer konumlarda sonuç “belirsiz” olur.`;
 }
 
 export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse | null; health: Health | null; onQueued?: (id: string) => void }) {

@@ -133,6 +133,9 @@ Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **h
 - ERR ±k bir duyarlılık senaryosudur, istatistiksel güven aralığı değildir. DEM clone verisi yok → `CLONE_NOT_PRECOMPUTED`.
 - Eğim: ≤ 20 m DEM gerekir; yoksa `SLOPE_UNKNOWN` → GRAY. Eğim iniş güvenliği değildir.
 - Zaman serisi örneklenmiştir; geçiş anları adım içinde belirsizdir. 200 km tarama eksiksizlik kanıtı değildir; 0.1° örnekleme tek başına %2 doğruluk garantisi değildir.
+- **DEM clone kapsamı:** yalnız Site01 (100 PGDA clone) ve yalnız ön hesaplanmış iki koordinat — Site01 karo merkezi (−89.46316, −137.48955) ve sırt test noktası (−89.4512, −137.1427), panel = anten 4 m, 200 km. Diğer konumlar `CLONE_NOT_PRECOMPUTED` / GRAY. Arayüz bu listeyi `/health.clones.profile_sets`'ten gösterir. Yalnız gözlemcinin 5 m karosu klonlanır; 80 m / 240 m nominal kalır.
+- **CLONE-01 sapması:** \|clone − surf\| / toterr medyanı 0.726, Gauss 1σ beklentisi 0.674 → Site01 clone'larının yüzeyden sapması PGDA belirsizlik haritasının ima ettiğinden **≈ %8 büyük**. Ölçüt (0.55–0.80) içinde; clone yayılımı istatistiksel güven aralığı değildir.
+- **NASA onayı değildir:** doğrulama sonuçları proje ekibinin NASA verisiyle yaptığı kendi testleridir; NASA/JPL/GSFC/PGDA tarafından onaylanmış veya sertifikalandırılmış değildir. Ayrıntı ve veri sürümleri: [`docs/VALIDATION.md`](docs/VALIDATION.md).
 
 ### Gerçek veride karar sınıfları (Faz 7, önceden sabit tasarım)
 
@@ -168,18 +171,20 @@ FastAPI, `http://127.0.0.1:8000/docs`. Uzun işler `202 + analysis_id`, durum `G
 | ufuk sonucu (`/horizon`) | **v1.2**: `layer_resolution_m`, `excluded_layers`; cache şeması 3 |
 | görev sonucu (`result.mission`) | **v1.3**: `radius_policy` {`code` `REDUCED_HORIZON_RADIUS`/`REFERENCE_RADIUS`, `radius_km`, `reference_radius_km`, `below_reference`, `status_before_policy`, `status_after_policy`, `capped`, `note`}; mühendis açıklamasında `radius_policy=` |
 | ufuk sonucu (`/horizon`) | **v1.3**: `effective_resolution` {`units`, `note`, `layers`: katman başına `status` (`OK`/`MISSING`/`NOT_PUBLISHED`), `pixel_m`, `band_km`, `at_observer_m`, `median_m`, `p90_m`, `max_m`}; önbelleğe yazılmaz, karar girdisi değildir. Clone modunda `uncertainty_mode: "clone"`, `clone_ensemble` (clone sayısı, karo, profil anahtarı, p05–p95 bant notu) ve `profiles.*.cautious/optimistic` = clone p95/p05 (yalnız gösterim) |
-| `GET /health` | **v1.3**: `clones` {`sites`: site başına `present/expected/complete`, `precomputed_profile_sets`}; `clone_profiles` dizgesi korunur (`AVAILABLE`/`NOT_PRECOMPUTED`) |
+| `GET /health` | **v1.3**: `clones` {`sites`: site başına `present/expected/complete`, `precomputed_profile_sets`, `profile_sets` (clone modunun çalıştığı koordinat, gözlemci yüksekliği, yarıçap; dosya yolu yok)}; `clone_profiles` dizgesi korunur (`AVAILABLE`/`NOT_PRECOMPUTED`) |
 | `POST /analyses` `uncertainty_mode: "clone"` | **v1.3**: ön hesaplanmış gerçek clone profili varsa her clone için metrik; ihtiyatlı varyant = kısıt başına clone p95-kötü değer (`metrics.method: clone_p95`), `variants.cautious.clone` {`n`, `pass_count`, `pass_fraction`, `fail_count_by_code`}; yoksa gerekçeli `CLONE_NOT_PRECOMPUTED` (GRAY) |
 
 v1.1 değişiklikleri **eklemelidir** (mevcut alanlar korunur) ve `tests/test_api_v11.py` ile test edilir. Ayrıca: kontrollü localhost CORS, iş zaman aşımı (`ANALYSIS_TIMEOUT`, 1800 s), havuz yalnız `lifespan` içinde.
 
 ## Testler ve doğrulama durumu
 
+Bilimsel doğrulamanın tam kanıtı (ölçütler, gerçek ölçümler, veri sürümleri, tekrarlanabilir senaryolar): **[`docs/VALIDATION.md`](docs/VALIDATION.md)** — ham rapor `docs/validation/report_2026-11-14.json`, veri sürümleri `docs/validation/data_versions_2026-11-14.json`. Bu sonuçlar NASA onayı veya sertifikası değildir.
+
 Son gerçek koşular (2026-11-14, Windows 11):
 
 | Komut | Sonuç |
 |---|---|
-| `python -m pytest -q` | **93 passed** (sözleşme, SPICE UTC→ET, indirici 24 senaryo — HTTP Range devamı + Windows manifest paylaşım ihlali dahil, Windows spawn 7, API v1.1–v1.3, LOD/ERR katman tutarlılığı + EFFRES özeti, clone motoru 5, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
+| `python -m pytest -q` | **97 passed** (+4 gerçek-veri senaryosu `tests/test_realdata_scenarios.py`: ERR YELLOW 2027-11-14, nominal GRAY + 135 km tavanı, RED + eğim 2026-12-26, clone YELLOW 73/100; NASA dosyaları yoksa *skipped*) — önceki 93: (sözleşme, SPICE UTC→ET, indirici 24 senaryo — HTTP Range devamı + Windows manifest paylaşım ihlali dahil, Windows spawn 7, API v1.1–v1.3, LOD/ERR katman tutarlılığı + EFFRES özeti, clone motoru 5, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
 | `python -m backend.validation` | **14 / 14 PASS** (A-04, V-01…V-10, SLOPE-01, EFFRES-01, CLONE-01; 2026-11-14T21:48Z, ağ dahil) → `data/validation/report.json` |
 | `cd frontend; npx vitest run` | **97 passed** (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |

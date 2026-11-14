@@ -1,0 +1,2745 @@
+{
+ "generated_utc": "2026-11-14T21:48:51Z",
+ "tool": "python -m backend.validation",
+ "tests": {
+  "V-01": {
+   "status": "PASS",
+   "summary": "SPK (Sun/Earth/Moon/EMB) and Moon PA binary PCK cover 2026-2035",
+   "evidence": {
+    "product_window_utc": [
+     "2026-01-01",
+     "2036-01-01"
+    ],
+    "spk": {
+     "SUN": {
+      "covered": true,
+      "intervals_utc": [
+       [
+        "1849-12-25T23:59:19",
+        "2150-01-21T23:58:51"
+       ]
+      ]
+     },
+     "EARTH": {
+      "covered": true,
+      "intervals_utc": [
+       [
+        "1849-12-25T23:59:19",
+        "2150-01-21T23:58:51"
+       ]
+      ]
+     },
+     "MOON": {
+      "covered": true,
+      "intervals_utc": [
+       [
+        "1849-12-25T23:59:19",
+        "2150-01-21T23:58:51"
+       ]
+      ]
+     },
+     "EMB": {
+      "covered": true,
+      "intervals_utc": [
+       [
+        "1849-12-25T23:59:19",
+        "2150-01-21T23:58:51"
+       ]
+      ]
+     }
+    },
+    "pck": {
+     "MOON_PA_DE440 (31008)": {
+      "covered": true,
+      "intervals_utc": [
+       [
+        "1549-12-30T23:59:19",
+        "2650-01-24T23:58:51"
+       ]
+      ]
+     }
+    },
+    "lola": {
+     "LDEM_60S_240MPP_ADJ.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 218961039,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "LDEM_60S_240MPP_ADJ_ERR.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 267005175,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_ERR.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "Site01_final_adj_5mpp_surf.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980810,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_surf.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_toterr.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980810,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_toterr.tif",
+      "crs": "unnamed"
+     },
+     "Site04_final_adj_5mpp_surf.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980806,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_surf.tif",
+      "crs": "unnamed"
+     },
+     "Site04_final_adj_5mpp_slp.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980772,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_slp.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_slp.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980776,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_slp.tif",
+      "crs": "unnamed"
+     },
+     "Site04_final_adj_5mpp_toterr.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980808,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_toterr.tif",
+      "crs": "unnamed"
+     },
+     "LDEM_80S_80MPP_ADJ_ERR.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 254808965,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ_ERR.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "LDEM_80S_80MPP_ADJ.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 189158392,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "Site07_final_adj_5mpp_surf.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980808,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site07/Site07_final_adj_5mpp_surf.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0001_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0001_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0002_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0002_err.tif",
+      "crs": "unknown"
+     },
+     "Site07_final_adj_5mpp_toterr.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980810,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site07/Site07_final_adj_5mpp_toterr.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0003_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0003_err.tif",
+      "crs": "unknown"
+     },
+     "Site07_final_adj_5mpp_slp.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980774,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site07/Site07_final_adj_5mpp_slp.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0004_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0004_err.tif",
+      "crs": "unknown"
+     },
+     "Site11_final_adj_5mpp_surf.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980806,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site11/Site11_final_adj_5mpp_surf.tif",
+      "crs": "unnamed"
+     },
+     "Site11_final_adj_5mpp_toterr.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980810,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site11/Site11_final_adj_5mpp_toterr.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0005_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0005_err.tif",
+      "crs": "unknown"
+     },
+     "Site11_final_adj_5mpp_slp.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40980774,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site11/Site11_final_adj_5mpp_slp.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0006_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0006_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0007_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0007_err.tif",
+      "crs": "unknown"
+     },
+     "Site23_final_adj_5mpp_surf.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 70586804,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site23/Site23_final_adj_5mpp_surf.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0008_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0008_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0009_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987153,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0009_err.tif",
+      "crs": "unknown"
+     },
+     "Site23_final_adj_5mpp_toterr.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 70586811,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site23/Site23_final_adj_5mpp_toterr.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0010_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0010_err.tif",
+      "crs": "unknown"
+     },
+     "Site23_final_adj_5mpp_slp.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 70586810,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site23/Site23_final_adj_5mpp_slp.tif",
+      "crs": "unnamed"
+     },
+     "Site01_final_adj_5mpp_0011_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0011_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0012_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0012_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0013_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0013_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0041_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0041_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0071_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0071_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0014_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0014_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0042_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0042_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0072_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0072_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0015_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987157,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0015_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0043_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0043_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0073_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0073_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0016_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0016_err.tif",
+      "crs": "unknown"
+     },
+     "LDEM_60S_240MPP_ADJ_EFFRES.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 259831703,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "Site01_final_adj_5mpp_0044_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987151,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0044_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0074_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0074_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0017_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0017_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0045_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0045_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0075_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0075_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0046_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0046_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0018_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0018_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0076_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0076_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0047_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0047_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0019_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0019_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0077_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987157,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0077_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0078_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0078_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0020_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0020_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0048_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0048_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0079_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0079_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0021_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0021_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0049_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0049_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0080_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0080_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0022_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987155,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0022_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0050_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0050_err.tif",
+      "crs": "unknown"
+     },
+     "LDEM_80S_80MPP_ADJ_EFFRES.TIF": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 250228467,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+      "crs": "Moon (2015) - Sphere / Ocentric / South Polar"
+     },
+     "Site01_final_adj_5mpp_0081_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0081_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0023_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987157,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0023_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0051_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0051_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0082_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0082_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0024_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0024_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0052_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0052_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0083_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0083_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0025_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0025_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0053_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0053_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0084_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0084_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0026_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0026_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0054_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0054_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0085_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0085_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0027_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0027_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0055_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0055_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0086_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0086_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0028_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0028_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0056_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0056_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0087_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987155,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0087_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0029_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0029_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0057_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0057_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0030_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0030_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0088_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0088_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0058_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0058_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0095_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0095_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0064_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0064_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0089_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0089_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0036_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0036_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0031_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0031_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0059_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0059_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0037_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987157,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0037_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0096_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0096_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0032_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0032_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0090_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0090_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0065_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0065_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0060_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0060_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0038_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0038_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0091_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0091_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0097_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0097_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0061_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0061_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0092_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0092_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0033_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987157,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0033_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0066_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0066_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0039_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0039_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0062_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0062_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0098_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0098_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0034_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987159,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0034_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0093_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0093_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0040_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0040_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0067_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0067_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0094_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0094_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0099_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0099_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0035_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987161,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0035_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0063_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0063_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0100_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0100_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0068_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987163,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0068_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0069_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0069_err.tif",
+      "crs": "unknown"
+     },
+     "Site01_final_adj_5mpp_0070_err.tif": {
+      "status": "PRESENT_UNVERIFIED",
+      "bytes": 40987165,
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0070_err.tif",
+      "crs": "unknown"
+     }
+    },
+    "dem_present": true
+   },
+   "run_utc": "2026-11-14T21:47:28Z"
+  },
+  "V-02": {
+   "status": "PASS",
+   "summary": "MOON_ME_DE440_ME421 loaded; raster is 1737.4 km Moon sphere south-polar stereographic, east-positive",
+   "evidence": {
+    "frame": "MOON_ME_DE440_ME421",
+    "frame_id": 31009,
+    "PA_to_ME_rotation_arcsec_2026-12-01": 103.91,
+    "note": "ME and PA differ by this rotation (~hundreds of metres at the surface); all code uses ME",
+    "raster_crs": "Moon (2015) - Sphere / Ocentric / South Polar",
+    "sphere_m": [
+     1737400.0,
+     1737400.0
+    ],
+    "pole_xy_m": [
+     0.0,
+     0.0
+    ],
+    "east_90_lat_-89_xy_m": [
+     30324.1,
+     0.0
+    ]
+   },
+   "run_utc": "2026-11-14T21:47:29Z"
+  },
+  "V-03": {
+   "status": "PASS",
+   "summary": "UTC->ET within 0.01 s of independent TT-UTC=69.184 s (TDB-TT < 2 ms; assumes no new leap second)",
+   "evidence": [
+    {
+     "utc": "2026-01-01T00:00:00Z",
+     "et": 820497669.18392,
+     "independent_tt_approx": 820497669.184,
+     "diff_s": -7.998943328857422e-05
+    },
+    {
+     "utc": "2026-12-01T12:00:00Z",
+     "et": 849398469.183084,
+     "independent_tt_approx": 849398469.184,
+     "diff_s": -0.0009160041809082031
+    },
+    {
+     "utc": "2030-06-30T23:59:59Z",
+     "et": 962366468.184124,
+     "independent_tt_approx": 962366468.184,
+     "diff_s": 0.0001239776611328125
+    },
+    {
+     "utc": "2035-12-31T12:00:00Z",
+     "et": 1135987269.1838884,
+     "independent_tt_approx": 1135987269.184,
+     "diff_s": -0.00011157989501953125
+    }
+   ],
+   "run_utc": "2026-11-14T21:47:29Z"
+  },
+  "V-05": {
+   "status": "PASS",
+   "summary": "Criterion: 200->250 km max horizon change < 0.05 deg at every site; observed 0.0000 deg over 7 sites. 135->200 km max change 1.509 deg (why <200 km may not end GREEN). Not exhaustive.",
+   "evidence": [
+    {
+     "site": [
+      -89.54,
+      0.0
+     ],
+     "label": "test point -89.54/0",
+     "seconds": {
+      "135.0": 0.3,
+      "200.0": 0.49,
+      "250.0": 0.52
+     },
+     "max_abs_diff_deg_135_vs_200": 0.0,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.0,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -89.4512,
+      -137.1427
+     ],
+     "label": "ridge test point",
+     "seconds": {
+      "135.0": 0.44,
+      "200.0": 0.58,
+      "250.0": 0.67
+     },
+     "max_abs_diff_deg_135_vs_200": 0.7624155483967062,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.09972222222222223,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -89.46316,
+      -137.48955
+     ],
+     "label": "site01_5m tile centre",
+     "seconds": {
+      "135.0": 0.43,
+      "200.0": 0.58,
+      "250.0": 0.74
+     },
+     "max_abs_diff_deg_135_vs_200": 0.004904364470854183,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.0,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -89.76681,
+      -171.8699
+     ],
+     "label": "site04_5m tile centre",
+     "seconds": {
+      "135.0": 0.44,
+      "200.0": 0.59,
+      "250.0": 0.78
+     },
+     "max_abs_diff_deg_135_vs_200": 0.0,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.0,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -88.81101,
+      123.69007
+     ],
+     "label": "site07_5m tile centre",
+     "seconds": {
+      "135.0": 0.36,
+      "200.0": 0.49,
+      "250.0": 0.59
+     },
+     "max_abs_diff_deg_135_vs_200": 1.1486839037147512,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.18416666666666667,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -88.68342,
+      -67.9321
+     ],
+     "label": "site11_5m tile centre",
+     "seconds": {
+      "135.0": 0.36,
+      "200.0": 0.51,
+      "250.0": 0.61
+     },
+     "max_abs_diff_deg_135_vs_200": 1.5094473664634624,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.13916666666666666,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    },
+    {
+     "site": [
+      -85.99478,
+      -0.23578
+     ],
+     "label": "site23_5m tile centre",
+     "seconds": {
+      "135.0": 0.42,
+      "200.0": 0.6,
+      "250.0": 0.65
+     },
+     "max_abs_diff_deg_135_vs_200": 0.5029169040781984,
+     "share_az_diff_gt_0.01deg_135_vs_200": 0.08194444444444444,
+     "max_abs_diff_deg_200_vs_250": 0.0,
+     "share_az_diff_gt_0.01deg_200_vs_250": 0.0
+    }
+   ],
+   "run_utc": "2026-11-14T21:47:40Z"
+  },
+  "V-06": {
+   "status": "PASS",
+   "summary": "NoData propagates as NaN; 11 layer pair(s) agree (|median diff| < 5 m) and LOD picks the finest layer by distance",
+   "evidence": {
+    "nan_pixels_within_260km_box": 0,
+    "nodata_pixel_sample_returns": "NaN",
+    "layers_present": [
+     "lola_240m",
+     "lola_80m",
+     "site01_5m",
+     "site04_5m",
+     "site07_5m",
+     "site11_5m",
+     "site23_5m"
+    ],
+    "criterion": "|median(fine - coarse)| < 5 m for every overlapping pair; LOD picks site (<=5 km), 80 m (<=30 km), 240 m (beyond)",
+    "pairs": [
+     {
+      "pair": "lola_80m - lola_240m",
+      "n": 441,
+      "median_diff_m": -0.09238518609606672,
+      "p95_abs_diff_m": 4.706848144627656
+     },
+     {
+      "pair": "site01_5m - lola_80m",
+      "n": 225,
+      "median_diff_m": 0.09088321605486271,
+      "p95_abs_diff_m": 2.8703186045966502
+     },
+     {
+      "pair": "site01_5m - lola_240m",
+      "n": 225,
+      "median_diff_m": 0.6270135372615186,
+      "p95_abs_diff_m": 9.831035380386762
+     },
+     {
+      "pair": "site04_5m - lola_80m",
+      "n": 225,
+      "median_diff_m": -0.08209664618402712,
+      "p95_abs_diff_m": 2.315215069012083
+     },
+     {
+      "pair": "site04_5m - lola_240m",
+      "n": 225,
+      "median_diff_m": -0.08581034241689167,
+      "p95_abs_diff_m": 7.953485079834807
+     },
+     {
+      "pair": "site07_5m - lola_80m",
+      "n": 225,
+      "median_diff_m": -0.2425020179268813,
+      "p95_abs_diff_m": 1.753148542135841
+     },
+     {
+      "pair": "site07_5m - lola_240m",
+      "n": 225,
+      "median_diff_m": 0.2857867043491069,
+      "p95_abs_diff_m": 5.521894763798124
+     },
+     {
+      "pair": "site11_5m - lola_80m",
+      "n": 225,
+      "median_diff_m": 0.22227478024910852,
+      "p95_abs_diff_m": 2.235214669437286
+     },
+     {
+      "pair": "site11_5m - lola_240m",
+      "n": 225,
+      "median_diff_m": 0.4273998234141345,
+      "p95_abs_diff_m": 6.501224938416635
+     },
+     {
+      "pair": "site23_5m - lola_80m",
+      "n": 225,
+      "median_diff_m": 0.05900573732378689,
+      "p95_abs_diff_m": 1.7003601074320613
+     },
+     {
+      "pair": "site23_5m - lola_240m",
+      "n": 225,
+      "median_diff_m": 0.3746541340942713,
+      "p95_abs_diff_m": 6.704860432915296
+     }
+    ],
+    "lod_provenance": [
+     {
+      "site": "site01_5m",
+      "centre": {
+       "lat": -89.46316,
+       "lon": -137.48955
+      },
+      "by_distance_km": {
+       "1.0": "site01_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      },
+      "expected": {
+       "1.0": "site01_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      }
+     },
+     {
+      "site": "site04_5m",
+      "centre": {
+       "lat": -89.76681,
+       "lon": -171.8699
+      },
+      "by_distance_km": {
+       "1.0": "site04_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      },
+      "expected": {
+       "1.0": "site04_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      }
+     },
+     {
+      "site": "site07_5m",
+      "centre": {
+       "lat": -88.81101,
+       "lon": 123.69007
+      },
+      "by_distance_km": {
+       "1.0": "site07_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      },
+      "expected": {
+       "1.0": "site07_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      }
+     },
+     {
+      "site": "site11_5m",
+      "centre": {
+       "lat": -88.68342,
+       "lon": -67.9321
+      },
+      "by_distance_km": {
+       "1.0": "site11_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      },
+      "expected": {
+       "1.0": "site11_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      }
+     },
+     {
+      "site": "site23_5m",
+      "centre": {
+       "lat": -85.99478,
+       "lon": -0.23578
+      },
+      "by_distance_km": {
+       "1.0": "site23_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      },
+      "expected": {
+       "1.0": "site23_5m",
+       "10.0": "lola_80m",
+       "100.0": "lola_240m"
+      }
+     }
+    ]
+   },
+   "run_utc": "2026-11-14T21:47:44Z"
+  },
+  "V-07": {
+   "status": "PASS",
+   "summary": "Flat: max |error| 0.0028 vs analytic segment (27 offsets). Curved REAL horizons: 321 partially occluded Sun samples at 3 sites, max |default - dense Cartesian reference| 0.0060 (criterion < 0.01 for both). Tests disc quadrature only (same horizon interpolation), not horizon accuracy.",
+   "evidence": {
+    "max_abs_error": 0.0028430264316187115,
+    "rows": [
+     {
+      "el_offset_deg": -0.26,
+      "analytic": 0.00425432495998005,
+      "quadrature": 0.005208333333333333,
+      "abs_err": 0.0009540083733532833,
+      "reported_refinement_diff": 0.001736111111111111
+     },
+     {
+      "el_offset_deg": -0.24,
+      "analytic": 0.02185577461132012,
+      "quadrature": 0.021701388888888888,
+      "abs_err": 0.00015438572243123283,
+      "reported_refinement_diff": 0.004340277777777776
+     },
+     {
+      "el_offset_deg": -0.22,
+      "analytic": 0.04647996474274996,
+      "quadrature": 0.04774305555555555,
+      "abs_err": 0.001263090812805595,
+      "reported_refinement_diff": 0.0026041666666666644
+     },
+     {
+      "el_offset_deg": -0.2,
+      "analytic": 0.0760763922541614,
+      "quadrature": 0.0763888888888889,
+      "abs_err": 0.00031249663472748823,
+      "reported_refinement_diff": 0.0034722222222222238
+     },
+     {
+      "el_offset_deg": -0.18,
+      "analytic": 0.10955101870852403,
+      "quadrature": 0.10850694444444445,
+      "abs_err": 0.0010440742640795836,
+      "reported_refinement_diff": 0.0008680555555555525
+     },
+     {
+      "el_offset_deg": -0.16,
+      "analytic": 0.14616406692533332,
+      "quadrature": 0.1449652777777778,
+      "abs_err": 0.001198789147555529,
+      "reported_refinement_diff": 0.004340277777777762
+     },
+     {
+      "el_offset_deg": -0.14,
+      "analytic": 0.1853553857622874,
+      "quadrature": 0.18489583333333334,
+      "abs_err": 0.00045955242895406867,
+      "reported_refinement_diff": 0.0026041666666666574
+     },
+     {
+      "el_offset_deg": -0.12,
+      "analytic": 0.22667042756122802,
+      "quadrature": 0.2265625,
+      "abs_err": 0.00010792756122801617,
+      "reported_refinement_diff": 0.0026041666666666574
+     },
+     {
+      "el_offset_deg": -0.1,
+      "analytic": 0.26972225031206626,
+      "quadrature": 0.2699652777777778,
+      "abs_err": 0.00024302746571153166,
+      "reported_refinement_diff": 0.0008680555555555247
+     },
+     {
+      "el_offset_deg": -0.08,
+      "analytic": 0.3141694458611641,
+      "quadrature": 0.3142361111111111,
+      "abs_err": 6.666524994702883e-05,
+      "reported_refinement_diff": 0.005208333333333315
+     },
+     {
+      "el_offset_deg": -0.06,
+      "analytic": 0.35970209118590035,
+      "quadrature": 0.3602430555555556,
+      "abs_err": 0.000540964369655228,
+      "reported_refinement_diff": 0.006076388888888895
+     },
+     {
+      "el_offset_deg": -0.04,
+      "analytic": 0.40603210322273015,
+      "quadrature": 0.4036458333333333,
+      "abs_err": 0.0023862698893968304,
+      "reported_refinement_diff": 0.009548611111111105
+     },
+     {
+      "el_offset_deg": -0.02,
+      "analytic": 0.45288614023504803,
+      "quadrature": 0.4557291666666667,
+      "abs_err": 0.002843026431618656,
+      "reported_refinement_diff": 0.0078125
+     },
+     {
+      "el_offset_deg": 0.0,
+      "analytic": 0.5,
+      "quadrature": 0.5,
+      "abs_err": 0.0,
+      "reported_refinement_diff": 0.0
+     },
+     {
+      "el_offset_deg": 0.02,
+      "analytic": 0.5471138597649521,
+      "quadrature": 0.5442708333333334,
+      "abs_err": 0.0028430264316187115,
+      "reported_refinement_diff": 0.0078125
+     },
+     {
+      "el_offset_deg": 0.04,
+      "analytic": 0.5939678967772699,
+      "quadrature": 0.5963541666666666,
+      "abs_err": 0.0023862698893967194,
+      "reported_refinement_diff": 0.00954861111111105
+     },
+     {
+      "el_offset_deg": 0.06,
+      "analytic": 0.6402979088140998,
+      "quadrature": 0.6397569444444444,
+      "abs_err": 0.000540964369655339,
+      "reported_refinement_diff": 0.006076388888888951
+     },
+     {
+      "el_offset_deg": 0.08,
+      "analytic": 0.685830554138836,
+      "quadrature": 0.6857638888888888,
+      "abs_err": 6.666524994713985e-05,
+      "reported_refinement_diff": 0.005208333333333259
+     },
+     {
+      "el_offset_deg": 0.1,
+      "analytic": 0.7302777496879337,
+      "quadrature": 0.7300347222222222,
+      "abs_err": 0.00024302746571147615,
+      "reported_refinement_diff": 0.0008680555555555802
+     },
+     {
+      "el_offset_deg": 0.12,
+      "analytic": 0.773329572438772,
+      "quadrature": 0.7734375,
+      "abs_err": 0.00010792756122801617,
+      "reported_refinement_diff": 0.0026041666666666297
+     },
+     {
+      "el_offset_deg": 0.14,
+      "analytic": 0.8146446142377126,
+      "quadrature": 0.8151041666666666,
+      "abs_err": 0.00045955242895401316,
+      "reported_refinement_diff": 0.0026041666666666297
+     },
+     {
+      "el_offset_deg": 0.16,
+      "analytic": 0.8538359330746668,
+      "quadrature": 0.8550347222222222,
+      "abs_err": 0.0011987891475554457,
+      "reported_refinement_diff": 0.00434027777777779
+     },
+     {
+      "el_offset_deg": 0.18,
+      "analytic": 0.8904489812914761,
+      "quadrature": 0.8914930555555556,
+      "abs_err": 0.0010440742640794864,
+      "reported_refinement_diff": 0.0008680555555555802
+     },
+     {
+      "el_offset_deg": 0.2,
+      "analytic": 0.9239236077458387,
+      "quadrature": 0.9236111111111112,
+      "abs_err": 0.00031249663472754374,
+      "reported_refinement_diff": 0.00347222222222221
+     },
+     {
+      "el_offset_deg": 0.22,
+      "analytic": 0.9535200352572499,
+      "quadrature": 0.9522569444444444,
+      "abs_err": 0.0012630908128055118,
+      "reported_refinement_diff": 0.0026041666666667407
+     },
+     {
+      "el_offset_deg": 0.24,
+      "analytic": 0.9781442253886798,
+      "quadrature": 0.9782986111111112,
+      "abs_err": 0.0001543857224313161,
+      "reported_refinement_diff": 0.004340277777777679
+     },
+     {
+      "el_offset_deg": 0.26,
+      "analytic": 0.9957456750400199,
+      "quadrature": 0.9947916666666666,
+      "abs_err": 0.0009540083733532434,
+      "reported_refinement_diff": 0.0017361111111111605
+     }
+    ],
+    "curved": {
+     "status": "PASS",
+     "n_partial": 321,
+     "max_abs_error": 0.006020690908143278,
+     "n_sites": 3,
+     "per_site": [
+      {
+       "site": "test point -89.54/0",
+       "partial_samples": 36
+      },
+      {
+       "site": "ridge test point",
+       "partial_samples": 0
+      },
+      {
+       "site": "site01_5m tile centre",
+       "partial_samples": 145
+      },
+      {
+       "site": "site04_5m tile centre",
+       "partial_samples": 0
+      },
+      {
+       "site": "site07_5m tile centre",
+       "partial_samples": 0
+      },
+      {
+       "site": "site11_5m tile centre",
+       "partial_samples": 0
+      },
+      {
+       "site": "site23_5m tile centre",
+       "partial_samples": 140
+      }
+     ],
+     "median_abs_error": 0.0005504440828971724,
+     "worst_samples": [
+      {
+       "site": "test point -89.54/0",
+       "utc": "2027-01-23T16:30:00.000Z",
+       "sun_az_deg": 347.15986521633664,
+       "sun_el_deg": 0.9077942836000358,
+       "default": 0.5073784722222222,
+       "reference": 0.5013577813140789,
+       "abs_err": 0.006020690908143278,
+       "reported_refinement_diff": 0.00737847222222221
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2027-01-23T21:30:00.000Z",
+       "sun_az_deg": 344.82686626704356,
+       "sun_el_deg": 4.317954894485662,
+       "default": 0.4947916666666667,
+       "reference": 0.49001258817661447,
+       "abs_err": 0.004779078490052213,
+       "reported_refinement_diff": 0.00347222222222221
+      },
+      {
+       "site": "test point -89.54/0",
+       "utc": "2026-11-30T20:00:00.000Z",
+       "sun_az_deg": 282.0782374145956,
+       "sun_el_deg": 1.5673980756288042,
+       "default": 0.53515625,
+       "reference": 0.5389639693133506,
+       "abs_err": 0.003807719313350555,
+       "reported_refinement_diff": 0.0004340277777777901
+      },
+      {
+       "site": "test point -89.54/0",
+       "utc": "2027-01-23T17:00:00.000Z",
+       "sun_az_deg": 346.90721165870593,
+       "sun_el_deg": 0.9065927409274398,
+       "default": 0.5512152777777778,
+       "reference": 0.5548219050107277,
+       "abs_err": 0.0036066272329499105,
+       "reported_refinement_diff": 0.0008680555555555802
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2026-12-28T19:30:00.000Z",
+       "sun_az_deg": 301.9616205966856,
+       "sun_el_deg": 3.1986244922366946,
+       "default": 0.4032118055555556,
+       "reference": 0.4065506020948626,
+       "abs_err": 0.0033387965393070207,
+       "reported_refinement_diff": 0.01171875
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2027-01-23T23:30:00.000Z",
+       "sun_az_deg": 343.81368829321093,
+       "sun_el_deg": 4.295916216722159,
+       "default": 0.4053819444444444,
+       "reference": 0.40861696316176993,
+       "abs_err": 0.0032350187173255107,
+       "reported_refinement_diff": 0.00954861111111116
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2026-12-28T17:30:00.000Z",
+       "sun_az_deg": 302.9729699572429,
+       "sun_el_deg": 3.260054529438899,
+       "default": 0.4835069444444444,
+       "reference": 0.4802824818500661,
+       "abs_err": 0.003224462594378308,
+       "reported_refinement_diff": 0.0026041666666666297
+      },
+      {
+       "site": "site01_5m tile centre",
+       "utc": "2027-01-23T19:30:00.000Z",
+       "sun_az_deg": 123.13725090203776,
+       "sun_el_deg": 0.16136949383740523,
+       "default": 0.4548611111111111,
+       "reference": 0.45170969606283007,
+       "abs_err": 0.0031514150482810366,
+       "reported_refinement_diff": 0.005208333333333315
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2027-01-23T22:30:00.000Z",
+       "sun_az_deg": 344.3202730330272,
+       "sun_el_deg": 4.307084740406668,
+       "default": 0.4557291666666667,
+       "reference": 0.45276266932680964,
+       "abs_err": 0.0029664973398570438,
+       "reported_refinement_diff": 0.006076388888888895
+      },
+      {
+       "site": "site23_5m tile centre",
+       "utc": "2026-11-29T19:00:00.000Z",
+       "sun_az_deg": 294.8390227495934,
+       "sun_el_deg": 3.165540187493414,
+       "default": 0.6037326388888888,
+       "reference": 0.6007727081997324,
+       "abs_err": 0.0029599306891564536,
+       "reported_refinement_diff": 0.008246527777777679
+      }
+     ],
+     "reference": "Cartesian 401x401 grid inside the disc (independent of the polar quadrature)"
+    }
+   },
+   "run_utc": "2026-11-14T21:47:50Z"
+  },
+  "V-08": {
+   "status": "PASS",
+   "summary": "ERR +/-k sensitivity at 7 sites for k=1 and k=2: complete coverage, cautious >= nominal >= optimistic, band(k=2) >= band(k=1) at every azimuth, observer sigma reported. Consistency only - not a statistical validation. DEM clones: see CLONE-01.",
+   "evidence": [
+    {
+     "site": [
+      -89.54,
+      0.0
+     ],
+     "label": "test point -89.54/0",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.05881730537427668,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.015592926698201781
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.05881730537427668,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.031185852802050995
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -89.4512,
+      -137.1427
+     ],
+     "label": "ridge test point",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.2778530858828397,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.29899152786017413
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.2778530858828397,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.5578690974030648
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -89.46316,
+      -137.48955
+     ],
+     "label": "site01_5m tile centre",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.2532311284613904,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.7385026303660719
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.2532311284613904,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 1.4225837935477381
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -89.76681,
+      -171.8699
+     ],
+     "label": "site04_5m tile centre",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.236667894648456,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.43663168477951686
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.236667894648456,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.8850305747648868
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -88.81101,
+      123.69007
+     ],
+     "label": "site07_5m tile centre",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.3117338313654735,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.8836882325119938
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.3117338313654735,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 1.782373037951788
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -88.68342,
+      -67.9321
+     ],
+     "label": "site11_5m tile centre",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.44373977961945227,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 0.7604456531082544
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.44373977961945227,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 1.5352801442614294
+     },
+     "band_k2_ge_band_k1": true
+    },
+    {
+     "site": [
+      -85.99478,
+      -0.23578
+     ],
+     "label": "site23_5m tile centre",
+     "k1": {
+      "status": "complete",
+      "observer_err_m": 0.5965347620347858,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 1.5484506091841634
+     },
+     "k2": {
+      "status": "complete",
+      "observer_err_m": 0.5965347620347858,
+      "excluded_layers": {},
+      "ordered_cautious_ge_nominal_ge_optimistic": true,
+      "max_band_width_deg": 3.1467162175940073
+     },
+     "band_k2_ge_band_k1": true
+    }
+   ],
+   "run_utc": "2026-11-14T21:48:02Z"
+  },
+  "V-09": {
+   "status": "PASS",
+   "summary": "Constraint/violation logic on hand-computed inputs (longest run, min/max limits, unknown slope)",
+   "evidence": {
+    "longest_run_s": 3600,
+    "span": [
+     1,
+     3
+    ],
+    "violations": [
+     "MAX_DARKNESS",
+     "MIN_ILLUMINATION"
+    ],
+    "unknown": [
+     "SLOPE_UNKNOWN"
+    ]
+   },
+   "run_utc": "2026-11-14T21:48:02Z"
+  },
+  "V-10": {
+   "status": "PASS",
+   "summary": "Real 24 h analysis at test site 2: status GRAY; provenance fields present",
+   "evidence": {
+    "checks": {
+     "horizon.sources": true,
+     "horizon.cache_key": true,
+     "horizon.reference_radius_km": true,
+     "horizon.uncertainty_mode": true,
+     "mission.disclaimers": true,
+     "mission.explanations": true,
+     "timeline.utc_Z": true,
+     "nominal_never_GREEN": true
+    },
+    "status": "GRAY"
+   },
+   "run_utc": "2026-11-14T21:48:03Z"
+  },
+  "SLOPE-01": {
+   "status": "PASS",
+   "summary": "5 m slope vs official PGDA slope map: median |diff| 0.07 deg over 725 points (criterion <= 2 deg); end-to-end analysis with max_slope_deg evaluated slope from site01_5m. Screening only, not landing safety.",
+   "evidence": {
+    "criterion": "median |ours - official| <= 2 deg; worker analysis reports screening_only slope from the 5 m layer",
+    "rows": [
+     {
+      "site": "site01_5m",
+      "lat": -89.46316,
+      "lon": -137.48955,
+      "n": 29,
+      "ours_mean_deg": 5.861790342146843,
+      "ours_max_deg": 9.341802691321153,
+      "official_mean_deg": 5.9419208868762885,
+      "official_max_deg": 9.591585064441828,
+      "median_abs_diff_deg": 0.2426375260172282
+     },
+     {
+      "site": "site01_5m",
+      "lat": -89.45316,
+      "lon": -137.48955,
+      "n": 29,
+      "ours_mean_deg": 5.024154517043032,
+      "ours_max_deg": 7.007313279764508,
+      "official_mean_deg": 4.9710149246927,
+      "official_max_deg": 6.952466648961764,
+      "median_abs_diff_deg": 0.10260455876480457
+     },
+     {
+      "site": "site01_5m",
+      "lat": -89.47316,
+      "lon": -137.48955,
+      "n": 29,
+      "ours_mean_deg": 3.5112776568397335,
+      "ours_max_deg": 10.15799763768642,
+      "official_mean_deg": 3.649422075308404,
+      "official_max_deg": 11.19791485978072,
+      "median_abs_diff_deg": 0.11529768342214197
+     },
+     {
+      "site": "site01_5m",
+      "lat": -89.46316,
+      "lon": -136.98955,
+      "n": 29,
+      "ours_mean_deg": 3.2146536253458264,
+      "ours_max_deg": 5.443246931950639,
+      "official_mean_deg": 3.2778396420348304,
+      "official_max_deg": 5.322070643467928,
+      "median_abs_diff_deg": 0.1276894472116643
+     },
+     {
+      "site": "site01_5m",
+      "lat": -89.46316,
+      "lon": -137.98955,
+      "n": 29,
+      "ours_mean_deg": 3.8008561638250273,
+      "ours_max_deg": 6.853934057134224,
+      "official_mean_deg": 3.827648171614476,
+      "official_max_deg": 6.6910151724748745,
+      "median_abs_diff_deg": 0.1436128293065364
+     },
+     {
+      "site": "site04_5m",
+      "lat": -89.76681,
+      "lon": -171.8699,
+      "n": 29,
+      "ours_mean_deg": 31.3766863089782,
+      "ours_max_deg": 33.639179440014345,
+      "official_mean_deg": 31.400263127648564,
+      "official_max_deg": 33.56916159142731,
+      "median_abs_diff_deg": 0.055071729357891286
+     },
+     {
+      "site": "site04_5m",
+      "lat": -89.75681,
+      "lon": -171.8699,
+      "n": 29,
+      "ours_mean_deg": 32.704135586013955,
+      "ours_max_deg": 38.006594324926034,
+      "official_mean_deg": 32.65850458456973,
+      "official_max_deg": 37.673005446627,
+      "median_abs_diff_deg": 0.12846761290690978
+     },
+     {
+      "site": "site04_5m",
+      "lat": -89.77681,
+      "lon": -171.8699,
+      "n": 29,
+      "ours_mean_deg": 34.08703935773365,
+      "ours_max_deg": 37.45867033333795,
+      "official_mean_deg": 34.09048933203867,
+      "official_max_deg": 37.369945010376085,
+      "median_abs_diff_deg": 0.02191307736036663
+     },
+     {
+      "site": "site04_5m",
+      "lat": -89.76681,
+      "lon": -171.3699,
+      "n": 29,
+      "ours_mean_deg": 33.27032639798352,
+      "ours_max_deg": 39.09968722912195,
+      "official_mean_deg": 33.284407347827894,
+      "official_max_deg": 39.05739735995937,
+      "median_abs_diff_deg": 0.02752145969177633
+     },
+     {
+      "site": "site04_5m",
+      "lat": -89.76681,
+      "lon": -172.3699,
+      "n": 29,
+      "ours_mean_deg": 29.639755844970445,
+      "ours_max_deg": 36.275286068601226,
+      "official_mean_deg": 29.617072414129282,
+      "official_max_deg": 36.06427792099787,
+      "median_abs_diff_deg": 0.05958789071697268
+     },
+     {
+      "site": "site07_5m",
+      "lat": -88.81101,
+      "lon": 123.69007,
+      "n": 29,
+      "ours_mean_deg": 4.04530183379773,
+      "ours_max_deg": 6.839237135387985,
+      "official_mean_deg": 4.053107482317971,
+      "official_max_deg": 6.810802442538389,
+      "median_abs_diff_deg": 0.09305183277553652
+     },
+     {
+      "site": "site07_5m",
+      "lat": -88.80101,
+      "lon": 123.69007,
+      "n": 29,
+      "ours_mean_deg": 3.82042324171328,
+      "ours_max_deg": 5.399807773683382,
+      "official_mean_deg": 3.8498856997630906,
+      "official_max_deg": 5.295685058241448,
+      "median_abs_diff_deg": 0.13538749488142887
+     },
+     {
+      "site": "site07_5m",
+      "lat": -88.82101,
+      "lon": 123.69007,
+      "n": 29,
+      "ours_mean_deg": 6.793218296737609,
+      "ours_max_deg": 10.240434594755001,
+      "official_mean_deg": 6.842244273871523,
+      "official_max_deg": 10.961756153337618,
+      "median_abs_diff_deg": 0.15273230876605126
+     },
+     {
+      "site": "site07_5m",
+      "lat": -88.81101,
+      "lon": 124.19007,
+      "n": 29,
+      "ours_mean_deg": 6.833240768498951,
+      "ours_max_deg": 9.84993244100743,
+      "official_mean_deg": 6.8323837462779435,
+      "official_max_deg": 9.73026222506416,
+      "median_abs_diff_deg": 0.0688721960297185
+     },
+     {
+      "site": "site07_5m",
+      "lat": -88.81101,
+      "lon": 123.19007,
+      "n": 29,
+      "ours_mean_deg": 5.149979851324474,
+      "ours_max_deg": 8.13795271163777,
+      "official_mean_deg": 5.182668208579316,
+      "official_max_deg": 8.433346382130807,
+      "median_abs_diff_deg": 0.11895394155590289
+     },
+     {
+      "site": "site11_5m",
+      "lat": -88.68342,
+      "lon": -67.9321,
+      "n": 29,
+      "ours_mean_deg": 2.545077904123447,
+      "ours_max_deg": 5.393832787215314,
+      "official_mean_deg": 2.5703887041774838,
+      "official_max_deg": 5.377217011370545,
+      "median_abs_diff_deg": 0.06184694948422842
+     },
+     {
+      "site": "site11_5m",
+      "lat": -88.67342,
+      "lon": -67.9321,
+      "n": 29,
+      "ours_mean_deg": 5.249496242174959,
+      "ours_max_deg": 7.553306277291346,
+      "official_mean_deg": 5.272778418936583,
+      "official_max_deg": 7.709173610447662,
+      "median_abs_diff_deg": 0.05779086992209326
+     },
+     {
+      "site": "site11_5m",
+      "lat": -88.69342,
+      "lon": -67.9321,
+      "n": 29,
+      "ours_mean_deg": 6.6618595224988075,
+      "ours_max_deg": 12.728509591838144,
+      "official_mean_deg": 6.682094531682178,
+      "official_max_deg": 12.727606922716332,
+      "median_abs_diff_deg": 0.07500722299889695
+     },
+     {
+      "site": "site11_5m",
+      "lat": -88.68342,
+      "lon": -67.4321,
+      "n": 29,
+      "ours_mean_deg": 10.557426515603895,
+      "ours_max_deg": 15.053606224697145,
+      "official_mean_deg": 10.543200945553675,
+      "official_max_deg": 15.022621683474892,
+      "median_abs_diff_deg": 0.18700661029684795
+     },
+     {
+      "site": "site11_5m",
+      "lat": -88.68342,
+      "lon": -68.4321,
+      "n": 29,
+      "ours_mean_deg": 4.697568635484693,
+      "ours_max_deg": 6.2830007738793086,
+      "official_mean_deg": 4.723932509391274,
+      "official_max_deg": 6.305315148956512,
+      "median_abs_diff_deg": 0.014685668071900082
+     },
+     {
+      "site": "site23_5m",
+      "lat": -85.99478,
+      "lon": -0.23578,
+      "n": 29,
+      "ours_mean_deg": 4.199850734931399,
+      "ours_max_deg": 8.8854013704463,
+      "official_mean_deg": 4.231442864267531,
+      "official_max_deg": 8.910557547325142,
+      "median_abs_diff_deg": 0.016411136632604073
+     },
+     {
+      "site": "site23_5m",
+      "lat": -85.98478,
+      "lon": -0.23578,
+      "n": 29,
+      "ours_mean_deg": 5.522212692243945,
+      "ours_max_deg": 8.229571027430078,
+      "official_mean_deg": 5.551148851484508,
+      "official_max_deg": 8.299552533045254,
+      "median_abs_diff_deg": 0.007730915923533033
+     },
+     {
+      "site": "site23_5m",
+      "lat": -86.00478,
+      "lon": -0.23578,
+      "n": 29,
+      "ours_mean_deg": 5.292902769792248,
+      "ours_max_deg": 7.936694872390723,
+      "official_mean_deg": 5.333447696159215,
+      "official_max_deg": 7.990360418794315,
+      "median_abs_diff_deg": 0.015474536312269471
+     },
+     {
+      "site": "site23_5m",
+      "lat": -85.99478,
+      "lon": 0.26422,
+      "n": 29,
+      "ours_mean_deg": 7.698787322762103,
+      "ours_max_deg": 15.590537631582576,
+      "official_mean_deg": 7.874845968973269,
+      "official_max_deg": 15.653601178803342,
+      "median_abs_diff_deg": 0.09637047132233079
+     },
+     {
+      "site": "site23_5m",
+      "lat": -85.99478,
+      "lon": -0.73578,
+      "n": 29,
+      "ours_mean_deg": 4.547667514926276,
+      "ours_max_deg": 8.595819938527207,
+      "official_mean_deg": 4.773549303523199,
+      "official_max_deg": 8.656913874393904,
+      "median_abs_diff_deg": 0.05743876066434961
+     }
+    ],
+    "end_to_end": {
+     "site": "site01_5m",
+     "centre": {
+      "lat": -89.46316,
+      "lon": -137.48955
+     },
+     "decision": "GRAY",
+     "error_code": null,
+     "slope": {
+      "slope_max_deg": 9.341802691321153,
+      "slope_mean_deg": 5.861790342146843,
+      "status": "screening_only",
+      "source": "site01_5m",
+      "sampling_interval_m": 5.0,
+      "n_points": 29
+     },
+     "max_slope_violation": [],
+     "slope_unknown": false,
+     "horizon_layers": {
+      "lola_240m": 240,
+      "lola_80m": 80,
+      "site01_5m": 5,
+      "site04_5m": 5
+     }
+    }
+   },
+   "run_utc": "2026-11-14T21:48:06Z"
+  },
+  "EFFRES-01": {
+   "status": "PASS",
+   "summary": "EFFRES for lola_240m, lola_80m: identical grid to DEM (True); >= 99 % valid, positive values in each principal LOD band at 7 sites (True). Band medians (m): {'lola_240m': [24.5, 24.6, 24.5, 24.8, 25.2, 24.8, 27.0], 'lola_80m': [15.5, 16.9, 16.8, 16.6, 18.6, 17.6, 16.9]}. Quality metadata only.",
+   "evidence": {
+    "grid": [
+     {
+      "layer": "lola_240m",
+      "same_shape": true,
+      "same_transform": true,
+      "same_crs_params": true
+     },
+     {
+      "layer": "lola_80m",
+      "same_shape": true,
+      "same_transform": true,
+      "same_crs_params": true
+     }
+    ],
+    "rows": [
+     {
+      "site": "test point -89.54/0",
+      "latlon": [
+       -89.54,
+       0.0
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 14.21299545849636,
+       "median_m": 24.472022599845303,
+       "p90_m": 41.64331622297221,
+       "max_m": 99.54240550675276,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 12.90823199764176,
+       "median_m": 15.513605806365575,
+       "p90_m": 20.687788300114633,
+       "max_m": 45.94983092129808,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "ridge test point",
+      "latlon": [
+       -89.4512,
+       -137.1427
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 17.330325165861872,
+       "median_m": 24.571836324359275,
+       "p90_m": 42.32272061275265,
+       "max_m": 154.04722486871674,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 14.833084643620278,
+       "median_m": 16.938574767532117,
+       "p90_m": 24.94412290468634,
+       "max_m": 75.6401923866944,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "site01_5m tile centre",
+      "latlon": [
+       -89.46316,
+       -137.48955
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 16.90021566024808,
+       "median_m": 24.522456571702193,
+       "p90_m": 43.33494675080772,
+       "max_m": 139.81721404463872,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 14.494672464564776,
+       "median_m": 16.75577188640562,
+       "p90_m": 24.59713018751446,
+       "max_m": 101.93882309235379,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "site04_5m tile centre",
+      "latlon": [
+       -89.76681,
+       -171.8699
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 17.32221931893045,
+       "median_m": 24.75496777427262,
+       "p90_m": 41.638293279497205,
+       "max_m": 108.71821229040076,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 15.895338054312067,
+       "median_m": 16.596482931566207,
+       "p90_m": 22.545838199282702,
+       "max_m": 112.94350686182096,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "site07_5m tile centre",
+      "latlon": [
+       -88.81101,
+       123.69007
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 15.429704365948133,
+       "median_m": 25.206559781407577,
+       "p90_m": 43.66112638979575,
+       "max_m": 287.73575719122965,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 16.44013746320228,
+       "median_m": 18.637657835721797,
+       "p90_m": 26.56792283626298,
+       "max_m": 76.21177012527481,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "site11_5m tile centre",
+      "latlon": [
+       -88.68342,
+       -67.9321
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 18.26617900235612,
+       "median_m": 24.82029670979539,
+       "p90_m": 42.1714930011434,
+       "max_m": 149.5748593510025,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 21.931676294077008,
+       "median_m": 17.629639586636422,
+       "p90_m": 24.596030098050267,
+       "max_m": 59.75756625946225,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     },
+     {
+      "site": "site23_5m tile centre",
+      "latlon": [
+       -85.99478,
+       -0.23578
+      ],
+      "lola_240m": {
+       "pixel_m": 240,
+       "band_km": [
+        30.0,
+        200.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 15.317079874090084,
+       "median_m": 27.039556183365157,
+       "p90_m": 49.57714068305851,
+       "max_m": 123.50127329143024,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      },
+      "lola_80m": {
+       "pixel_m": 80,
+       "band_km": [
+        0.0,
+        30.0
+       ],
+       "status": "OK",
+       "file": "lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF",
+       "at_observer_m": 17.347517508174143,
+       "median_m": 16.920958564367204,
+       "p90_m": 24.877334483798258,
+       "max_m": 71.272690678142,
+       "valid_fraction": 1.0,
+       "n_samples": 1800
+      }
+     }
+    ]
+   },
+   "run_utc": "2026-11-14T21:48:08Z"
+  },
+  "CLONE-01": {
+   "status": "PASS",
+   "summary": "Site01: grid OK, |clone-surf|/toterr median 0.726 (range 0.721-0.730; criterion 0.55-0.80), complete profile sets 2. Not downloaded: Site04, Site07, Site11. Empirical ensemble consistency only; not a statistical validation of the DEM.",
+   "evidence": [
+    {
+     "tile": "Site01",
+     "files": {
+      "site_tile": "Site01",
+      "present": 100,
+      "expected": 100,
+      "complete": true
+     },
+     "grid_errors": [],
+     "grid_ok": true,
+     "ratio_median_of_medians": 0.7261496328038735,
+     "ratio_min": 0.7208844453403087,
+     "ratio_max": 0.7298153891337762,
+     "ratio_ok": true,
+     "profile_sets": [
+      {
+       "key": "67444f630b6a",
+       "latlon": [
+        -89.4512,
+        -137.1427
+       ],
+       "complete_profiles": {
+        "h4": 100
+       },
+       "seconds": 200.6,
+       "clone_p05_p95_within_err_k2_band_share": 1.0,
+       "clone_spread_deg_max": 0.2365258991718293,
+       "err_k2_band_deg_max": 0.5578690974030648
+      },
+      {
+       "key": "e2b99248c369",
+       "latlon": [
+        -89.46316,
+        -137.48955
+       ],
+       "complete_profiles": {
+        "h4": 100
+       },
+       "seconds": 201.2,
+       "clone_p05_p95_within_err_k2_band_share": 1.0,
+       "clone_spread_deg_max": 0.5750599145889281,
+       "err_k2_band_deg_max": 1.4225837935477381
+      }
+     ],
+     "profile_sets_ok": true
+    }
+   ],
+   "run_utc": "2026-11-14T21:48:12Z"
+  },
+  "A-04": {
+   "status": "PASS",
+   "summary": "28 Sun/Earth directions at 14 site/date cases (2026-2035, lat -80.5..-89.98, heights 0-5 km); max separation 5.77e-07 deg (threshold 0.005); synthetic heights",
+   "evidence": {
+    "max_difference_deg": 5.772715767147865e-07,
+    "rows": [
+     {
+      "case": "near Shackleton example",
+      "body": "sun",
+      "utc": "2026-12-01T12:00:00Z",
+      "difference_deg": 8.271062010049331e-09,
+      "passed": true
+     },
+     {
+      "case": "near Shackleton example",
+      "body": "earth",
+      "utc": "2026-12-01T12:00:00Z",
+      "difference_deg": 3.3492218156033427e-07,
+      "passed": true
+     },
+     {
+      "case": "near Connecting Ridge example",
+      "body": "sun",
+      "utc": "2026-06-15T06:00:00Z",
+      "difference_deg": 1.4457706849172537e-09,
+      "passed": true
+     },
+     {
+      "case": "near Connecting Ridge example",
+      "body": "earth",
+      "utc": "2026-06-15T06:00:00Z",
+      "difference_deg": 4.1399856862112446e-07,
+      "passed": true
+     },
+     {
+      "case": "near Malapert example",
+      "body": "sun",
+      "utc": "2027-03-21T18:00:00Z",
+      "difference_deg": 1.2727939108370977e-08,
+      "passed": true
+     },
+     {
+      "case": "near Malapert example",
+      "body": "earth",
+      "utc": "2027-03-21T18:00:00Z",
+      "difference_deg": 3.443602436809677e-07,
+      "passed": true
+     },
+     {
+      "case": "Site01 tile centre",
+      "body": "sun",
+      "utc": "2026-12-26T12:00:00Z",
+      "difference_deg": 8.625106055670811e-10,
+      "passed": true
+     },
+     {
+      "case": "Site01 tile centre",
+      "body": "earth",
+      "utc": "2026-12-26T12:00:00Z",
+      "difference_deg": 5.305786070509475e-07,
+      "passed": true
+     },
+     {
+      "case": "Site04 tile centre",
+      "body": "sun",
+      "utc": "2027-01-09T21:00:00Z",
+      "difference_deg": 5.300288976305086e-09,
+      "passed": true
+     },
+     {
+      "case": "Site04 tile centre",
+      "body": "earth",
+      "utc": "2027-01-09T21:00:00Z",
+      "difference_deg": 4.2266598549361973e-07,
+      "passed": true
+     },
+     {
+      "case": "near pole, east",
+      "body": "sun",
+      "utc": "2028-02-29T00:00:00Z",
+      "difference_deg": 9.325927444197192e-09,
+      "passed": true
+     },
+     {
+      "case": "near pole, east",
+      "body": "earth",
+      "utc": "2028-02-29T00:00:00Z",
+      "difference_deg": 4.825024410290062e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -88, west",
+      "body": "sun",
+      "utc": "2028-09-14T03:30:00Z",
+      "difference_deg": 1.137623842665698e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -88, west",
+      "body": "earth",
+      "utc": "2028-09-14T03:30:00Z",
+      "difference_deg": 2.79231137164934e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -85, east",
+      "body": "sun",
+      "utc": "2029-11-02T17:45:00Z",
+      "difference_deg": 9.081768467702338e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -85, east",
+      "body": "earth",
+      "utc": "2029-11-02T17:45:00Z",
+      "difference_deg": 2.7783720806042367e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -80.5, seam",
+      "body": "sun",
+      "utc": "2030-04-18T09:15:00Z",
+      "difference_deg": 3.289240986793588e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -80.5, seam",
+      "body": "earth",
+      "utc": "2030-04-18T09:15:00Z",
+      "difference_deg": 4.715962955086626e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -82, seam west",
+      "body": "sun",
+      "utc": "2031-07-07T22:00:00Z",
+      "difference_deg": 4.45748880249808e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -82, seam west",
+      "body": "earth",
+      "utc": "2031-07-07T22:00:00Z",
+      "difference_deg": 5.772715767147865e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -87, south-west",
+      "body": "sun",
+      "utc": "2032-12-31T23:59:00Z",
+      "difference_deg": 2.4013618185495325e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -87, south-west",
+      "body": "earth",
+      "utc": "2032-12-31T23:59:00Z",
+      "difference_deg": 4.253526893670078e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -89, east",
+      "body": "sun",
+      "utc": "2033-05-20T12:00:00Z",
+      "difference_deg": 1.939456644928518e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -89, east",
+      "body": "earth",
+      "utc": "2033-05-20T12:00:00Z",
+      "difference_deg": 5.11481344510463e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -84, Greenwich",
+      "body": "sun",
+      "utc": "2034-08-08T08:08:00Z",
+      "difference_deg": 7.294349451136283e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -84, Greenwich",
+      "body": "earth",
+      "utc": "2034-08-08T08:08:00Z",
+      "difference_deg": 4.065119326998011e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -86.5, east",
+      "body": "sun",
+      "utc": "2035-12-15T06:00:00Z",
+      "difference_deg": 2.6645827454174917e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -86.5, east",
+      "body": "earth",
+      "utc": "2035-12-15T06:00:00Z",
+      "difference_deg": 5.475790917537105e-07,
+      "passed": true
+     }
+    ],
+    "horizons_site_metadata": [
+     "Center pole/equ : MEAN_ME (high precision)        {East-longitude positive}",
+     "Center radii    : 1737.4, 1737.4, 1737.4 km       {Equator_a, b, pole_c}"
+    ]
+   },
+   "run_utc": "2026-11-14T21:48:51Z"
+  },
+  "V-04": {
+   "status": "PASS",
+   "summary": "Same run as A-04: 28 Sun/Earth directions at 14 site/date cases (2026-2035, lat -80.5..-89.98, heights 0-5 km); max separation 5.77e-07 deg (threshold 0.005); synthetic heights",
+   "evidence": {
+    "max_difference_deg": 5.772715767147865e-07,
+    "rows": [
+     {
+      "case": "near Shackleton example",
+      "body": "sun",
+      "utc": "2026-12-01T12:00:00Z",
+      "difference_deg": 8.271062010049331e-09,
+      "passed": true
+     },
+     {
+      "case": "near Shackleton example",
+      "body": "earth",
+      "utc": "2026-12-01T12:00:00Z",
+      "difference_deg": 3.3492218156033427e-07,
+      "passed": true
+     },
+     {
+      "case": "near Connecting Ridge example",
+      "body": "sun",
+      "utc": "2026-06-15T06:00:00Z",
+      "difference_deg": 1.4457706849172537e-09,
+      "passed": true
+     },
+     {
+      "case": "near Connecting Ridge example",
+      "body": "earth",
+      "utc": "2026-06-15T06:00:00Z",
+      "difference_deg": 4.1399856862112446e-07,
+      "passed": true
+     },
+     {
+      "case": "near Malapert example",
+      "body": "sun",
+      "utc": "2027-03-21T18:00:00Z",
+      "difference_deg": 1.2727939108370977e-08,
+      "passed": true
+     },
+     {
+      "case": "near Malapert example",
+      "body": "earth",
+      "utc": "2027-03-21T18:00:00Z",
+      "difference_deg": 3.443602436809677e-07,
+      "passed": true
+     },
+     {
+      "case": "Site01 tile centre",
+      "body": "sun",
+      "utc": "2026-12-26T12:00:00Z",
+      "difference_deg": 8.625106055670811e-10,
+      "passed": true
+     },
+     {
+      "case": "Site01 tile centre",
+      "body": "earth",
+      "utc": "2026-12-26T12:00:00Z",
+      "difference_deg": 5.305786070509475e-07,
+      "passed": true
+     },
+     {
+      "case": "Site04 tile centre",
+      "body": "sun",
+      "utc": "2027-01-09T21:00:00Z",
+      "difference_deg": 5.300288976305086e-09,
+      "passed": true
+     },
+     {
+      "case": "Site04 tile centre",
+      "body": "earth",
+      "utc": "2027-01-09T21:00:00Z",
+      "difference_deg": 4.2266598549361973e-07,
+      "passed": true
+     },
+     {
+      "case": "near pole, east",
+      "body": "sun",
+      "utc": "2028-02-29T00:00:00Z",
+      "difference_deg": 9.325927444197192e-09,
+      "passed": true
+     },
+     {
+      "case": "near pole, east",
+      "body": "earth",
+      "utc": "2028-02-29T00:00:00Z",
+      "difference_deg": 4.825024410290062e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -88, west",
+      "body": "sun",
+      "utc": "2028-09-14T03:30:00Z",
+      "difference_deg": 1.137623842665698e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -88, west",
+      "body": "earth",
+      "utc": "2028-09-14T03:30:00Z",
+      "difference_deg": 2.79231137164934e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -85, east",
+      "body": "sun",
+      "utc": "2029-11-02T17:45:00Z",
+      "difference_deg": 9.081768467702338e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -85, east",
+      "body": "earth",
+      "utc": "2029-11-02T17:45:00Z",
+      "difference_deg": 2.7783720806042367e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -80.5, seam",
+      "body": "sun",
+      "utc": "2030-04-18T09:15:00Z",
+      "difference_deg": 3.289240986793588e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -80.5, seam",
+      "body": "earth",
+      "utc": "2030-04-18T09:15:00Z",
+      "difference_deg": 4.715962955086626e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -82, seam west",
+      "body": "sun",
+      "utc": "2031-07-07T22:00:00Z",
+      "difference_deg": 4.45748880249808e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -82, seam west",
+      "body": "earth",
+      "utc": "2031-07-07T22:00:00Z",
+      "difference_deg": 5.772715767147865e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -87, south-west",
+      "body": "sun",
+      "utc": "2032-12-31T23:59:00Z",
+      "difference_deg": 2.4013618185495325e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -87, south-west",
+      "body": "earth",
+      "utc": "2032-12-31T23:59:00Z",
+      "difference_deg": 4.253526893670078e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -89, east",
+      "body": "sun",
+      "utc": "2033-05-20T12:00:00Z",
+      "difference_deg": 1.939456644928518e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -89, east",
+      "body": "earth",
+      "utc": "2033-05-20T12:00:00Z",
+      "difference_deg": 5.11481344510463e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -84, Greenwich",
+      "body": "sun",
+      "utc": "2034-08-08T08:08:00Z",
+      "difference_deg": 7.294349451136283e-09,
+      "passed": true
+     },
+     {
+      "case": "lat -84, Greenwich",
+      "body": "earth",
+      "utc": "2034-08-08T08:08:00Z",
+      "difference_deg": 4.065119326998011e-07,
+      "passed": true
+     },
+     {
+      "case": "lat -86.5, east",
+      "body": "sun",
+      "utc": "2035-12-15T06:00:00Z",
+      "difference_deg": 2.6645827454174917e-08,
+      "passed": true
+     },
+     {
+      "case": "lat -86.5, east",
+      "body": "earth",
+      "utc": "2035-12-15T06:00:00Z",
+      "difference_deg": 5.475790917537105e-07,
+      "passed": true
+     }
+    ],
+    "horizons_site_metadata": [
+     "Center pole/equ : MEAN_ME (high precision)        {East-longitude positive}",
+     "Center radii    : 1737.4, 1737.4, 1737.4 km       {Equator_a, b, pole_c}"
+    ]
+   },
+   "run_utc": "2026-11-14T21:48:51Z"
+  }
+ }
+}

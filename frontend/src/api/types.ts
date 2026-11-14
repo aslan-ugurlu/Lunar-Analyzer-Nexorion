@@ -29,6 +29,8 @@ export interface Health {
   clones?: {
     sites: Record<string, { site_tile: string; present: number; expected: number; complete: boolean }>;
     precomputed_profile_sets: number;
+    /** v1.3: where clone mode works (exact coordinates, observer heights, radius). */
+    profile_sets?: { site_tile: string; latitude: number; longitude: number; observer_height_m: { sun: number; earth: number }; radius_km: number; n_clones: number }[];
   };
   limits?: {
     max_workers: number;

@@ -206,8 +206,17 @@ def describe_gap(lat: float, lon: float) -> str:
 
 def summary_status() -> dict:
     """For /health: clone files per site and number of precomputed profile sets."""
-    sets = len(list(CLONE_PROFILES.glob('*.json'))) if CLONE_PROFILES.is_dir() else 0
-    return {'sites': {t: clone_status(t) for t in CLONE_SITES}, 'precomputed_profile_sets': sets}
+    metas = []
+    for meta_path in sorted(CLONE_PROFILES.glob('*.json')) if CLONE_PROFILES.is_dir() else []:
+        try:
+            m = json.loads(meta_path.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        metas.append({'site_tile': m.get('site_tile'), 'latitude': m.get('latitude'), 'longitude': m.get('longitude'),
+                      'observer_height_m': m.get('observer_height_m'), 'radius_km': m.get('radius_km'),
+                      'n_clones': m.get('n_clones')})
+    return {'sites': {t: clone_status(t) for t in CLONE_SITES}, 'precomputed_profile_sets': len(metas),
+            'profile_sets': metas}
 
 
 def envelope(profiles: np.ndarray) -> dict:

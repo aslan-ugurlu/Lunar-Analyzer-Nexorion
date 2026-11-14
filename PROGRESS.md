@@ -5,10 +5,18 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T21:52Z
-- **Faz:** Faz 7 (P1-2) — 7.1 temizlik+push ✔, 7.2 Halk hata UX + 200 km kuralı ✔ (push), 7.3 EFFRES / Site07-11-23 / YELLOW / doğrulama / clone ✔
-- **Alt adım:** 7.3 tamam; yerel commit'ler GitHub'a gönderilmedi (7.3 için push onayı bekleniyor)
-- **Durum:** DONE (doğrulama 14/14 PASS; Site04/07/11 clone'ları ve 20 m katmanı kapsam dışı)
+- **Zaman (UTC):** 2026-11-14T22:20Z
+- **Faz:** Faz 8 — push (onaylı) + bilimsel sonuçların belgelenmesi; yeni büyük indirme / mimari değişiklik yok (kullanıcı kararı)
+- **Alt adım:** DONE — 14/14 doğrulama `docs/VALIDATION.md` ile belgelendi, gerçek-veri senaryoları pytest'e sabitlendi, clone kapsamı arayüzde
+- **Durum:** DONE. Sonraki aşama: arayüzün kullanıcıyla birlikte değerlendirilmesi (tasarım şimdilik değiştirilmiyor)
+
+## Çalışan sürümler (2026-11-14T22:20Z, ikisi de yalnız 127.0.0.1/localhost)
+| Port | Rol | Kod | Durum |
+|---|---|---|---|
+| `127.0.0.1:8000` | **eski backend — kullanıcı kararıyla KORUNUYOR** (yeniden başlatılmaz/kapatılmaz) | API süreci 2026-11-14T13:27:02Z'de Faz 7.2 (`4f752ad`) koduyla başladı; tek hesap işçisi 13:28:10Z'de açıldı (aynı kod). OpenAPI `1.1`. Not: yeni bir işçi açılırsa diskteki güncel kodu yükler | `/health` 200 `ready`; `clones` alanı yok, clone modu `CLONE_NOT_PRECOMPUTED` |
+| `localhost:5173` | eski frontend (Vite dev, 8000'e bağlı) | arayüz kaynağı HMR ile güncel diskteki kod; veri 8000'den | 200; Data sayfasında clone satırı "bilinmiyor" (8000'de alan yok) |
+| `127.0.0.1:8001` | **yeni backend** (test kopyası; CORS yalnız :5174) | güncel kod (Faz 8), 22:20Z'de yeniden başlatıldı; OpenAPI `1.3` | `/health` 200 `ready`; `clone_profiles: AVAILABLE`, Site01 100/100, 2 ön hesap seti |
+| `localhost:5174` | **yeni frontend** (Vite dev, `VITE_API_BASE_URL=http://127.0.0.1:8001`) | güncel kod | 200; clone kapsamı, EFFRES, YELLOW/clone senaryoları burada denenir |
 
 ## Tamamlanan iş
 - Talimat dosyaları okundu: `CLAUDE.md`, `CLAUDE_DEVIR_TALIMATI.md` (§0–§10).
@@ -417,3 +425,24 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   kullanıcı adını içeriyordu (7.1'de `d943820` ile zaten itildi; geçmiş yeniden yazılmadı) → güncel dosyada `%USERPROFILE%` yapıldı.
   `.gitignore` önleyici eklemeler: `*.npz`, `*.npy`, `*.download.lock`, `.env.*` (`!.env.example`), `frontend/e2e/_tmp_*`,
   `playwright-report/`, `test-results/` (izlenen dosya etkilenmedi).
+- 22:05Z — **Push (onaylı) başarılı:** `git push origin main` → `4f752ad..c35670a  main -> main`; uzak dal **`origin/main`**
+  (https://github.com/aslan-ugurlu/Lunar-Mission-Window-Analyzer-Nasa-Space-App), `git ls-remote` ucu
+  `c35670a288a88d4aa91202a393546dd1933b1bf7`. Gönderilen 10 commit: `f4802c4`, `74a23fd`, `0552af4`, `bf8cd46`, `f402c07`, `a1e5fe9`,
+  `9b263cd`, `7274a37`, `a29f882` (bekleyen 9) + `c35670a` (güvenlik kontrolü / `.gitignore`).
+- 22:07Z — Arayüzde clone kapsamı (yalnız metin, tasarım aynı): `/health.clones.profile_sets` (koordinat, gözlemci yüksekliği, yarıçap;
+  dosya yolu yok) → form clone ipucu (Halk/Mühendis) ve Data sayfası "yalnız Site01 · 2 koordinat: (−89.4512, −137.1427), (−89.46316,
+  −137.48955) · 4/4 m · 200 km". "Bilinen bilimsel sınırlamalar" listesine clone kapsamı ve **CLONE-01 ≈ %8 sapma**; doğrulama bölümüne
+  "proje ekibinin kendi testleridir; NASA tarafından onaylanmış veya sertifikalandırılmış değildir". Tarayıcı (:5174): metinler görünür, axe 0.
+- 22:05Z — **Kanıt paketi (veri içermez, commit edilir):** `python -m backend.export_evidence` → `docs/validation/report_2026-11-14.json`
+  (21:48:51Z gerçek koşunun kopyası, 87 kB) ve `docs/validation/data_versions_2026-11-14.json` (5 kernel, 21 raster, 100 clone = 4,098,716,270 B,
+  2 clone profil seti; resmi URL, ürün sayfası, bayt, indirme zamanı, yerel SHA-256 — PGDA checksum yayımlamaz). İnsan okunur özet:
+  **`docs/VALIDATION.md`** (14 test: ölçüt → gerçek ölçüm, kullanılan veri, sınırlamalar, NASA onayı değildir bildirimi). Mutlak yol / traceback yok.
+- 22:06Z — **Tekrarlanabilir gerçek-veri senaryoları:** `tests/test_realdata_scenarios.py` (üretim worker'ı + `AnalysisInput` Pydantic yükü;
+  NASA dosyaları yoksa *skip*): ERR YELLOW 2027-11-14 (+72 sa DTE 7.0 → 11.5 sa), nominal GRAY + 135 km GREEN→YELLOW, RED + eğim 9.34°
+  2026-12-26, clone YELLOW 73/100 (27 × `MAX_DTE_GAP`, p95 10.5 sa) + clone GREEN/RED → **4 passed** (17 s).
+- 22:20Z — OpenAPI sürüm etiketi `1.1` → `1.3` (belgelerdeki API sürümüyle tutarlılık; davranış değişmedi). :8001 yeniden başlatıldı
+  (kullanıcının :8000/:5173'üne dokunulmadı).
+- 22:20Z — **Final testler:** `python -m pytest -q` **97 passed** · `npx vitest run` **97 passed** · `npm run lint` 0 · `npm run build` OK (363 kB) ·
+  API sözleşme testleri 25 passed. README: `docs/VALIDATION.md` bağlantısı, sınırlamalar (clone kapsamı, CLONE-01 %8, NASA onayı değildir),
+  `/health.clones.profile_sets`, test sayıları. Bu belge commit'i aynı onay kapsamında `origin/main`'e gönderiliyor (sonuç kullanıcıya raporlanır).
+
