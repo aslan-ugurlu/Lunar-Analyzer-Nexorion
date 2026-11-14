@@ -128,6 +128,7 @@ Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **h
 - Güneş görünürlüğü: sonlu disk payı `f_sun`, alan-eşit polar quadrature + iki kademeli fark raporu. **Elektrik üretimi değildir.**
 - DTE: yalnız Dünya **merkezinin** arazi ufku üstünde olması. **RF bağlantı bütçesi değildir.**
 - Karar: nominal ihlal → RED; nominal geçer ama ihtiyatlı (ERR +k) ihlal → YELLOW; veri/doğrulama eksik → GRAY; GREEN yalnız nominal + ihtiyatlı geçerse. **Nominal mod tek başına GREEN üretmez.**
+- **DEM clone modu (v1.3):** PGDA'nın 100 gerçek clone LDEM'i ile; her clone için gözlemci karosu yerine clone konarak tam ufuk yeniden hesaplanır (çevrimdışı ön hesap). Karar ERR ile aynı kuralla: nominal ihlal RED; ihtiyatlı = her kısıt için clone topluluğunun %95 kötü tarafı (max-tip p95, min-tip p05) ihlal ederse YELLOW; ayrıca tüm kısıtları sağlayan clone sayısı raporlanır. Gerçek örnek: Site01 merkezi 2027-11-14 → clone YELLOW (+72 sa'da 73/100 clone geçti; p95 DTE kesintisi 10.5 sa > 8 sa), ERR ile aynı sınıf.
 - **200 km referans kuralı (v1.3):** ufuk 200 km'den kısa tarandıysa (ör. 135 km hızlı mod) karar **en fazla YELLOW** olur (`radius_policy.code = REDUCED_HORIZON_RADIUS`, GREEN → YELLOW). Gerekçe: kısa tarama, referans arazi örneklerinin bir alt kümesi üzerinde maksimum alır; ufku yalnız alçaltabilir, yani Güneş/DTE görünürlüğü iyimserdir. Bu yüzden 135 km'de RED geçerli kalır; YELLOW/GRAY 200 km'de kötüleşebilir. Gerçek koşu (2026-11-14, ERR k=1, 2026-12-17): aynı istek 200 km → GREEN, 135 km → YELLOW (`logs/radius_policy_faz7.json`).
 - ERR ±k bir duyarlılık senaryosudur, istatistiksel güven aralığı değildir. DEM clone verisi yok → `CLONE_NOT_PRECOMPUTED`.
 - Eğim: ≤ 20 m DEM gerekir; yoksa `SLOPE_UNKNOWN` → GRAY. Eğim iniş güvenliği değildir.
@@ -178,12 +179,12 @@ Son gerçek koşular (2026-11-14, Windows 11):
 
 | Komut | Sonuç |
 |---|---|
-| `python -m pytest -q` | **83 passed** (sözleşme, SPICE UTC→ET, indirici 23 senaryo — HTTP Range devamı dahil, Windows spawn 7, API v1.1/v1.2, LOD/ERR katman tutarlılığı, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
+| `python -m pytest -q` | **93 passed** (sözleşme, SPICE UTC→ET, indirici 24 senaryo — HTTP Range devamı + Windows manifest paylaşım ihlali dahil, Windows spawn 7, API v1.1–v1.3, LOD/ERR katman tutarlılığı + EFFRES özeti, clone motoru 5, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
-| `python -m backend.validation` | **12 / 12 PASS** (A-04, V-01…V-10, SLOPE-01) → `data/validation/report.json` |
-| `cd frontend; npx vitest run` | **95 passed** (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
+| `python -m backend.validation` | **14 / 14 PASS** (A-04, V-01…V-10, SLOPE-01, EFFRES-01, CLONE-01; 2026-11-14T21:48Z, ağ dahil) → `data/validation/report.json` |
+| `cd frontend; npx vitest run` | **97 passed** (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
-| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı |
+| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı, `UNCERTAINTY=err LANDING_DATE=2027-11-14` (Site01 merkezi) ile **YELLOW**, `UNCERTAINTY=clone` ile clone modu YELLOW + kayma |
 | `npm run e2e:states` | 17/17 kontrol, **her durum iki modda**: Halk'ta sade başlık + kod yalnız klavyeyle açılan “Teknik detaylar”da, Mühendis'te kod doğrudan; SPICE hatasında odak taşınır; hata ekranlarında axe 0. Gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
 
 Mock kullanımı: yalnız UI/istemci sözleşme testlerinde ve indirici testlerinde (HTTP mock + `tmp_path` içinde sentetik minik GeoTIFF); her biri dosya başında işaretlidir. UI bileşen testleri, gerçek bir API yanıtının kısaltılmış kopyasını (`frontend/src/test/fixtures/real_analysis_62e783c2.json`, `_provenance` alanı) kullanır.
@@ -200,9 +201,11 @@ Bilimsel doğrulama (`GET /validation`, PASS yalnız kayıtlı vakaları kapsar)
 | V-06 LOD/NoData | PASS | NaN yayılımı doğru; 5 katman çifti medyan farkı −0.09…+0.63 m (ölçüt < 5 m; 80−240: −0.09 m, Site01−80: +0.09 m, Site04−80: −0.08 m); LOD 1 km → 5 m site, 10 km → 80 m, 100 km → 240 m |
 | V-07 disk quadrature | PASS (düz + gerçek eğri ufuk) | düz: analitik daire segmentine karşı maks 0.0028; **gerçek ufuklar**: 3 konumda 321 kısmi örtülme örneği (0.01 < f < 0.99), bağımsız 401×401 Kartezyen referansa göre maks \|Δ\| **0.0060**, medyan 0.00055 (ölçüt < 0.01). Yalnız disk integralini sınar (aynı ufuk enterpolasyonu), ufuk doğruluğunu değil |
 | V-08 ERR | PASS (yalnız tutarlılık) | **7 konum × k=1,2**: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, band(k=2) ≥ band(k=1) her azimutta; k=1 maks bant 0.016° (−89.54/0) … 1.548° (Site23 merkezi, gözlemci σ 0.597 m), Site01 merkezi 0.739°. İstatistiksel doğrulama değildir |
+| CLONE-01 DEM clone | PASS (yalnız tutarlılık) | Site01: 100 clone'un hepsi `_surf` ızgarasında; \|clone − surf\| / toterr medyanı **0.726** (aralık 0.721–0.730; ölçüt 0.55–0.80; saf Gauss beklentisi 0.674 → clone sapmaları toterr'in ima ettiğinden ~%8 büyük); 2 ön hesap seti, her biri 100/100 tam profil (~201 s). Bilgi: clone p05–p95 yayılımı azimutların %100'ünde ERR k=2 bandı içinde (maks 0.24° / 0.58° vs 0.56° / 1.42°). Site04/07/11 clone'ları indirilmedi. İstatistiksel DEM doğrulaması değildir |
+| EFFRES-01 etkin çözünürlük | PASS | 240 m + 80 m EFFRES DEM ile aynı ızgara; 7 konumda asıl LOD bandında ≥ %99 geçerli. Bant medyanları 80 m (0–30 km) 15.5–18.6 m, 240 m (30–200 km) 24.5–27.0 m. Yalnız kalite bilgisi |
 | V-09 kısıt mantığı | PASS | elle hesaplanmış girdiler |
 | V-10 izlenebilirlik | PASS | gerçek analizde provenance alanları; nominal → GRAY |
-| SLOPE-01 5 m eğim | PASS | bizim 5 m merkezi-fark eğimimiz ile **resmi PGDA `_slp.tif`** 290 noktada: medyan \|Δ\| 0.08° (ölçüt ≤ 2°); Site01 merkezi maks 9.34° / ort 5.86°, Site04 karo merkezi ~31–34° (Shackleton iç duvarı). Uçtan uca: eğim kısıtlı gerçek analiz eğimi `site01_5m`'den değerlendirdi; HTTP API'de err + ≤ 10° → GREEN, err + ≤ 5° → RED (`MAX_SLOPE`). Eğim iniş güvenliği değildir |
+| SLOPE-01 5 m eğim | PASS | bizim 5 m merkezi-fark eğimimiz ile **resmi PGDA `_slp.tif`** 5 karoda 725 noktada: medyan \|Δ\| 0.07° (ölçüt ≤ 2°); Site01 merkezi maks 9.34° / ort 5.86°, Site04 karo merkezi ~31–34° (Shackleton iç duvarı). Uçtan uca: eğim kısıtlı gerçek analiz eğimi `site01_5m`'den değerlendirdi; HTTP API'de err + ≤ 10° → GREEN, err + ≤ 5° → RED (`MAX_SLOPE`). Eğim iniş güvenliği değildir |
 
 ## Deep-link doğrulaması
 
@@ -239,7 +242,8 @@ Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.na
 ## Bilinen eksikler
 
 - 5 m karolar Site01/04/07/11/23 ile sınırlı; dışında eğim `SLOPE_UNKNOWN` (GRAY katkısı) kalır. 20 m katmanı ve Site06/20/Haworth/Shoemaker/DM2 indirilmez.
-- DEM clone belirsizliği uygulanmadı (`CLONE_NOT_PRECOMPUTED`).
+- DEM clone modu yalnız **Site01** için (100 clone indirildi) ve yalnız **ön hesaplanmış** konum/gözlemci yüksekliği/yarıçap için çalışır (şu an Site01 karo merkezi ve sırt test noktası, 4/4 m, 200 km). Diğer konumlar gerekçeli `CLONE_NOT_PRECOMPUTED` / GRAY döner; ön hesap `python -m backend.clone_engine --lat … --lon …` (~3.5 dk). Yalnız gözlemcinin karosu klonlanır; 80/240 m nominal kalır.
+- Clone ihtiyatlı kuralı (kısıt başına p95-kötü clone) bir tarama kuralıdır; sertifikalı güven düzeyi değildir.
 - A-04 14 durum, V-05/V-08 7 konum, V-07 3 konumda 321 örnek: kapsam genişledi ama tam yıl / tüm konum kanıtı değildir.
 - Moon Trek koordinata odaklanma güvenilir değil (dış uygulama kaynaklı).
 - Rate-limit tek süreç içi; analiz kayıtları sunucu yeniden başlayınca kaybolur (UI 404'ü "kayboldu" olarak gösterir).

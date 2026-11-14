@@ -5,10 +5,10 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T13:33Z
-- **Faz:** Faz 7 (P1-2) — (1) `(1).py` temizliği + push, (2) Halk hata UX + 200 km GREEN kuralı, (3) EFFRES/Site07-11-23/YELLOW/doğrulama kapsamı, clone modu
-- **Alt adım:** 7.1 + 7.2 DONE (push edildi) → kullanıcıya test raporu → 7.3 (EFFRES, Site07/11/23, YELLOW araştırması, doğrulama kapsamı) başlıyor
-- **Durum:** IN_PROGRESS (Faz 0–6 kullanıcı tarafından kabul edildi, 2026-11-14)
+- **Zaman (UTC):** 2026-11-14T21:52Z
+- **Faz:** Faz 7 (P1-2) — 7.1 temizlik+push ✔, 7.2 Halk hata UX + 200 km kuralı ✔ (push), 7.3 EFFRES / Site07-11-23 / YELLOW / doğrulama / clone ✔
+- **Alt adım:** 7.3 tamam; yerel commit'ler GitHub'a gönderilmedi (7.3 için push onayı bekleniyor)
+- **Durum:** DONE (doğrulama 14/14 PASS; Site04/07/11 clone'ları ve 20 m katmanı kapsam dışı)
 
 ## Tamamlanan iş
 - Talimat dosyaları okundu: `CLAUDE.md`, `CLAUDE_DEVIR_TALIMATI.md` (§0–§10).
@@ -388,3 +388,23 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   Manifest bozulmadı (geçerli JSON; 86 clone kaydı = diskteki 86 dosya). Düzeltme: okuma ve değiştirmede PermissionError için kısa
   yeniden deneme; yalnız gerçek JSON hatası "geçersiz"; yeni test. Ölü süreçlerin 3 geçici manifest dosyası silindi.
 - 21:28Z — pytest `tests/test_download_lola.py` 24 passed. İndirme 86/100, döngüler yeni kodla devam ediyor.
+- 21:39Z — **Site01 clone indirmesi tamam: 100/100** (eksik/yarım/kilit yok; manifest 100 clone kaydı). Tüm döngüler çıkış kodu 0.
+- 21:43Z — Clone ön hesabı Site01 karo merkezi (−89.46316, −137.48955; 4/4 m; 200 km): 100 dosyanın her biri `_surf` ızgara/CRS
+  eşlemesinden geçti, 100/100 tam profil, 201.2 s (`data/clone_profiles/e2b99248c369…`). 21:46Z — sırt test noktası (−89.4512, −137.1427):
+  100/100, 200.6 s (`67444f630b6a…`).
+- 21:47Z — **Clone modu gerçek API (:8001, `logs/clone_api_faz7.json`):** Site01 merkezi 2026-12-17 → GREEN, 2027-11-14 → **YELLOW**
+  (+72 sa: 73/100 clone tüm kısıtları sağlıyor; 27'si `MAX_DTE_GAP`; clone p95 kesinti 10.5 sa > 8 sa; clone min…maks 1.0…11.5 sa),
+  2026-12-26 → RED; sırt noktası 2026-12-17 → GREEN; Site04 merkezi → `CLONE_NOT_PRECOMPUTED` ("Site04: 0/100 clone files present").
+  Üç tarihte clone sınıfı ERR sınıfıyla aynı. Gözlemci DEM clone aralığı 1944.27–1945.19 m.
+- 21:48Z — **Tam doğrulama (ağ dahil): 14/14 PASS** → `data/validation/report.json`. Yeni/değişen: SLOPE-01 725 nokta / 5 karo, medyan 0.07°;
+  V-06 11 katman çifti; EFFRES-01; **CLONE-01**: \|clone − surf\|/toterr medyanı 0.726 (0.721–0.730; ölçüt 0.55–0.80; Gauss beklentisi 0.674 →
+  clone sapmaları toterr'den ~%8 büyük), 2 tam ön hesap seti; bilgi: clone p05–p95 yayılımı azimutların %100'ünde ERR k=2 bandı içinde.
+- 21:48Z — Tarayıcı clone testi ilk denemede 429 (`RATE_LIMITED`: 1 dk içinde 6. analiz — sınır doğru çalıştı); ikinci denemede
+  **gerçek hata**: Mühendis tablosu clone varyantında olmayan `max_disk_integration_difference` alanını kontrolsüz biçimlendirip çöktü
+  (`toExponential`). Düzeltme: arayüz alan yoksa "—" + tipte isteğe bağlı alanlar; backend clone varyantı bu değeri clone'ların maksimumu
+  olarak raporluyor; tabloda yöntem + "73/100 clone geçti". Regresyon testi (`CloneUi.test.tsx`). :8001 yeniden başlatıldı.
+- 21:50Z — `UNCERTAINTY=clone` tarayıcı (:5174): YELLOW, mod geçişinde değişmedi, +6 sa kayma (clone kayma yolu) çalıştı, CSV/JSON, axe 0,
+  mobil 0, konsol 0 (`logs/e2e_clone_faz7/`). `npm run e2e:states` (:5173) 17/17.
+- 21:52Z — **Final:** `python -m pytest -q` **93 passed** · `npx vitest run` **97 passed** · `npm run lint` 0 · `npm run build` OK (361 kB).
+  README: clone modu, CLONE-01/EFFRES-01 satırları, test sayıları, bilinen eksikler güncellendi.
+

@@ -68,6 +68,8 @@ def test_clone_p95_rule_yellow_when_more_than_5_percent_fail(monkeypatch):
     assert m['cautious_violations'][0]['code'] == 'MAX_DARKNESS'
     assert m['cautious_violations'][0]['clone_fail_count'] == 10
     assert 'clone' in m['label']
+    metrics = m['scenarios'][0]['variants']['cautious']['metrics']
+    assert metrics['method'] == 'clone_p95' and isinstance(metrics['max_disk_integration_difference'], float)
 
 
 def test_clone_p95_rule_green_when_at_most_5_percent_fail(monkeypatch):

@@ -148,6 +148,8 @@ def _clone_variant(sky, seconds, ensemble, dark_threshold, slope, limits, percen
         spread[key]={'min':float(arr.min()),'p05':float(np.percentile(arr,5)),'p50':float(np.percentile(arr,50)),
                      'p95':float(np.percentile(arr,95)),'max':float(arr.max())}
     metrics['time_resolution_minutes']=per_clone[0]['time_resolution_minutes']
+    # Worst numerical disc-integration difference over all clones (same meaning as the nominal field).
+    metrics['max_disk_integration_difference']=max(m['max_disk_integration_difference'] for m in per_clone)
     violations, unknown=_constraints(metrics,slope,limits)
     passing=sum(1 for m in per_clone if not _constraints(m,slope,limits)[0])
     failing_by_code={}

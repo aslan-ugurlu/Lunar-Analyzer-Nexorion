@@ -185,13 +185,13 @@ function EngineerTable({ mission }: { mission: Mission }) {
               return (
                 <tr key={`${s.shift_hours}-${name}`} className="border-t border-line">
                   <td className="py-1 pr-2">+{s.shift_hours} sa</td>
-                  <td className="pr-2">{name}</td>
+                  <td className="pr-2">{name}{m?.method ? <span className="block text-muted">{m.method}{v && 'clone' in v && v.clone?.pass_count != null ? ` · ${v.clone.pass_count}/${v.clone.n} clone geçti` : ''}</span> : null}</td>
                   <td className="pr-2">{m ? formatNumber(m.mean_sun_visible_fraction, 4) : 'geçersiz'}</td>
                   <td className="pr-2">{m ? formatHours(m.max_continuous_darkness_s, 2) : '—'}</td>
                   <td className="pr-2">{m ? formatNumber(m.dte_visible_fraction, 4) : '—'}</td>
                   <td className="pr-2">{m ? formatHours(m.max_continuous_dte_gap_s, 2) : '—'}</td>
-                  <td className="pr-2">{m ? m.max_disk_integration_difference.toExponential(2) : '—'}</td>
-                  <td className="pr-2">{m ? `${m.time_resolution_minutes} dk` : '—'}</td>
+                  <td className="pr-2">{typeof m?.max_disk_integration_difference === 'number' ? m.max_disk_integration_difference.toExponential(2) : '—'}</td>
+                  <td className="pr-2">{typeof m?.time_resolution_minutes === 'number' ? `${m.time_resolution_minutes} dk` : '—'}</td>
                   <td>{v?.violations.length ?? 0} / {v?.unknown.length ?? 0}{!m && v?.metrics && 'reason' in v.metrics && v.metrics.reason ? ` · ${v.metrics.reason}` : ''}</td>
                 </tr>
               );

@@ -125,12 +125,17 @@ export interface ValidMetrics {
   dte_visible_fraction: number;
   max_continuous_darkness_s: number;
   max_continuous_dte_gap_s: number;
-  max_disk_integration_difference: number;
+  /** Absent in older/clone variants: always check before formatting. */
+  max_disk_integration_difference?: number;
   darkness_interval: [number, number] | null;
   dte_gap_interval: [number, number] | null;
-  sun_visible_fraction: number[];
-  earth_visible: boolean[];
-  time_resolution_minutes: number;
+  /** Per-sample series; absent in the clone variant (an ensemble has no single series). */
+  sun_visible_fraction?: number[];
+  earth_visible?: boolean[];
+  time_resolution_minutes?: number;
+  /** v1.3: 'clone_p95' for the clone ensemble variant. */
+  method?: string;
+  n_clones?: number;
 }
 
 export interface InvalidMetrics {
