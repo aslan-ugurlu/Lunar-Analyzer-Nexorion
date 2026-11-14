@@ -9,6 +9,10 @@ import { Icon, Notice } from './ui';
 
 const SHIFT_OPTIONS = [0, 24, 48, 72];
 const HEIGHT_PRESETS = [1, 4, 40];
+/** Fields that live in the "Gelişmiş görev ayarları" accordion in Halk / Eğitimci mode. */
+export const ADVANCED_FIELDS: (keyof Form)[] = [
+  'buffer_hours', 'step_minutes', 'horizon_radius_km', 'err_k', 'dark_fraction_threshold', 'max_slope_deg', 'slope_footprint_radius_m',
+];
 
 function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: ReactNode; error?: string; children: ReactNode }) {
   return (
@@ -29,8 +33,13 @@ function describedBy(id: string, hint: boolean, error?: string) {
   return [hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined;
 }
 
+function Legend({ children }: { children: ReactNode }) {
+  return <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">{children}</legend>;
+}
+
 export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse | null; health: Health | null; onQueued?: (id: string) => void }) {
   const { register, mode } = useApp();
+  const engineer = mode === 'engineer';
   const uid = useId();
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
   const [touched, setTouched] = useState(false);
@@ -38,9 +47,11 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
   const [serverError, setServerError] = useState<unknown>(null);
   const [serverFieldErrors, setServerFieldErrors] = useState<FieldErrors>({});
   const [lastQueued, setLastQueued] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const built = useMemo(() => buildRequest(form), [form]);
   const errors: FieldErrors = touched ? { ...built.errors, ...serverFieldErrors } : serverFieldErrors;
+  const advancedHasError = ADVANCED_FIELDS.some((k) => Boolean(errors[k]));
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
     setServerFieldErrors((e) => ({ ...e, [key]: undefined }));
@@ -61,7 +72,8 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
     setServerFieldErrors({});
     if (!built.input) {
       const first = Object.keys(built.errors)[0];
-      if (first) document.getElementById(id(first))?.focus();
+      if (first && ADVANCED_FIELDS.includes(first as keyof Form)) setAdvancedOpen(true);
+      if (first) setTimeout(() => document.getElementById(id(first))?.focus(), 0);
       return;
     }
     setSubmitting(true);
@@ -79,6 +91,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           if (key) mapped[key] = `Sunucu: ${d.message}`;
         }
         setServerFieldErrors(mapped);
+        if (Object.keys(mapped).some((k) => ADVANCED_FIELDS.includes(k as keyof Form))) setAdvancedOpen(true);
       }
     } finally {
       setSubmitting(false);
@@ -102,18 +115,65 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
     />
   );
 
+  /* ---------- technical fields (accordion in Halk mode, inline in Mühendis mode) ---------- */
+  const fBuffer = (
+    <Field id={id('buffer_hours')} label="Tampon (saat)" hint={engineer ? '0 … 168' : 'Görev sonrasına eklenen emniyet süresi (0 … 168 sa)'} error={errors.buffer_hours}>
+      {numberInput('buffer_hours', { min: 0, max: 168 })}
+    </Field>
+  );
+  const fStep = (
+    <Field id={id('step_minutes')} label="Zaman adımı (dakika)" hint={engineer ? '10 … 120, tam sayı' : 'Hesabın kaç dakikada bir yapılacağı (10 … 120)'} error={errors.step_minutes}>
+      {numberInput('step_minutes', { min: 10, max: 120, step: 1 })}
+    </Field>
+  );
+  const fRadius = (
+    <Field id={id('horizon_radius_km')} label="Ufuk tarama yarıçapı (km)" hint="10 … 200. 200 km referans; 135 km hızlı mod (yüksek konumlarda uzak araziyi kaçırabilir — V-05). Tarama mesafesi eksiksizlik kanıtı değildir." error={errors.horizon_radius_km}>
+      <div className="flex gap-2">
+        {numberInput('horizon_radius_km', { min: 10, max: 200 })}
+        {[135, 200].map((r) => (
+          <button key={r} type="button" className="btn shrink-0" onClick={() => set('horizon_radius_km', String(r))} aria-label={`Yarıçapı ${r} km yap`}>{r}</button>
+        ))}
+      </div>
+    </Field>
+  );
+  const fErrK = form.uncertainty_mode === 'err' ? (
+    <Field id={id('err_k')} label="ERR çarpanı k" hint="0 … 3 (engel +kσ, gözlemci −kσ)" error={errors.err_k}>
+      {numberInput('err_k', { min: 0, max: 3 })}
+    </Field>
+  ) : null;
+  const fDark = (
+    <Field id={id('dark_fraction_threshold')} label="Karanlık eşiği (Güneş diski görünür payı ≤)" hint="0 … 0.1; örn. 0.01 = diskin %1’i" error={errors.dark_fraction_threshold}>
+      {numberInput('dark_fraction_threshold', { min: 0, max: 0.1 })}
+    </Field>
+  );
+  const fSlope = (
+    <Field id={id('max_slope_deg')} label="Azami eğim (°, isteğe bağlı)" hint="≤ 20 m DEM gerekir (5 m site DEM’leri uygundur); yoksa SLOPE_UNKNOWN → GRAY. Eğim iniş güvenliği değildir." error={errors.max_slope_deg}>
+      {numberInput('max_slope_deg', { min: 0, max: 90 })}
+    </Field>
+  );
+  const fFootprint = (
+    <Field id={id('slope_footprint_radius_m')} label="Eğim ayak izi yarıçapı (m)" hint="5 … 200" error={errors.slope_footprint_radius_m}>
+      {numberInput('slope_footprint_radius_m', { min: 5, max: 200 })}
+    </Field>
+  );
+
+  const advancedSummary = [
+    `tampon ${form.buffer_hours || '—'} sa`, `adım ${form.step_minutes || '—'} dk`, `${form.horizon_radius_km || '—'} km`,
+    form.uncertainty_mode === 'err' ? `k ${form.err_k}` : null, `eğim ${form.max_slope_deg ? `≤ ${form.max_slope_deg}°` : 'değerlendirilmiyor'}`,
+  ].filter(Boolean).join(' · ');
+
   return (
     <form onSubmit={submit} noValidate className="space-y-5" aria-labelledby={id('title')}>
-      <h2 id={id('title')} className="panel-title">Görev tanımı</h2>
+      <h2 id={id('title')} className="panel-title">{engineer ? 'Görev tanımı — tüm parametreler' : 'Görev tanımı'}</h2>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">1 · Konum ve arazi verisi</legend>
-        <Field id={id('dataset_id')} label="NASA LOLA arazi katmanı (dataset)" hint={site ? `${site.resolution_m} m/piksel · ${site.note}` : 'Katman listesi /sites uç noktasından gelir.'}>
+        <Legend>1 · Konum ve arazi verisi</Legend>
+        <Field id={id('dataset_id')} label="NASA LOLA arazi katmanı (dataset)" hint={site ? `${site.resolution_m} m/piksel${site.region_name ? ` · PGDA bölge adı: ${site.region_name}` : ''} · ${site.note}` : 'Katman listesi /sites uç noktasından gelir.'}>
           <select id={id('dataset_id')} className="input" value={form.dataset_id} onChange={(e) => set('dataset_id', e.target.value)} aria-describedby={`${id('dataset_id')}-hint`}>
             {sites && sites.sites.length > 0 ? (
               sites.sites.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.id} · {s.resolution_m} m {s.available ? '· mevcut' : '· indirilmeli'}
+                  {s.id} · {s.resolution_m} m{s.region_name ? ` · ${s.region_name}` : ''} {s.available ? '· mevcut' : '· indirilmeli'}
                 </option>
               ))
             ) : (
@@ -125,6 +185,17 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           <p role="status" className="rounded-md border border-caution/50 bg-caution/10 p-2 text-xs text-caution">
             Bu katmanın dosyası sunucuda yok ({site.expected_folder}/{site.expected_file}). Analiz isteği <span className="mono">DEM_MISSING</span> ile reddedilir; sonuç uydurulmaz.
           </p>
+        )}
+        {site?.available && site.footprint && !site.footprint.contains_pole && (
+          <div className="rounded-md border border-line bg-panel-2 p-2 text-xs text-muted">
+            <p>
+              Bu DEM karosu {site.footprint.width_km.toFixed(1)} × {site.footprint.height_km.toFixed(1)} km; enlem {site.footprint.lat_range[0].toFixed(3)}° … {site.footprint.lat_range[1].toFixed(3)}°.
+              Koordinat bu karonun içinde olmalı; dışındaysa analiz <span className="mono">DEM_MISSING</span> döner.
+            </p>
+            <button type="button" className="link mt-1" onClick={() => { set('latitude', String(site.footprint!.center.lat)); set('longitude', String(site.footprint!.center.lon)); }}>
+              Karonun merkezini doldur ({site.footprint.center.lat.toFixed(4)}°, {site.footprint.center.lon.toFixed(4)}°)
+            </button>{' '}— raster kapsamının merkezidir; resmi iniş noktası değildir.
+          </div>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field id={id('latitude')} label="Enlem (°, planetosentrik)" hint="−90 … −80 (güney kutbu bölgesi)" error={errors.latitude}>
@@ -145,7 +216,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">2 · Zaman (UTC)</legend>
+        <Legend>2 · Zaman (UTC)</Legend>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field id={id('landing_date')} label="İniş tarihi (UTC)" error={errors.landing_date}>
             <input id={id('landing_date')} type="date" className="input mono" min="2026-01-01" max="2035-12-31" value={form.landing_date}
@@ -159,16 +230,12 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
         <p className="text-xs text-muted">
           Gönderilecek zaman: <span className="mono text-ink">{isoPreview ?? 'geçersiz'}</span>
         </p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className={`grid gap-3 ${engineer ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
           <Field id={id('duration_hours')} label="Görev süresi (saat)" hint="0 < süre ≤ 720" error={errors.duration_hours}>
             {numberInput('duration_hours', { min: 0, max: 720 })}
           </Field>
-          <Field id={id('buffer_hours')} label="Tampon (saat)" hint="0 … 168" error={errors.buffer_hours}>
-            {numberInput('buffer_hours', { min: 0, max: 168 })}
-          </Field>
-          <Field id={id('step_minutes')} label="Zaman adımı (dakika)" hint="10 … 120, tam sayı" error={errors.step_minutes}>
-            {numberInput('step_minutes', { min: 10, max: 120, step: 1 })}
-          </Field>
+          {engineer && fBuffer}
+          {engineer && fStep}
         </div>
         <fieldset>
           <legend className="label">İniş kayma senaryoları (saat)</legend>
@@ -190,15 +257,8 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">3 · Gözlemci ve ufuk</legend>
-        <Field id={id('horizon_radius_km')} label="Ufuk tarama yarıçapı (km)" hint="10 … 200. 200 km referans; 135 km hızlı mod. Tarama mesafesi eksiksizlik kanıtı değildir." error={errors.horizon_radius_km}>
-          <div className="flex gap-2">
-            {numberInput('horizon_radius_km', { min: 10, max: 200 })}
-            {[135, 200].map((r) => (
-              <button key={r} type="button" className="btn shrink-0" onClick={() => set('horizon_radius_km', String(r))} aria-label={`Yarıçapı ${r} km yap`}>{r}</button>
-            ))}
-          </div>
-        </Field>
+        <Legend>3 · Gözlemci{engineer ? ' ve ufuk' : ''}</Legend>
+        {engineer && fRadius}
         <div className="grid gap-3 sm:grid-cols-2">
           {(['sun_observer_height_m', 'earth_observer_height_m'] as const).map((key) => (
             <Field key={key} id={id(key)} label={key === 'sun_observer_height_m' ? 'Güneş paneli yüksekliği (m, yüzey üstü)' : 'DTE anten yüksekliği (m, yüzey üstü)'} hint="0 … 100 m; öneriler 1 / 4 / 40 m" error={errors[key]}>
@@ -214,7 +274,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">4 · Belirsizlik</legend>
+        <Legend>4 · Belirsizlik</Legend>
         <div role="radiogroup" aria-label="Belirsizlik modu" className="grid gap-2 sm:grid-cols-3">
           {([
             ['nominal', 'Nominal', 'Yalnız DEM. Tek başına GREEN üretemez (en iyi durumda GRAY).'],
@@ -230,31 +290,50 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
             </label>
           ))}
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {form.uncertainty_mode === 'err' && (
-            <Field id={id('err_k')} label="ERR çarpanı k" hint="0 … 3 (engel +kσ, gözlemci −kσ)" error={errors.err_k}>
-              {numberInput('err_k', { min: 0, max: 3 })}
-            </Field>
-          )}
-          <Field id={id('dark_fraction_threshold')} label="Karanlık eşiği (Güneş diski görünür payı ≤)" hint="0 … 0.1; örn. 0.01 = diskin %1’i" error={errors.dark_fraction_threshold}>
-            {numberInput('dark_fraction_threshold', { min: 0, max: 0.1 })}
-          </Field>
-        </div>
+        {engineer && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {fErrK}
+            {fDark}
+          </div>
+        )}
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">5 · Görev kısıtları</legend>
+        <Legend>5 · Görev kısıtları</Legend>
         <p className="text-xs text-muted">Varsayılanlar belgelerdeki örnek değerlerdir; NASA tarafından önerilmiş görev sınırları değildir. Boş bırakılan kısıt değerlendirilmez.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field id={id('max_darkness_hours')} label="Azami kesintisiz karanlık (saat)" hint="0 … 720" error={errors.max_darkness_hours}>{numberInput('max_darkness_hours', { min: 0, max: 720 })}</Field>
-          <Field id={id('min_sun_fraction_pct')} label="Asgari ort. Güneş diski görünürlüğü (%)" hint="0 … 100 (elektrik üretimi değildir)" error={errors.min_sun_fraction_pct}>{numberInput('min_sun_fraction_pct', { min: 0, max: 100 })}</Field>
-          <Field id={id('min_dte_fraction_pct')} label="Asgari DTE görüş payı (%)" hint="Dünya merkezi geometrik görüşü; RF bağlantısı değildir" error={errors.min_dte_fraction_pct}>{numberInput('min_dte_fraction_pct', { min: 0, max: 100 })}</Field>
-          <Field id={id('max_dte_gap_hours')} label="Azami kesintisiz DTE kesintisi (saat)" hint="0 … 720" error={errors.max_dte_gap_hours}>{numberInput('max_dte_gap_hours', { min: 0, max: 720 })}</Field>
-          <Field id={id('max_slope_deg')} label="Azami eğim (°, isteğe bağlı)" hint="≤20 m DEM gerekir; yoksa SLOPE_UNKNOWN → GRAY. Eğim, iniş güvenliği değildir." error={errors.max_slope_deg}>{numberInput('max_slope_deg', { min: 0, max: 90 })}</Field>
-          <Field id={id('slope_footprint_radius_m')} label="Eğim ayak izi yarıçapı (m)" hint="5 … 200" error={errors.slope_footprint_radius_m}>{numberInput('slope_footprint_radius_m', { min: 5, max: 200 })}</Field>
+          <Field id={id('max_darkness_hours')} label={engineer ? 'Azami kesintisiz karanlık (saat)' : 'En fazla kaç saat karanlıkta kalınabilir?'} hint="0 … 720 saat" error={errors.max_darkness_hours}>{numberInput('max_darkness_hours', { min: 0, max: 720 })}</Field>
+          <Field id={id('min_sun_fraction_pct')} label={engineer ? 'Asgari ort. Güneş diski görünürlüğü (%)' : 'Güneş en az yüzde kaç görünmeli?'} hint="0 … 100 % (elektrik üretimi değildir)" error={errors.min_sun_fraction_pct}>{numberInput('min_sun_fraction_pct', { min: 0, max: 100 })}</Field>
+          <Field id={id('min_dte_fraction_pct')} label={engineer ? 'Asgari DTE görüş payı (%)' : 'Dünya en az yüzde kaç görünmeli?'} hint="Dünya merkezi geometrik görüşü; RF bağlantısı değildir" error={errors.min_dte_fraction_pct}>{numberInput('min_dte_fraction_pct', { min: 0, max: 100 })}</Field>
+          <Field id={id('max_dte_gap_hours')} label={engineer ? 'Azami kesintisiz DTE kesintisi (saat)' : 'Dünya en fazla kaç saat görünmeyebilir?'} hint="0 … 720 saat" error={errors.max_dte_gap_hours}>{numberInput('max_dte_gap_hours', { min: 0, max: 720 })}</Field>
+          {engineer && fSlope}
+          {engineer && fFootprint}
         </div>
         {errors.constraints && <p className="text-xs font-medium text-stop">{errors.constraints}</p>}
       </fieldset>
+
+      {!engineer && (
+        <details
+          className="rounded-lg border border-line bg-panel-2 p-3"
+          open={advancedOpen || advancedHasError}
+          onToggle={(e) => setAdvancedOpen((e.currentTarget as HTMLDetailsElement).open)}
+          data-testid="advanced-settings"
+        >
+          <summary className="cursor-pointer text-sm font-semibold text-ink">
+            Gelişmiş görev ayarları
+            <span className="mt-0.5 block text-xs font-normal text-muted">{advancedSummary}{advancedHasError ? ' · düzeltilmesi gereken alan var' : ''}</span>
+          </summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {fBuffer}
+            {fStep}
+            <div className="sm:col-span-2">{fRadius}</div>
+            {fErrK}
+            {fDark}
+            {fSlope}
+            {fFootprint}
+          </div>
+        </details>
+      )}
 
       <div className="rounded-lg border border-line bg-panel-2 p-3 text-xs text-muted" aria-live="polite">
         <p className="font-semibold text-ink">Tahmini hesap yükü (süre vaadi değildir)</p>
@@ -262,16 +341,18 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           Zaman serisi: <span className="mono text-ink">{built.points ?? '—'}</span> örnek × <span className="mono text-ink">{built.scenarioCount}</span> senaryo
           {built.points !== null && <> = <span className="mono text-ink">{built.points * built.scenarioCount}</span> Güneş/Dünya konumu (sınır 12000)</>}.
         </p>
-        <p>
-          Ufuk: 3600 azimut × <span className="mono text-ink">{profileCount}</span> profil{sameHeights ? ' (panel ve anten aynı yükseklikte → tek profil)' : ''}; 200 km’de ışın başına ~1270 DEM örneği.
-          İlk hesap DEM ve diske bağlı olarak dakikalar sürebilir; aynı parametreler önbellekten gelir.
-        </p>
+        {engineer && (
+          <p>
+            Ufuk: 3600 azimut × <span className="mono text-ink">{profileCount}</span> profil{sameHeights ? ' (panel ve anten aynı yükseklikte → tek profil)' : ''}; 200 km’de ışın başına ~1270 DEM örneği.
+            İlk hesap DEM ve diske bağlı olarak dakikalar sürebilir; aynı parametreler önbellekten gelir.
+          </p>
+        )}
         {errors.budget && <p className="mt-1 font-medium text-stop">{errors.budget}</p>}
       </div>
 
       {serverError !== null && (
         <Notice explained={explainError(serverError)}>
-          {mode === 'engineer' && serverError instanceof ApiError && serverError.details.length > 0 && (
+          {engineer && serverError instanceof ApiError && serverError.details.length > 0 && (
             <ul className="mono list-inside list-disc text-xs">
               {serverError.details.map((d, i) => <li key={i}>{d.field ?? '(gövde)'}: {d.message}</li>)}
             </ul>

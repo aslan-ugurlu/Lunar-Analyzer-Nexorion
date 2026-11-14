@@ -45,6 +45,17 @@ export interface SiteLayer {
   expected_file?: string;
   expected_folder?: string;
   source_page?: string | null;
+  /** Region name from the PGDA LOLA_5mpp README (names a DEM tile, not a landing site). */
+  region_name?: string | null;
+  /** Extent computed from the raster's own georeferencing; null when the file is absent. */
+  footprint?: {
+    center: { lat: number; lon: number };
+    lat_range: [number, number];
+    width_km: number;
+    height_km: number;
+    contains_pole: boolean;
+    pixel_size_m: number;
+  } | null;
   note: string;
 }
 
@@ -192,6 +203,10 @@ export interface Horizon {
     observer_height_m: { sun: number; earth: number };
   };
   sources: Record<string, string>;
+  /** v1.2: resolution of every layer actually used (metres). */
+  layer_resolution_m?: Record<string, number>;
+  /** v1.2: layers present on disk but not used (e.g. no ERR in ERR mode), with reason. */
+  excluded_layers?: Record<string, string>;
   reference_radius_km: number;
   selected_dataset_id: string;
   uncertainty_mode: 'nominal' | 'err';

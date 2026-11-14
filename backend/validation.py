@@ -158,16 +158,45 @@ def v05_radius_sensitivity() -> dict:
                  rows)
 
 
+def _grid_points(footprint: dict, path, n: int = 15, inner: float = 0.8):
+    """Regular grid of lon/lat points over the inner part of a raster (from its own transform)."""
+    import rasterio
+    from pyproj import CRS, Transformer
+    with rasterio.open(path) as ds:
+        left, bottom, right, top = ds.bounds
+        cx, cy = (left + right) / 2, (bottom + top) / 2
+        hx, hy = (right - left) / 2 * inner, (top - bottom) / 2 * inner
+        xs, ys = np.meshgrid(np.linspace(cx - hx, cx + hx, n), np.linspace(cy - hy, cy + hy, n))
+        geo = CRS.from_proj4(f'+proj=longlat +a={R_MOON_KM * 1000} +b={R_MOON_KM * 1000} +no_defs')
+        lon, lat = Transformer.from_crs(ds.crs, geo, always_xy=True).transform(xs.ravel(), ys.ravel())
+    return np.asarray(lon), np.asarray(lat)
+
+
+def _compare_layers(fine: str, coarse: str, lon, lat, centre, radius_km) -> dict:
+    from backend.terrain_engine import RasterSampler
+    a = RasterSampler.open(fine, DATASETS[fine]['path'], centre[0], centre[1], radius_km)
+    b = RasterSampler.open(coarse, DATASETS[coarse]['path'], centre[0], centre[1], radius_km)
+    try:
+        fa, fb = a.sample(lon, lat), b.sample(lon, lat)
+    finally:
+        a.close()
+        b.close()
+    ok = np.isfinite(fa) & np.isfinite(fb)
+    d = fa[ok] - fb[ok]
+    return {'pair': f'{fine} - {coarse}', 'n': int(ok.sum()), 'median_diff_m': float(np.median(d)) if d.size else None,
+            'p95_abs_diff_m': float(np.percentile(np.abs(d), 95)) if d.size else None}
+
+
 def v06_lod_nodata() -> dict:
     if not dem_present():
         return entry('BLOCKED', 'LOLA 240 m raster missing')
     import rasterio
     from rasterio.windows import from_bounds
+    from backend.terrain_engine import RasterSampler, TerrainContext, raster_footprint
     with rasterio.open(DATASETS['lola_240m']['path']) as ds:
         win = from_bounds(-260000, -260000, 260000, 260000, transform=ds.transform)
         data = ds.read(1, window=win, masked=True)
         nan_count = int(np.count_nonzero(~np.isfinite(data.filled(np.nan))))
-    from backend.terrain_engine import RasterSampler
     sampler = RasterSampler.open('lola_240m', DATASETS['lola_240m']['path'], 0.0, -89.5, 5)
     try:
         sampler.data[sampler.data.shape[0] // 2, sampler.data.shape[1] // 2] = np.nan  # in-memory copy only
@@ -178,14 +207,104 @@ def v06_lod_nodata() -> dict:
         sampled = float(sampler.sample(np.array([lon]), np.array([lat]))[0])
     finally:
         sampler.close()
-    other_layers = [k for k, v in DATASETS.items() if k != 'lola_240m' and v['path'].is_file()]
+    present = [k for k, v in DATASETS.items() if v['path'].is_file()]
     evidence = {'nan_pixels_within_260km_box': nan_count, 'nodata_pixel_sample_returns': 'NaN' if math.isnan(sampled) else sampled,
-                'higher_resolution_layers_present': other_layers}
+                'layers_present': present, 'criterion': '|median(fine - coarse)| < 5 m for every overlapping pair; '
+                'LOD picks site (<=5 km), 80 m (<=30 km), 240 m (beyond)', 'pairs': [], 'lod_provenance': []}
     if not math.isnan(sampled):
         return entry('FAIL', 'NoData pixel did not propagate as NaN', evidence)
-    if not other_layers:
+    finer = [k for k in present if k != 'lola_240m']
+    if not finer:
         return entry('BLOCKED', 'NoData handling PASS (NaN propagates, no zero fill); LOD switching not testable: only lola_240m present', evidence)
-    return entry('PASS', 'NoData propagates as NaN; multiple LOD layers present', evidence)
+    ok = True
+    if 'lola_80m' in present:
+        lon, lat = _grid_points(None, DATASETS['lola_80m']['path'], n=21, inner=0.05)  # +-~15 km box round the pole
+        pair = _compare_layers('lola_80m', 'lola_240m', lon, lat, (0.0, -90.0), 40)
+        evidence['pairs'].append(pair)
+        ok &= pair['n'] > 0 and abs(pair['median_diff_m']) < 5
+    for site in [k for k in present if DATASETS[k]['kind'] == 'site']:
+        fp = raster_footprint(DATASETS[site]['path'])
+        lon, lat = _grid_points(fp, DATASETS[site]['path'])
+        centre = (fp['center']['lon'], fp['center']['lat'])
+        radius = max(fp['width_km'], fp['height_km'])
+        for coarse in [k for k in ('lola_80m', 'lola_240m') if k in present]:
+            pair = _compare_layers(site, coarse, lon, lat, centre, radius)
+            evidence['pairs'].append(pair)
+            ok &= pair['n'] > 0 and abs(pair['median_diff_m']) < 5
+        ctx = TerrainContext(centre[0], centre[1], 50.0, False)
+        try:
+            one = (np.array([centre[0]]), np.array([centre[1]]))
+            got = {d: str(ctx.sample(*one, np.array([d]))[2][0]) for d in (1.0, 10.0, 100.0)}
+        finally:
+            ctx.close()
+        expected = {1.0: site, 10.0: 'lola_80m' if 'lola_80m' in present else 'lola_240m', 100.0: 'lola_240m'}
+        evidence['lod_provenance'].append({'site': site, 'centre': fp['center'], 'by_distance_km': got,
+                                           'expected': {str(k): v for k, v in expected.items()}})
+        ok &= all(got[d] == expected[d] for d in got)
+    return entry('PASS' if ok else 'FAIL',
+                 f"NoData propagates as NaN; {len(evidence['pairs'])} layer pair(s) agree (|median diff| < 5 m) and LOD picks the finest layer by distance"
+                 if ok else 'Layer bias or LOD selection outside criterion (see evidence)', evidence)
+
+
+def slope01_cross_check() -> dict:
+    """Our 5 m central-difference slope vs the official PGDA product-78 slope map at the same points,
+    plus one real worker analysis with a slope constraint (end-to-end)."""
+    from backend.terrain_engine import RasterSampler, local_slope, raster_footprint
+    from backend.config import SITES
+    sites = [k for k, v in DATASETS.items() if v['kind'] == 'site' and v['path'].is_file()]
+    pairs = [(k, SITES / DATASETS[k]['path'].name.replace('_surf.tif', '_slp.tif')) for k in sites]
+    pairs = [(k, slp) for k, slp in pairs if slp.is_file()]
+    if not pairs:
+        return entry('BLOCKED', 'No 5 m site DEM with official slope map present (python -m backend.download_data --include-site-5m)')
+    rows, diffs = [], []
+    for site, slp_path in pairs:
+        fp = raster_footprint(DATASETS[site]['path'])
+        c = fp['center']
+        for dlat, dlon in ((0, 0), (0.01, 0), (-0.01, 0), (0, 0.5), (0, -0.5)):
+            lat, lon = c['lat'] + dlat, c['lon'] + dlon
+            ours = local_slope(lat, lon, 30.0, with_points=True)
+            if ours.get('source') != site or not ours.get('points'):
+                rows.append({'site': site, 'lat': lat, 'lon': lon, 'skipped': ours.get('status')})
+                continue
+            plon = np.array([p[0] for p in ours['points']])
+            plat = np.array([p[1] for p in ours['points']])
+            official = RasterSampler.open(site + '_slp', slp_path, lon, lat, 0.5)
+            try:
+                ref = official.sample(plon, plat)
+            finally:
+                official.close()
+            mine = np.array([p[2] for p in ours['points']])
+            ok = np.isfinite(ref)
+            d = mine[ok] - ref[ok]
+            diffs.extend(d.tolist())
+            rows.append({'site': site, 'lat': round(lat, 5), 'lon': round(lon, 5), 'n': int(ok.sum()),
+                         'ours_mean_deg': float(mine.mean()), 'ours_max_deg': float(mine.max()),
+                         'official_mean_deg': float(np.nanmean(ref)), 'official_max_deg': float(np.nanmax(ref)),
+                         'median_abs_diff_deg': float(np.median(np.abs(d))) if d.size else None})
+    from backend.main import _worker_calculate
+    site, _ = pairs[0]
+    c = raster_footprint(DATASETS[site]['path'])['center']
+    payload = {'dataset_id': site, 'latitude': c['lat'], 'longitude': c['lon'], 'landing_utc': '2026-12-17T00:00:00Z',
+               'duration_hours': 24, 'buffer_hours': 0, 'step_minutes': 60, 'horizon_radius_km': 200, 'sun_observer_height_m': 4,
+               'earth_observer_height_m': 4, 'uncertainty_mode': 'nominal', 'err_k': 1, 'dark_fraction_threshold': 0.01,
+               'shifts_hours': [0], 'constraints': {'max_slope_deg': 10, 'slope_footprint_radius_m': 30}}
+    result = _worker_calculate(payload)
+    mission = result.get('mission') or {}
+    slope = mission.get('slope') or {}
+    e2e = {'site': site, 'centre': c, 'decision': mission.get('status', result.get('status')), 'error_code': result.get('error_code'),
+           'slope': {k: slope.get(k) for k in ('slope_max_deg', 'slope_mean_deg', 'status', 'source', 'sampling_interval_m', 'n_points')},
+           'max_slope_violation': [v for v in mission.get('nominal_violations', []) if v['code'] == 'MAX_SLOPE'],
+           'slope_unknown': any(u['code'] == 'SLOPE_UNKNOWN' for u in mission.get('unresolved', [])),
+           'horizon_layers': (result.get('horizon') or {}).get('layer_resolution_m')}
+    median_abs = float(np.median(np.abs(diffs))) if diffs else None
+    e2e_ok = slope.get('status') == 'screening_only' and slope.get('source') == site and not e2e['slope_unknown']
+    ok = median_abs is not None and median_abs <= 2.0 and e2e_ok
+    return entry('PASS' if ok else 'FAIL',
+                 f'5 m slope vs official PGDA slope map: median |diff| {median_abs:.2f} deg over {len(diffs)} points (criterion <= 2 deg); '
+                 f'end-to-end analysis with max_slope_deg evaluated slope from {slope.get("source")}. Screening only, not landing safety.'
+                 if median_abs is not None else 'No comparable slope points',
+                 {'criterion': 'median |ours - official| <= 2 deg; worker analysis reports screening_only slope from the 5 m layer',
+                  'rows': rows, 'end_to_end': e2e})
 
 
 def v07_disk_quadrature() -> dict:
@@ -266,7 +385,7 @@ def v10_traceability() -> dict:
 
 CHECKS = [('V-01', v01_sources_and_coverage), ('V-02', v02_frames), ('V-03', v03_utc), ('V-05', v05_radius_sensitivity),
           ('V-06', v06_lod_nodata), ('V-07', v07_disk_quadrature), ('V-08', v08_err_clone), ('V-09', v09_constraints),
-          ('V-10', v10_traceability)]
+          ('V-10', v10_traceability), ('SLOPE-01', slope01_cross_check)]
 
 
 def main(argv=None) -> int:

@@ -34,7 +34,7 @@ GEO = CRS.from_proj4(f'+proj=longlat +a={R_M:.0f} +b={R_M:.0f} +no_defs')
 GEOD = Geod(a=R_M, b=R_M)
 AZ_STEP_DEG = 0.1
 # Bump when the horizon JSON layout/semantics change so stale cache entries are not reused.
-HORIZON_SCHEMA = 2
+HORIZON_SCHEMA = 3  # v3: layer resolutions + layers excluded in ERR mode
 
 
 class TerrainError(RuntimeError):
@@ -141,10 +141,17 @@ class TerrainContext:
         self.sources = {}
         self.errors = {}
         self.loaded = []
+        self.excluded = {}
         try:
             for name, definition in DATASETS.items():
                 path = definition['path']
                 if not path.is_file():
+                    continue
+                err_path = definition.get('err')
+                if uncertainty and not (err_path is not None and err_path.is_file()):
+                    # Mixing a layer without ERR into an ERR run would make every ray it touches
+                    # NaN (-> partial -> GRAY). Use only layers whose ERR exists, and say so.
+                    self.excluded[name] = 'ERR layer missing for this dataset (ERR mode uses only layers with ERR)'
                     continue
                 limit = min(radius_km, 5 if '5m' in name or '20m' in name else
                             30 if '80m' in name else radius_km)
@@ -349,6 +356,8 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
                         'observer_height_m': {'sun': sun_height_m, 'earth': earth_height_m}}
         output = {'azimuth_deg': az.tolist(), 'profiles': profiles, 'geometry': geometry,
                   'sources': {name:src.path.relative_to(src.path.parents[1]).as_posix() for name,src in ctx.sources.items()},
+                  'layer_resolution_m': {name: DATASETS[name]['resolution_m'] for name in ctx.sources},
+                  'excluded_layers': dict(ctx.excluded),
                   'reference_radius_km':radius_km, 'selected_dataset_id':dataset_id, 'uncertainty_mode':uncertainty_mode,
                   'k':k if uncertainty else None, 'cache_key':key,
                   'status':'complete' if all(np.isfinite(np.asarray(profiles[b]['nominal'],dtype=float)).all() for b in profiles)
@@ -426,7 +435,33 @@ def earth_dte_visible(earth_az, earth_el, horizon_deg):
     return bool(earth_el > h)
 
 
-def local_slope(lat_deg, lon_deg, footprint_radius_m=30.0):
+def _slope_points(sampler, lat_deg, lon_deg, footprint_radius_m, resolution):
+    """Central-difference slopes on a 7x7 grid clipped to the footprint circle.
+
+    Returns (points, step) where points = [(lon, lat, slope_deg)], or (None, step) if any
+    neighbour sample is missing (no guessed values).
+    """
+    xy = np.linspace(-footprint_radius_m, footprint_radius_m, 7)
+    step = max(5., float(resolution))
+    points = []
+    for north in xy:
+        for east in xy:
+            if east*east+north*north > footprint_radius_m**2:
+                continue
+            az = math.degrees(math.atan2(east, north)) % 360
+            dd = math.hypot(east, north)
+            lo, la, _ = GEOD.fwd(lon_deg, lat_deg, az, dd)
+            bearings = np.array([0, 90, 180, 270], dtype=float)
+            longitudes, latitudes, _ = GEOD.fwd(np.full(4, lo), np.full(4, la), bearings, np.full(4, step))
+            north_h, east_h, south_h, west_h = sampler.sample(longitudes, latitudes)
+            if not np.isfinite([north_h, east_h, south_h, west_h]).all():
+                return None, step
+            grad = math.hypot((east_h-west_h)/(2*step), (north_h-south_h)/(2*step))
+            points.append((float(lo), float(la), math.degrees(math.atan(grad))))
+    return points, step
+
+
+def local_slope(lat_deg, lon_deg, footprint_radius_m=30.0, with_points=False):
     """Screening-only slope from central finite differences; no terrain safety certification.
 
     Uses best available <=20m raster and checks a user-specified footprint grid.
@@ -438,29 +473,40 @@ def local_slope(lat_deg, lon_deg, footprint_radius_m=30.0):
         try:
             s = RasterSampler.open(name, path, lon_deg, lat_deg, max(0.5, footprint_radius_m/1000+0.2))
             try:
-                xy = np.linspace(-footprint_radius_m,footprint_radius_m,7)
-                values=[]
-                step = max(5., float(resolution))
-                for north in xy:
-                    for east in xy:
-                        if east*east+north*north > footprint_radius_m**2:
-                            continue
-                        az = math.degrees(math.atan2(east,north))%360
-                        dd = math.hypot(east,north)
-                        lo,la,_ = GEOD.fwd(lon_deg,lat_deg,az,dd)
-                        bearings = np.array([0,90,180,270], dtype=float)
-                        longitudes,latitudes,_=GEOD.fwd(np.full(4,lo),np.full(4,la),bearings,np.full(4,step))
-                        north_h,east_h,south_h,west_h=s.sample(longitudes,latitudes)
-                        if not np.isfinite([north_h,east_h,south_h,west_h]).all():
-                            return {'slope_max_deg':None,'status':'missing_data','source':name}
-                        grad = math.hypot((east_h-west_h)/(2*step),(north_h-south_h)/(2*step))
-                        values.append(math.degrees(math.atan(grad)))
-                if values:
-                    return {'slope_max_deg':max(values),'slope_mean_deg':float(np.mean(values)),
-                            'status':'screening_only','source':name,'footprint_radius_m':footprint_radius_m,
-                            'sampling_interval_m':step}
+                points, step = _slope_points(s, lat_deg, lon_deg, footprint_radius_m, resolution)
+                if points is None:
+                    return {'slope_max_deg':None,'status':'missing_data','source':name}
+                if points:
+                    values = [p[2] for p in points]
+                    out = {'slope_max_deg':max(values),'slope_mean_deg':float(np.mean(values)),
+                           'status':'screening_only','source':name,'footprint_radius_m':footprint_radius_m,
+                           'sampling_interval_m':step,'n_points':len(values)}
+                    if with_points:
+                        out['points'] = points
+                    return out
             finally:
                 s.close()
         except TerrainMissing:
             continue
     return {'slope_max_deg':None,'status':'high_resolution_dem_missing'}
+
+
+def raster_footprint(path: Path) -> dict:
+    """Real footprint of a raster from its own georeferencing (no guessed site coordinates)."""
+    with rasterio.open(path) as ds:
+        tf = Transformer.from_crs(ds.crs, GEO, always_xy=True)
+        left, bottom, right, top = ds.bounds
+        edge = np.linspace(0.0, 1.0, 41)
+        xs = np.r_[left + (right-left)*edge, np.full(41, right), right - (right-left)*edge, np.full(41, left)]
+        ys = np.r_[np.full(41, bottom), bottom + (top-bottom)*edge, np.full(41, top), top - (top-bottom)*edge]
+        lons, lats = tf.transform(xs, ys)
+        cx, cy = (left+right)/2, (bottom+top)/2
+        clon, clat = tf.transform(cx, cy)
+        inv = ~ds.transform
+        col, row = inv * (0.0, 0.0)
+        contains_pole = 0 <= col < ds.width and 0 <= row < ds.height
+        return {'center': {'lat': round(float(clat), 5), 'lon': round(float(clon), 5)},
+                # [southernmost, northernmost] latitude of the raster extent (boundary-sampled).
+                'lat_range': [-90.0 if contains_pole else round(float(np.min(lats)), 4), round(float(np.max(lats)), 4)],
+                'width_km': round((right-left)/1000, 2), 'height_km': round((top-bottom)/1000, 2),
+                'contains_pole': bool(contains_pole), 'pixel_size_m': float(abs(ds.transform.a))}

@@ -29,6 +29,8 @@ pip install -r requirements.txt
 python -m backend.download_data --include-lola-240m
 #    İsteğe bağlı: ERR katmanı (~267 MB) -> "err" belirsizlik modu (GREEN/YELLOW için gerekli)
 python -m backend.download_data --include-lola-240m-err
+#    İsteğe bağlı (LOD + eğim): 80 m DEM (~189 MB) + 80 m ERR (~255 MB), Site01/Site04 5 m surf/toterr/slp (6 × ~41 MB)
+python -m backend.download_data --include-lola-80m --include-lola-80m-err --include-site-5m
 
 # 3) Backend (tek API worker; --reload yalnız yerel geliştirmede)
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
@@ -57,12 +59,16 @@ Ortam değişkenleri:
 | `spice/naif0012.tls`, `pck00011.tpc`, `de440s.bsp`, `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf` | [NASA JPL NAIF generic_kernels](https://naif.jpl.nasa.gov/naif/) | mevcut | başlık (`KPL/`, `DAF/`) + yerel SHA-256; kapsam V-01 ile doğrulandı |
 | `lola/LDEM_60S_240MPP_ADJ.TIF` (218,961,039 B) | [PGDA ürün 90](https://pgda.gsfc.nasa.gov/products/90) — `https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ.TIF` | mevcut | HTTP 200 + Content-Length eşleşmesi + rasterio: 1 bant float32, 7760×7760, 240 m, CRS *Moon (2015) - Sphere / Ocentric / South Polar* (Polar Stereographic B, lat_ts −90°, lon_0 0°, R = 1,737,400 m), NoData = NaN, z −9127…7025 m |
 | `lola/LDEM_60S_240MPP_ADJ_ERR.TIF` (267,005,175 B) | aynı ürün sayfası | mevcut (isteğe bağlı indirme) | aynı zincir; aynı CRS/ızgara, NoData NaN, kutup örneği σ 0.02–0.17 m |
-| `lola/LDEM_80S_80MPP_ADJ.TIF`, `LDEM_80S_20MPP_ADJ.TIF`, `sites/*5mpp*` | PGDA | **otomatik indirilmez** | yalnız 240 m kullanılır; eğim kısıtı ≤ 20 m DEM ister |
+| `lola/LDEM_80S_80MPP_ADJ.TIF` (+ `_ERR`) | [PGDA ürün 90](https://pgda.gsfc.nasa.gov/products/90) `/data/LOLA_20mpp/` | `--include-lola-80m` / `--include-lola-80m-err` | aynı zincir; 30 km içindeki ufuk halkasında kullanılır (LOD) |
+| `sites/Site01_final_adj_5mpp_{surf,toterr,slp}.tif`, `sites/Site04_…` | [PGDA ürün 78](https://pgda.gsfc.nasa.gov/products/78) `/data/LOLA_5mpp/` (Barker et al. 2021, PSS 203:105119) | `--include-site-5m` | 5 m/piksel, 16 × 16 km karo, güney polar stereografik (R 1737.4 km), NoData NaN; `_surf` boş pikselleri **enterpolasyonla doldurulmuş** (README); `_toterr` RMS (m); `_slp` resmi eğim (°) yalnız doğrulamada kullanılır. Site01 = *Connecting ridge*, Site04 = *Shackleton rim* (PGDA README; karo adıdır, iniş noktası değildir) |
+| `LDEM_80S_20MPP_ADJ.TIF`, diğer siteler, DEM clone'lar | PGDA | **indirilmez** | ürün 78'de site başına 100 clone yayımlanıyor; clone modu hâlâ `CLONE_NOT_PRECOMPUTED` |
 
+- Not: 5 m site DEM'leri **ürün 90'da değil, ürün 78'de** yayımlanıyor (2026-11-14 kontrol). İndirici yalnız katalogdaki resmi (ad, URL) çiftlerini kabul eder.
+- LOD: ufuk ışınının 0–5 km'si en ince mevcut katmandan (5 m site → 80 m → 240 m), 5–30 km'si 80 m'den, ötesi 240 m'den örneklenir. **ERR modunda yalnız ERR katmanı olan DEM'ler kullanılır**; diğerleri `excluded_layers` alanında gerekçesiyle raporlanır (karışık katman ERR ışınlarını NaN yapıp GRAY'e düşürürdü).
 - LOLA: *A New View of the Lunar South Pole from LOLA* — Barker et al. 2023, PSJ 4:183, DOI 10.3847/PSJ/acf3e1; veri DOI 10.60903/gsfcpgda-lola-spole. Ürün sayfasına göre yükseklikler metre, konumlar **MOON_ME (DE421)** çerçevesinde polar stereografiktir.
 - SPICE frame **`MOON_ME_DE440_ME421`**, NAIF frame kernel'inde DE421 ortalama-Dünya çerçevesiyle yakından hizalı tanımlıdır → LOLA ürünleriyle tutarlı. PA→ME farkı 2026-12-01'de 103.9″ ölçüldü; kod her yerde ME kullanır.
 - PGDA bu dosyalar için **checksum yayımlamıyor**. Manifest'teki SHA-256 yalnız yerel izlenebilirliktir (`official_sha256_matched: false`).
-- İndirici güvenliği: kilit dosyası + 30 sn heartbeat (çakışan indirme reddedilir), yetim `.part`/kilit temizliği, disk ön-kontrolü, Content-Length zorunluluğu, rasterio doğrulaması, atomik `os.replace`. Varolan geçersiz dosyanın üzerine yazılmaz.
+- İndirici güvenliği: kilit dosyası + 30 sn heartbeat (çakışan indirme reddedilir — paralel indirmelerde gerçek koşuda görüldü), yetim `.part`/kilit temizliği, disk ön-kontrolü, Content-Length zorunluluğu, kopan/kesik aktarımda **HTTP Range ile aynı çağrı içinde devam** (en fazla 4 deneme; 206 + `Content-Range` ve ETag eşleşmeli), rasterio doğrulaması, atomik `os.replace`. Varolan geçersiz dosyanın üzerine yazılmaz. 2026-11-14'te 80 m DEM'in ilk aktarımı gerçekten kesik geldi (187.36/189.16 MB) ve reddedildi.
 
 ## Arayüz (P0 ekranlar)
 
@@ -70,7 +76,7 @@ React 19 + Vite 8 + TypeScript 6 (strict) + Tailwind 4 + Plotly.js (`react-plotl
 
 | Sekme | İçerik |
 |---|---|
-| Başlık | Backend Online/Offline, SPICE / LOLA 240 m / ERR / Clone durum çipleri, "Tüm zamanlar UTC", **Halk / Mühendis** anahtarı (yalnız anlatımı değiştirir; karar aynı kalır — test ve E2E ile doğrulandı) |
+| Başlık | Backend Online/Offline, SPICE / LOLA DEM (mevcut çözünürlükler, ör. "240 · 80 · 5 m") / ERR / Clone durum çipleri, "Tüm zamanlar UTC", **Halk / Mühendis** anahtarı (yalnız sunumu değiştirir; karar aynı kalır — test ve E2E ile doğrulandı) |
 | **Mission Setup** | `/sites` katmanları ("indirilmeli" etiketi), enlem −90…−80 / boylam −180…180, ayrı UTC tarih+saat (tarayıcı saat dilimi kullanılmaz, ISO `Z` önizlemesi), görev/tampon/adım, 135/200 km, panel ve DTE anten yükseklikleri (1/4/40 m), nominal/err/clone, kısıtlar, örnekleme bütçesi; 202 + 2 sn polling; sonuç özeti, ihlal UTC aralıkları, provenance, kopyalanabilir özet; Halk modunda Dünya–Ay eğitim kartı |
 | **Sky View** | 0–360° panorama (0 = Kuzey, 90 = Doğu), gerçek `/horizon` profili, Güneş/Dünya disklerinin **gerçek açısal boyutu** (0/360 sarma), ERR bandı yalnız API verirse, eksik ışınlar işaretli, ayrı anten ufku, gövdeye yakınlaştırma, güney kutbu azimut/meridyen notu |
 | **Timeline** | `scenarios[].timeline` ile f_sun ve geometrik DTE, en uzun karanlık/kesinti vurgusu, tıklama + klavye kaydırıcı (Sky View ile eşzamanlı), +0/+24/+48/+72 senaryoları, `/scenarios/shift` ile yeni kaymalar (ebeveyn korunur), mühendis modunda yükseklik-ufuk grafiği |
@@ -78,6 +84,17 @@ React 19 + Vite 8 + TypeScript 6 (strict) + Tailwind 4 + Plotly.js (`react-plotl
 | **Data & Validation** | `/health` ("dosya var" ≠ "bilimsel doğrulandı"), katman tablosu + indirme komutları, `/validation` PASS/FAIL/BLOCKED/NOT_RUN + kanıt, NASA kaynakları, sınırlamalar |
 
 Hata/boş durumlar: backend yok (`BACKEND_OFFLINE`), `SPICE_MISSING`, `DEM_MISSING`, `TERRAIN_UNAVAILABLE`, `CLONE_NOT_PRECOMPUTED`, `WORKER_UNAVAILABLE`, `ANALYSIS_TIMEOUT`, 422 (alan bazlı), 429 `RATE_LIMITED`/`QUEUE_FULL`, 409 hazır değil, 404 (sunucu yeniden başladıysa), `INCOMPARABLE`. Kodlar her zaman metinle birlikte görünür; bilinmeyen kodlar gizlenmez.
+
+### Halk / Eğitimci ve Mühendis modları (aynı sonuç, farklı sunum)
+
+| | Halk / Eğitimci | Mühendis |
+|---|---|---|
+| Görev formu | Ana sorular sade dille; tampon, zaman adımı, tarama yarıçapı, ERR k, karanlık eşiği, eğim ve ayak izi **"Gelişmiş görev ayarları" akordeonunda** (kapalı; özet satırı var; gizli alanda hata olursa kendiliğinden açılır) | Tüm kısıt ve sensör parametreleri açık; ufuk hesap yükü ayrıntısı |
+| Sonuç | Büyük **KPI kartları** (Güneş görünürlüğü, en uzun karanlık, Dünya görüşü, en uzun Dünya kesintisi; kısıt durumu ikon + kelime), sade **hikâye** anlatımı, "Neden bu sonuç?" listesi, Türkçe sınırlamalar, öne çıkarılmış **Dünya–Ay eğitim kartı** | En üstte **telemetri**: `MOON_ME_DE440_ME421`, DEM katmanları + çözünürlük, kullanılmayan katmanlar, gözlemci kotu tablosu (h_DEM + h_obs → r), ERR σ, cache anahtarı, eğim; **ihlal UTC aralıkları tablosu**; senaryo metrik tablosu |
+| Sky View | Panorama + anlık açıklama + Öğren kartı | Ufuk özeti: panel/anten profili min/maks açı ve azimutu, eksik ışın, panel–anten farkı, ERR bant genişliği |
+| Timeline | f_sun / DTE grafiği, kaymalar | Güneş/Dünya açısal yükseklik grafiği **üstte**, **JSON / CSV ham veri dışa aktarma** (yalnız API değerleri) |
+
+Kod görünürlüğü: CLAUDE.md gereği `DEM_MISSING`, `SPICE_MISSING`, `GRAY` vb. veri eksikliği/hata kodları Halk modunda da gösterilir; Halk modunda gizlenenler ham durum etiketleri, ihlal kodları, metrik/provenance tabloları ve cache anahtarıdır.
 
 ## Demo adımları
 
@@ -110,12 +127,13 @@ FastAPI, `http://127.0.0.1:8000/docs`. Uzun işler `202 + analysis_id`, durum `G
 | Uç nokta | Not |
 |---|---|
 | `GET /health` | `status` ready/degraded = dosya varlığı; **v1.1 eklemeleri**: `layers` (dem/err/effres), `clone_profiles`, `limits`, `scientific_validation` |
-| `GET /sites` | **v1.1**: `kind`, `effres_available`, `expected_file`, `expected_folder` (göreli), `source_page` |
+| `GET /sites` | **v1.1**: `kind`, `effres_available`, `expected_file`, `expected_folder` (göreli), `source_page`; **v1.2**: `region_name` (PGDA README), `footprint` (raster'ın kendi georeferansından merkez, enlem aralığı, boyut; dosya yoksa `null`) |
 | `POST /analyses` | 202; 503 `SPICE_MISSING`/`DEM_MISSING`; 429 `RATE_LIMITED`/`QUEUE_FULL`; **v1.1**: 422 yanıtında `error.details[{field, message, type}]` (girdi değeri geri yansıtılmaz) |
 | `GET /analyses/{id}` · `/horizon` · `/timeline` | 404 `ANALYSIS_NOT_FOUND`, 409 `HORIZON_NOT_READY`/`TIMELINE_NOT_READY` |
 | `POST /compare` | `analysis_ids` (2–12), `priority`; 422 `INCOMPARABLE` (konum/dataset dışındaki her parametre aynı olmalı) |
 | `POST /scenarios/shift` | 202; ebeveyn ufku yeniden kullanılır |
-| `GET /validation` | **v1.1 yeni**: yalnız `python -m backend.validation` gerçek koşusunun raporu; yoksa tümü `NOT_RUN` |
+| `GET /validation` | **v1.1 yeni**: yalnız `python -m backend.validation` gerçek koşusunun raporu; yoksa tümü `NOT_RUN`. **v1.2**: `SLOPE-01` eklendi |
+| ufuk sonucu (`/horizon`) | **v1.2**: `layer_resolution_m`, `excluded_layers`; cache şeması 3 |
 
 v1.1 değişiklikleri **eklemelidir** (mevcut alanlar korunur) ve `tests/test_api_v11.py` ile test edilir. Ayrıca: kontrollü localhost CORS, iş zaman aşımı (`ANALYSIS_TIMEOUT`, 1800 s), havuz yalnız `lifespan` içinde.
 
@@ -125,13 +143,13 @@ Son gerçek koşular (2026-11-14, Windows 11):
 
 | Komut | Sonuç |
 |---|---|
-| `python -m pytest -q` | **62 passed** (sözleşme, SPICE UTC→ET, `--include-lola-240m` 17 senaryo, Windows spawn 7, API v1.1, doğrulama koşucusu, Pareto regresyonu) |
+| `python -m pytest -q` | **75 passed** (sözleşme, SPICE UTC→ET, indirici 23 senaryo — HTTP Range devamı dahil, Windows spawn 7, API v1.1/v1.2, LOD/ERR katman tutarlılığı, doğrulama koşucusu, Pareto regresyonu) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
-| `python -m backend.validation` | **10 PASS · 1 BLOCKED** (V-06) → `data/validation/report.json` |
-| `cd frontend; npx vitest run` | **71 passed** (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
+| `python -m backend.validation` | **12 / 12 PASS** (A-04, V-01…V-10, SLOPE-01) → `data/validation/report.json` |
+| `cd frontend; npx vitest run` | **85 passed** (mod ayrımı, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
 | `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı |
-| `npm run e2e:states` | 8/8: gerçek `DEM_MISSING`; işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
+| `npm run e2e:states` | 8/8: gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
 
 Mock kullanımı: yalnız UI/istemci sözleşme testlerinde ve indirici testlerinde (HTTP mock + `tmp_path` içinde sentetik minik GeoTIFF); her biri dosya başında işaretlidir. UI bileşen testleri, gerçek bir API yanıtının kısaltılmış kopyasını (`frontend/src/test/fixtures/real_analysis_62e783c2.json`, `_provenance` alanı) kullanır.
 
@@ -143,12 +161,13 @@ Bilimsel doğrulama (`GET /validation`, PASS yalnız kayıtlı vakaları kapsar)
 | V-01 kaynak + kapsam | PASS | de440s 1849–2150; moon PA bpc 1550–2650 ⊇ 2026–2035 |
 | V-02 frame/koordinat | PASS | raster küresi 1737.4 km, kutup = (0,0), +90°E → +x; PA→ME 103.9″ |
 | V-03 UTC→ET | PASS | 4 tarih, bağımsız TT−UTC = 69.184 s ile < 0.01 s |
-| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0°; **135→200 km: 1950 m'lik sırt noktasında 0.457°, azimutların %7.1'i** → hızlı mod yüksek konumlarda yetersiz olabilir |
-| V-06 LOD/NoData | BLOCKED | NaN yayılımı doğru; LOD geçişi yalnız 240 m olduğundan test edilemedi |
+| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0°; **135→200 km: 1950 m'lik sırt noktasında 0.762°, azimutların %10'u** (5 m + 80 m LOD ile) → hızlı mod yüksek konumlarda yetersiz olabilir |
+| V-06 LOD/NoData | PASS | NaN yayılımı doğru; 5 katman çifti medyan farkı −0.09…+0.63 m (ölçüt < 5 m; 80−240: −0.09 m, Site01−80: +0.09 m, Site04−80: −0.08 m); LOD 1 km → 5 m site, 10 km → 80 m, 100 km → 240 m |
 | V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı maks hata 0.0028 |
-| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 sitede ERR ±1σ: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.028 / 0.036 m, bant ≤ 0.006° / 0.104°. İstatistiksel doğrulama değildir. Clone: NOT_RUN (veri yok) |
+| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 sitede ERR ±1σ (240 + 80 m + 5 m ERR): tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.059 / 0.278 m, bant ≤ 0.016° / 0.299°. İstatistiksel doğrulama değildir. Clone: NOT_RUN |
 | V-09 kısıt mantığı | PASS | elle hesaplanmış girdiler |
 | V-10 izlenebilirlik | PASS | gerçek analizde provenance alanları; nominal → GRAY |
+| SLOPE-01 5 m eğim | PASS | bizim 5 m merkezi-fark eğimimiz ile **resmi PGDA `_slp.tif`** 290 noktada: medyan \|Δ\| 0.08° (ölçüt ≤ 2°); Site01 merkezi maks 9.34° / ort 5.86°, Site04 karo merkezi ~31–34° (Shackleton iç duvarı). Uçtan uca: eğim kısıtlı gerçek analiz eğimi `site01_5m`'den değerlendirdi; HTTP API'de err + ≤ 10° → GREEN, err + ≤ 5° → RED (`MAX_SLOPE`). Eğim iniş güvenliği değildir |
 
 ## Deep-link doğrulaması
 
@@ -185,7 +204,7 @@ Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.na
 ## Bilinen eksikler
 
 - YELLOW (nominal geçer, ERR +k ihlal) durumu gerçek veriyle henüz gözlenmedi; mantığı birim testleriyle doğrulandı.
-- 80 m / 20 m / 5 m katmanları yok → LOD geçişi (V-06) ve eğim kısıtı test edilmedi; eğim her zaman `SLOPE_UNKNOWN`.
+- Yalnız Site01 ve Site04 5 m karoları indirilir; diğer konumlarda eğim `SLOPE_UNKNOWN` (GRAY katkısı) kalır. 20 m katmanı yok.
 - DEM clone belirsizliği uygulanmadı (`CLONE_NOT_PRECOMPUTED`).
 - A-04 yalnız 3 geometri/tarih; V-05 yalnız 2 konum; V-07 yalnız düz ufuk. Tam yıl ve eğri arazi kanıtı değildir.
 - Moon Trek koordinata odaklanma güvenilir değil (dış uygulama kaynaklı).

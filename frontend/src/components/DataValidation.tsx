@@ -19,6 +19,7 @@ const TEST_TITLES: Record<string, string> = {
   'V-08': 'ERR / DEM clone gerçek belirsizlik',
   'V-09': 'Kısıt doğruluğu',
   'V-10': 'İzlenebilirlik (provenance)',
+  'SLOPE-01': '5 m eğim: resmi PGDA eğim haritasıyla çapraz kontrol + uçtan uca eğim kısıtı',
 };
 
 function StatusPill({ status }: { status: ValidationStatus }) {
@@ -73,7 +74,7 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
                 <tbody>
                   {(sites?.sites ?? []).map((s) => (
                     <tr key={s.id} className="border-t border-line">
-                      <td className="mono py-1">{s.id} · {s.resolution_m} m</td>
+                      <td className="mono py-1">{s.id} · {s.resolution_m} m{s.region_name ? <span className="block font-sans text-muted">{s.region_name}</span> : null}</td>
                       <td className={s.available ? 'text-go' : 'text-stop'}>{s.available ? 'var' : 'indirilmeli'}</td>
                       <td className={s.uncertainty_err_available ? 'text-go' : 'text-muted'}>{s.uncertainty_err_available ? 'var' : 'yok'}</td>
                       <td className={s.effres_available ? 'text-go' : 'text-muted'}>{s.effres_available ? 'var' : 'yok'}</td>
@@ -87,7 +88,9 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
               <p>240 m referans DEM ve ERR katmanını resmi PGDA adresinden güvenli (kilitli, atomik, doğrulamalı) indirmek için proje kökünde:</p>
               <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m</p>
               <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m-err</p>
-              <p>Diğer katmanlar (80 m / 20 m / 5 m site) otomatik indirilmez; ürün sayfası: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink>. Clone profilleri: <span className="mono">{health.clone_profiles ?? 'bilinmiyor'}</span>.</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-80m --include-lola-80m-err</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-5m</p>
+              <p>80 m: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink> · 5 m site (Site01, Site04): <ExternalLink href="https://pgda.gsfc.nasa.gov/products/78">PGDA ürün 78</ExternalLink>; 20 m ve diğer siteler otomatik indirilmez. Site `_surf` dosyalarında boş pikseller enterpolasyonla doldurulmuştur (PGDA README). Clone profilleri: <span className="mono">{health.clone_profiles ?? 'bilinmiyor'}</span>.</p>
             </div>
             {health.limits && mode === 'engineer' && (
               <p className="mono text-xs text-muted">

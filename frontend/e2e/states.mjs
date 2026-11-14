@@ -1,5 +1,5 @@
 // UX of error / missing-data states in a real browser.
-// REAL: DEM_MISSING comes from the real backend (lola_80m file is absent).
+// REAL: DEM_MISSING comes from the real backend (lola_20m is catalogued but never downloaded).
 // MOCKED (labelled): backend offline (network abort), SPICE_MISSING 503, QUEUE_FULL 429,
 // WORKER_UNAVAILABLE job and 409 HORIZON_NOT_READY are injected with Playwright routes,
 // because they cannot be produced safely on the live server. No scientific values are mocked.
@@ -32,7 +32,7 @@ try {
   {
     const { ctx, page } = await fresh();
     await page.goto(BASE, { waitUntil: 'networkidle' });
-    await page.getByLabel('NASA LOLA arazi katmanı (dataset)').selectOption('lola_80m');
+    await page.getByLabel('NASA LOLA arazi katmanı (dataset)').selectOption('lola_20m');
     await page.getByText(/Bu katmanın dosyası sunucuda yok/).waitFor();
     await fillSite(page);
     await page.getByRole('button', { name: 'Analizi başlat' }).click();

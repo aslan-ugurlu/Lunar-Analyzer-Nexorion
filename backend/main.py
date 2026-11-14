@@ -29,7 +29,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.config import (DATASETS, KERNELS, MAX_PENDING, MAX_WORKERS, CACHE,
-                            ANALYSIS_TIMEOUT_S, VALIDATION, PGDA_SOUTH_POLE_PAGE)
+                            ANALYSIS_TIMEOUT_S, VALIDATION, PGDA_SOUTH_POLE_PAGE, PGDA_SITE_PAGE, SITE_NAMES)
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(message)s')
 log=logging.getLogger('lunar')
@@ -291,8 +291,27 @@ async def health():
 
 
 _SITE_FILES={name:{'expected_file':d['path'].name,'expected_folder':'data/'+d['path'].parent.name,
-                   'source_page':PGDA_SOUTH_POLE_PAGE if d['kind']!='site' else None}
+                   'source_page':PGDA_SITE_PAGE if d['kind']=='site' else PGDA_SOUTH_POLE_PAGE,
+                   'region_name':SITE_NAMES.get(name)}
              for name,d in DATASETS.items()}
+_FOOTPRINTS={}
+
+
+def _footprint(name):
+    """Raster extent from its own georeferencing, cached per file version; None if unavailable."""
+    path=DATASETS[name]['path']
+    if not path.is_file():
+        return None
+    st=path.stat()
+    key=(name,st.st_size,st.st_mtime_ns)
+    if key not in _FOOTPRINTS:
+        try:
+            from backend.terrain_engine import raster_footprint
+            _FOOTPRINTS[key]=raster_footprint(path)
+        except Exception:
+            log.exception('Footprint unavailable for %s',name)
+            _FOOTPRINTS[key]=None
+    return _FOOTPRINTS[key]
 
 
 @app.get('/sites')
@@ -302,12 +321,13 @@ async def sites():
               'uncertainty_err_available':bool(d.get('err') and d['err'].is_file()),
               'effres_available':bool(d.get('effres') and d['effres'].is_file()),
               **_SITE_FILES[name],
+              'footprint':_footprint(name),
               'note':'Raster layer, not an approved landing coordinate'}
               for name,d in DATASETS.items()],
             'site_coordinates':'Choose explicitly; named landmark coordinates are not invented'}
 
 
-VALIDATION_IDS=('A-04','V-01','V-02','V-03','V-04','V-05','V-06','V-07','V-08','V-09','V-10')
+VALIDATION_IDS=('A-04','V-01','V-02','V-03','V-04','V-05','V-06','V-07','V-08','V-09','V-10','SLOPE-01')
 
 
 @app.get('/validation')

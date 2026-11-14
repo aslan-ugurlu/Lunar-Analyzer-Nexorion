@@ -26,6 +26,9 @@ try {
   await page.getByText('Online', { exact: true }).waitFor({ timeout: 15000 });
   note('header + backend Online chip visible');
   await page.screenshot({ path: join(OUT, '01_setup_public.png'), fullPage: true });
+  // Halk mode: technical parameters are inside the closed accordion.
+  const adv = page.getByTestId('advanced-settings');
+  note(`public accordion present: ${await adv.count() === 1}, open: ${await adv.evaluate((d) => d.open)}`);
 
   // Optional real-data variants: UNCERTAINTY=err, LANDING_DATE=YYYY-MM-DD, LANDING_TIME=HH:MM (UTC).
   if (process.env.UNCERTAINTY === 'err') await page.getByRole('radio', { name: /ERR ±k/ }).check();
@@ -77,6 +80,19 @@ try {
   await page.waitForTimeout(800);
   const decision2 = await page.locator('[data-decision]').count();
   await page.screenshot({ path: join(OUT, '06_timeline_engineer.png'), fullPage: true });
+  // Engineer: raw CSV/JSON export of the shown scenario (real download).
+  const [csvDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'CSV indir' }).click()]);
+  const csvPath = join(OUT, csvDl.suggestedFilename());
+  await csvDl.saveAs(csvPath);
+  const csvText = (await import('node:fs')).readFileSync(csvPath, 'utf-8');
+  const csvLines = csvText.split(/\r?\n/);
+  const header = csvLines.find((l) => l.startsWith('utc,'));
+  note(`csv export ${csvDl.suggestedFilename()}: header=${header}; data rows=${csvLines.filter((l) => /^\d{4}-/.test(l)).length}`);
+  const [jsonDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'JSON indir' }).click()]);
+  const jsonPath = join(OUT, jsonDl.suggestedFilename());
+  await jsonDl.saveAs(jsonPath);
+  const exported = JSON.parse((await import('node:fs')).readFileSync(jsonPath, 'utf-8'));
+  note(`json export: timeline=${exported.timeline.length} frame=${exported.meta.frame} layers=${exported.meta.dem_layers}`);
   await page.getByRole('tab', { name: 'Sky View' }).click();
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(OUT, '07_skyview_engineer.png'), fullPage: true });

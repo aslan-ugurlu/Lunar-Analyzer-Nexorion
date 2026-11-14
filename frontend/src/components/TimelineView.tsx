@@ -10,6 +10,42 @@ import { useApp } from '../state/AppState';
 import { AnalysisGate, AnalysisPicker, Scrubber, useAnalysisData, useCurrentPoint, type AnalysisData } from './AnalysisView';
 import { Chart } from './Plot';
 import { Icon, Notice } from './ui';
+import { exportMeta, timelineToCsv } from '../lib/telemetry';
+
+function download(filename: string, text: string, mime: string) {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Engineer: export the RAW API timeline of the shown scenario (no derived values). */
+export function ExportBar({ data }: { data: AnalysisData }) {
+  const current = useCurrentPoint(data);
+  if (!current) return null;
+  const meta = exportMeta(data.entry.id, data.entry.input, current.scenario, data.horizon);
+  const base = `lmwa_${data.entry.id.slice(0, 8)}_shift${current.scenario.shift_hours}h`;
+  const json = () => JSON.stringify({
+    meta: { ...meta, exported_utc: new Date().toISOString() },
+    request: data.entry.input,
+    scenario: { shift_hours: current.scenario.shift_hours, start_utc: current.scenario.start_utc, end_utc: current.scenario.end_utc },
+    variants: current.missionScenario?.variants ?? null,
+    timeline: current.scenario.timeline,
+  }, null, 2);
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-panel-2 p-2 text-sm" role="group" aria-label="Ham veri dışa aktarma">
+      <span className="font-medium text-ink">Ham veri (senaryo +{current.scenario.shift_hours} sa, {current.scenario.timeline.length} örnek):</span>
+      <button type="button" className="btn" onClick={() => download(`${base}.json`, json(), 'application/json')}>JSON indir</button>
+      <button type="button" className="btn" onClick={() => download(`${base}.csv`, timelineToCsv(current.scenario.timeline, { ...meta, exported_utc: new Date().toISOString() }), 'text/csv')}>CSV indir</button>
+      <span className="text-xs text-muted">Yalnız API değerleri; türetilmiş/enterpole sütun yok.</span>
+    </div>
+  );
+}
 
 const SHIFT_CHOICES = [0, 6, 12, 24, 48, 72, 96, 120, 168];
 
@@ -95,20 +131,22 @@ function TimelinePanel({ data }: { data: AnalysisData }) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="min-w-0 space-y-3">
-        <Chart data={fig.data} layout={fig.layout} height={440} onClick={onClick}
+        {mode === 'engineer' && <ExportBar data={data} />}
+        {elev && (
+          <section className="space-y-1 rounded-lg border border-accent/40 bg-accent/5 p-2" aria-labelledby="elev-title">
+            <h3 id="elev-title" className="px-1 text-sm font-semibold text-accent">Güneş / Dünya açısal yüksekliği ve gövde azimutundaki arazi ufku</h3>
+            <Chart data={elev.data} layout={elev.layout} height={320} ariaLabel="Güneş ve Dünya yüksekliği ile o azimuttaki ufuk yüksekliği" />
+            <p className="px-1 text-xs text-muted">Kesikli ufuk eğrileri görüntüleme amaçlı enterpolasyondur; f_sun disk integrasyonu ve DTE kararı sunucuda yapılır.</p>
+          </section>
+        )}
+        <Chart data={fig.data} layout={fig.layout} height={mode === 'engineer' ? 380 : 440} onClick={onClick}
           ariaLabel={`Senaryo +${current.scenario.shift_hours} saat için Güneş diski görünürlüğü ve geometrik Dünya görüşü zaman çizelgesi`} />
         <p className="text-xs text-muted">
-          Grafiğe tıklayarak zaman seçebilirsiniz. Kırmızı gölgeli bölgeler en uzun kesintisiz karanlık ve en uzun DTE kesintisidir.
-          Geçiş anları örnekleme adımı ({data.entry.input.step_minutes} dk) içinde belirsizdir.
+          {mode === 'engineer'
+            ? <>Grafiğe tıklayarak zaman seçilir. Kırmızı gölge: en uzun kesintisiz karanlık / DTE kesintisi (sunucu aralıkları). Geçişler Δt = {data.entry.input.step_minutes} dk içinde belirsizdir.</>
+            : <>Sarı alan Güneş’in ne kadarının göründüğünü, mavi alan Dünya’nın görünüp görünmediğini gösterir. Grafiğe tıklayarak bir ana gidebilirsiniz; kırmızı gölge en uzun karanlık ve en uzun Dünya kesintisidir.</>}
           {fig.decimated && ` Görselleştirme için ${fig.indices.length} noktaya seyreltildi (uç değerler korunur); hesap tüm ${current.scenario.timeline.length} örnekle yapılmıştır.`}
         </p>
-        {elev && (
-          <>
-            <h3 className="text-sm font-semibold text-ink">Gövde yüksekliği ve gövde azimutundaki arazi ufku</h3>
-            <Chart data={elev.data} layout={elev.layout} height={300} ariaLabel="Güneş ve Dünya yüksekliği ile o azimuttaki ufuk yüksekliği" />
-            <p className="text-xs text-muted">Kesikli ufuk eğrileri görüntüleme amaçlı enterpolasyondur; f_sun disk integrasyonu ve DTE kararı sunucuda yapılır.</p>
-          </>
-        )}
         <ShiftRequest data={data} />
       </div>
       <aside className="space-y-3">

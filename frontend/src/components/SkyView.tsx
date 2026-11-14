@@ -7,6 +7,35 @@ import { useApp } from '../state/AppState';
 import { AnalysisGate, AnalysisPicker, Scrubber, useAnalysisData, useCurrentPoint, type AnalysisData } from './AnalysisView';
 import { Chart } from './Plot';
 import { Icon, KeyValue } from './ui';
+import { EarthMoonCard } from './EarthMoonCard';
+import { bandWidth, profileDifference, profileExtremes } from '../lib/telemetry';
+import type { Horizon } from '../api/types';
+
+/** Engineer: descriptive statistics of the API horizon profiles (no re-computation). */
+export function HorizonStats({ horizon }: { horizon: Horizon }) {
+  const az = horizon.azimuth_deg;
+  const hSun = horizon.geometry.observer_height_m.sun;
+  const hEarth = horizon.geometry.observer_height_m.earth;
+  const sun = profileExtremes(az, horizon.profiles.sun.nominal);
+  const earth = profileExtremes(az, horizon.profiles.earth.nominal);
+  const diff = hSun !== hEarth ? profileDifference(az, horizon.profiles.earth.nominal, horizon.profiles.sun.nominal) : null;
+  const band = bandWidth(horizon.profiles.sun);
+  const fmt = (e: ReturnType<typeof profileExtremes>) => e
+    ? `min ${e.min.toFixed(3)}° @ ${e.minAz.toFixed(1)}° · maks ${e.max.toFixed(3)}° @ ${e.maxAz.toFixed(1)}°${e.missing ? ` · eksik ışın ${e.missing}` : ''}`
+    : 'geçerli değer yok';
+  return (
+    <section className="space-y-2 rounded-lg border border-accent/40 bg-accent/5 p-3 text-sm" aria-label="Ufuk özeti">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-accent">Ufuk özeti (API profillerinden)</h3>
+      <KeyValue items={[
+        [`Panel ufku (h_obs ${hSun} m)`, fmt(sun)],
+        [`Anten ufku (h_obs ${hEarth} m)`, hSun === hEarth ? 'panel ile aynı yükseklik → aynı profil' : fmt(earth)],
+        ['Anten − panel farkı', diff ? `maks |Δ| ${diff.maxAbs.toFixed(3)}° @ ${diff.atAz.toFixed(1)}° · ort Δ ${diff.mean.toFixed(4)}° (${diff.n} azimut)` : 'yok (aynı yükseklik)'],
+        ['ERR bandı (ihtiyatlı − iyimser)', band ? `min ${band.min.toFixed(4)}° · ort ${band.mean.toFixed(4)}° · maks ${band.max.toFixed(4)}°` : 'yok (nominal mod veya ERR katmanı yok)'],
+        ['Kapsama', `${horizon.status} · ${horizon.reference_radius_km} km · ${az.length} azimut (0.1°)`],
+      ]} />
+    </section>
+  );
+}
 
 function AzimuthNote({ lat }: { lat: number }) {
   return (
@@ -60,6 +89,7 @@ function SkyPanel({ data }: { data: AnalysisData }) {
           {!figure.hasErrBand && ' Bu analizde ERR bandı yok (nominal mod veya ERR katmanı yok); belirsizlik bandı uydurulmaz.'}
           {figure.missing.sun > 0 && ` ${figure.missing.sun} azimut ışınında DEM verisi eksik (kırmızı ×).`}
         </p>
+        {mode === 'engineer' && <HorizonStats horizon={horizon} />}
       </div>
 
       <aside className="space-y-3" aria-label="Seçili anın değerleri">
@@ -109,7 +139,7 @@ function SkyPanel({ data }: { data: AnalysisData }) {
 }
 
 export function SkyView() {
-  const { selected } = useApp();
+  const { selected, mode } = useApp();
   const data = useAnalysisData(selected);
   return (
     <div className="panel space-y-4">
@@ -120,6 +150,12 @@ export function SkyView() {
       <AnalysisGate data={data} need="both">
         {data && <SkyPanel data={data} />}
       </AnalysisGate>
+      {mode === 'public' && (
+        <div className="rounded-xl border border-accent/30 p-1">
+          <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wider text-accent">Öğren</p>
+          <EarthMoonCard />
+        </div>
+      )}
     </div>
   );
 }

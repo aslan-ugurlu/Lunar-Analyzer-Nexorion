@@ -14,6 +14,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 export function JobStatusLine({ entry }: { entry: AnalysisEntry }) {
+  const { mode } = useApp();
   if (entry.lost) {
     return <span className="text-caution">Sunucuda bulunamadı (ANALYSIS_NOT_FOUND) — sunucu yeniden başlatılmış olabilir</span>;
   }
@@ -22,7 +23,7 @@ export function JobStatusLine({ entry }: { entry: AnalysisEntry }) {
     <span className="inline-flex items-center gap-1.5">
       {isActive(entry) && <Icon name="spinner" className="h-3.5 w-3.5 text-accent" />}
       <span>{STATUS_TEXT[status] ?? status}</span>
-      <span className="mono text-muted">({status})</span>
+      {mode === 'engineer' && <span className="mono text-muted">({status})</span>}
       {entry.job?.error && <span className="mono text-stop">· {entry.job.error}</span>}
       {entry.pollErrorCode && <span className="mono text-caution">· izleme: {entry.pollErrorCode}</span>}
     </span>

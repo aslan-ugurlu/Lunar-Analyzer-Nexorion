@@ -24,7 +24,12 @@ export function MissionSetup({ sites, sitesError, health }: { sites: SitesRespon
         <section className="panel" aria-label="Seçili analiz sonucu">
           <ResultSummary entry={selected} />
         </section>
-        {mode === 'public' && <EarthMoonCard />}
+        {mode === 'public' && (
+          <div className="rounded-xl border border-accent/30 p-1">
+            <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wider text-accent">Öğren</p>
+            <EarthMoonCard />
+          </div>
+        )}
       </div>
     </div>
   );

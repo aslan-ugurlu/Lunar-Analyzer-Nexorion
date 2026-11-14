@@ -26,6 +26,8 @@ export function Header({ health, healthError }: { health: Health | null; healthE
   const { mode, setMode } = useApp();
   const online = health !== null && !(healthError && healthError.code === 'BACKEND_OFFLINE');
   const lola = health?.layers?.lola_240m;
+  const resolutions = health ? Object.entries(health.datasets).filter(([, ok]) => ok).map(([id]) => id.match(/_(\d+)m$/)?.[1]).filter(Boolean) : [];
+  const lodText = [...new Set(resolutions)].sort((a, b) => Number(b) - Number(a)).join(' · ');
   const anyErr = health?.layers ? Object.values(health.layers).some((l) => l.dem && l.err) : false;
 
   return (
@@ -41,7 +43,7 @@ export function Header({ health, healthError }: { health: Health | null; healthE
           <ul className="flex flex-wrap gap-1.5" aria-label="Hizmet ve veri durumu">
             <Chip label="Backend" value={online ? 'Online' : healthError ? 'Offline' : 'kontrol ediliyor'} state={online ? 'ok' : healthError ? 'missing' : 'unknown'} />
             <Chip label="SPICE" value={!health ? '—' : health.spice_files_present ? 'dosyalar var' : 'eksik'} state={!health ? 'unknown' : health.spice_files_present ? 'ok' : 'missing'} />
-            <Chip label="LOLA 240 m" value={!health ? '—' : lola?.dem ?? health.datasets.lola_240m ? 'var' : 'eksik'} state={!health ? 'unknown' : lola?.dem ?? health.datasets.lola_240m ? 'ok' : 'missing'} />
+            <Chip label="LOLA DEM" value={!health ? '—' : lola?.dem ?? health.datasets.lola_240m ? `${lodText} m` : '240 m eksik'} state={!health ? 'unknown' : lola?.dem ?? health.datasets.lola_240m ? 'ok' : 'missing'} />
             <Chip label="ERR" value={!health ? '—' : anyErr ? 'var' : 'yok'} state={!health ? 'unknown' : anyErr ? 'ok' : 'info'} />
             <Chip label="Clone" value={!health ? '—' : health.clone_profiles === 'NOT_PRECOMPUTED' ? 'hazır değil' : (health.clone_profiles ?? 'bilinmiyor')} state={!health ? 'unknown' : 'info'} />
             <li className="chip border-accent/50 bg-panel-2 text-accent">

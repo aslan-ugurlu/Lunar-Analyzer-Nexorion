@@ -238,3 +238,100 @@ def test_default_cli_does_not_download_lola(monkeypatch):
 def test_pid_alive_is_non_destructive():
     assert dd.pid_alive(os.getpid()) is True
     assert dd.pid_alive(2**30) is False
+
+
+# ---------------------------------------------------------------- resume (HTTP Range) tests
+# MOCK NOTICE: scripted fake HTTP responses; body = synthetic tiny GeoTIFF fixture.
+
+class ScriptedOpener:
+    """Returns pre-scripted responses and records the Range header of each request."""
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.ranges = []
+
+    def __call__(self, request, timeout=None):
+        self.ranges.append(request.get_header('Range'))
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+class RangeResponse(FakeResponse):
+    def __init__(self, body, status, headers):
+        super().__init__(body, content_length='omit', status=status)
+        self.headers = headers
+
+
+def test_truncated_transfer_is_resumed_with_range(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    cut = len(body) // 2
+    first = RangeResponse(body[:cut], 200, {'Content-Length': str(len(body)), 'ETag': 'W/"v1"'})
+    tail = RangeResponse(body[cut:], 206, {'Content-Range': f'bytes {cut}-{len(body) - 1}/{len(body)}', 'ETag': 'W/"v1"'})
+    opener = ScriptedOpener([first, tail])
+    record = run(env, opener)
+    dest_dir, _ = env
+    assert (dest_dir / dd.LOLA_240M_NAME).read_bytes() == body
+    assert opener.ranges == [None, f'bytes={cut}-']
+    assert record['resumed_transfers'] == 1 and record['attempts'] == 2
+
+
+def test_resume_refused_when_remote_file_changed(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    cut = len(body) // 2
+    first = RangeResponse(body[:cut], 200, {'Content-Length': str(len(body)), 'ETag': 'W/"v1"'})
+    tail = RangeResponse(body[cut:], 206, {'Content-Range': f'bytes {cut}-{len(body) - 1}/{len(body)}', 'ETag': 'W/"v2"'})
+    with pytest.raises(dd.DownloadError, match='changed'):
+        run(env, ScriptedOpener([first, tail]))
+    dest_dir, _ = env
+    assert not (dest_dir / dd.LOLA_240M_NAME).exists()
+    assert not (dest_dir / (dd.LOLA_240M_NAME + '.part')).exists()
+
+
+def test_resume_refused_on_inconsistent_content_range(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    cut = len(body) // 2
+    first = RangeResponse(body[:cut], 200, {'Content-Length': str(len(body))})
+    wrong = RangeResponse(body[cut:], 206, {'Content-Range': f'bytes 0-{len(body) - 1}/{len(body)}'})
+    with pytest.raises(dd.DownloadError, match='does not continue'):
+        run(env, ScriptedOpener([first, wrong]))
+
+
+def test_server_ignoring_range_restarts_cleanly(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    cut = len(body) // 3
+    first = RangeResponse(body[:cut], 200, {'Content-Length': str(len(body))})
+    full = RangeResponse(body, 200, {'Content-Length': str(len(body))})
+    run(env, ScriptedOpener([first, full]))
+    dest_dir, _ = env
+    assert (dest_dir / dd.LOLA_240M_NAME).read_bytes() == body
+
+
+def test_connection_drop_mid_stream_then_resume(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    cut = len(body) // 2
+
+    class Dropping(RangeResponse):
+        def __init__(self):
+            super().__init__(body[:cut], 200, {'Content-Length': str(len(body))})
+            self.sent = False
+
+        def read(self, n=-1):
+            if self.sent:
+                raise ConnectionResetError('peer reset')
+            self.sent = True
+            return body[:cut]
+
+    tail = RangeResponse(body[cut:], 206, {'Content-Range': f'bytes {cut}-{len(body) - 1}/{len(body)}'})
+    record = run(env, ScriptedOpener([Dropping(), tail]))
+    assert record['resumed_transfers'] == 1
+
+
+def test_gives_up_after_max_attempts(env, tmp_path):
+    body = synthetic_tiff_bytes(tmp_path)
+    short = [RangeResponse(body[:10], 200, {'Content-Length': str(len(body))})] + \
+        [RangeResponse(b'', 206, {'Content-Range': f'bytes 10-{len(body) - 1}/{len(body)}'}) for _ in range(5)]
+    with pytest.raises(dd.DownloadError, match='Size mismatch'):
+        dd.download_lola_240m(dest_dir=env[0], manifest_path=env[1], opener=ScriptedOpener(short),
+                              disk_usage=big_disk, log=lambda *_: None, max_attempts=3)

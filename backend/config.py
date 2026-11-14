@@ -39,3 +39,8 @@ ANALYSIS_TIMEOUT_S = 1800
 VALIDATION = DATA / "validation"  # reports written ONLY by real validation runs
 # Official product pages for user guidance (no automatic download from the API).
 PGDA_SOUTH_POLE_PAGE = "https://pgda.gsfc.nasa.gov/products/90"
+PGDA_SITE_PAGE = "https://pgda.gsfc.nasa.gov/products/78"
+# Region names as written in the PGDA LOLA_5mpp README (checked 2026-11-14; numbering after
+# Mazarico et al. 2011). These name DEM tiles, NOT approved landing coordinates.
+SITE_NAMES = {"site01_5m": "Connecting ridge", "site04_5m": "Shackleton rim", "site07_5m": "Peak near Shackleton",
+              "site11_5m": "de Gerlache rim", "site23_5m": "Malapert massif"}

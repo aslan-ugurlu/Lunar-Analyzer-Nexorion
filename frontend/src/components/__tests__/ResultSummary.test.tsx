@@ -47,9 +47,9 @@ describe('ResultSummary with a real analysis result', () => {
   it('engineer mode shows the same decision plus codes and provenance', () => {
     renderWith('engineer');
     expect(document.querySelector('[data-decision="RED"]')).not.toBeNull();
-    expect(screen.getAllByText(/MAX_DARKNESS · Azami kesintisiz karanlık/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/MOON_ME_DE440_ME421 · R = 1737.4 km/)).toBeInTheDocument();
-    expect(screen.getByText(/lola_240m: lola\/LDEM_60S_240MPP_ADJ.TIF/)).toBeInTheDocument();
+    expect(screen.getAllByText('MAX_DARKNESS').length).toBe(4); // violation table: one per scenario
+    expect(screen.getByText(/MOON_ME_DE440_ME421 · referans küre R = 1737.4 km/)).toBeInTheDocument();
+    expect(screen.getByText(/lola_240m · .* · lola\/LDEM_60S_240MPP_ADJ.TIF/)).toBeInTheDocument();
   });
 
   it('switching Halk → Mühendis never changes the decision', async () => {

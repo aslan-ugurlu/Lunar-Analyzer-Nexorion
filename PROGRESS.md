@@ -5,9 +5,9 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T09:44Z
-- **Faz:** Faz 0–5 DONE · **P0_DONE** (11.1–11.5 kabul girdileri aşağıda; Moon Trek odaklanması NOT_VERIFIED olarak etiketli)
-- **Alt adım:** Final commit
+- **Zaman (UTC):** 2026-11-14T11:39Z
+- **Faz:** Faz 6 (P1) DONE — 80 m + 5 m site DEM, V-06 LOD, 5 m eğim; Halk/Mühendis ayrımı
+- **Alt adım:** Final commit (yerel; push kullanıcı onayı bekliyor)
 - **Durum:** DONE
 
 ## Tamamlanan iş
@@ -87,6 +87,10 @@
 | `data/lola/LDEM_80S_80MPP_ADJ.TIF` | MISSING | — | PGDA | — |
 | `data/lola/LDEM_60S_240MPP_ADJ_ERR.TIF` | PRESENT_UNVERIFIED (yapısal/CRS doğrulaması PASS) | 267005175 (= Content-Length) | https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_ERR.TIF | rasterio: aynı CRS/ızgara (7760², 240 m), NoData NaN, kutup örneği σ 0.024–0.165 m; 1774.7 s |
 | `LDEM_60S_240MPP_ADJ_EFFRES.TIF` | MISSING (bilerek indirilmedi) | — | PGDA ürün 90 | config'e eklendi; kodda kullanılmıyor |
+| `data/lola/LDEM_80S_80MPP_ADJ.TIF` | PRESENT_UNVERIFIED (yapısal/CRS PASS) | 189158392 (= Content-Length; 2. deneme) | PGDA ürün 90 /data/LOLA_20mpp/ | Moon (2015) Sphere South Polar, 7600² × 80 m, NoData NaN, kutup örneği 1008–1353 m |
+| `data/lola/LDEM_80S_80MPP_ADJ_ERR.TIF` | PRESENT_UNVERIFIED (yapısal/CRS PASS) | 254808965 | PGDA ürün 90 | aynı ızgara; kutup σ 0.03–0.51 m |
+| `data/sites/Site01_final_adj_5mpp_{surf,toterr,slp}.tif` | PRESENT_UNVERIFIED (yapısal/CRS PASS) | 40980810 / 40980810 / 40980776 | PGDA ürün 78 /data/LOLA_5mpp/Site01/ | Polar Stereographic B, R 1737400, 3200² × 5 m, 16×16 km, merkez (−89.46316, −137.48955); `_surf` enterpolasyonla doldurulmuş |
+| `data/sites/Site04_final_adj_5mpp_{surf,toterr,slp}.tif` | PRESENT_UNVERIFIED (yapısal/CRS PASS) | 40980806 / 40980808 / 40980772 | PGDA ürün 78 /data/LOLA_5mpp/Site04/ | aynı; karo güney kutbunu içeriyor |
 | `data/sites/*5mpp*` | MISSING | — | PGDA | — |
 
 `data/manifest.json` tarihi `2026-11-14T08:12:33Z`; 5 kernel kaydı var, `official_sha256_matched=false`.
@@ -111,9 +115,10 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 | V-03 UTC→ET | PASS | 4 tarih, bağımsız TT−UTC = 69.184 s ile < 0.01 s; 2035'e kadar yeni artık saniye olmadığı varsayımı |
 | V-04 Horizons | PASS (sınırlı) | = A-04 |
 | V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0.0000° (eğrilik ≥3.3° düşürür); **135→200 km 1950 m sırt noktasında 0.457°, azimutların %7.1'i** → 135 km hızlı mod yüksek konumlarda yetersiz olabilir |
-| V-06 LOD/NoData | BLOCKED | NoData NaN olarak yayılıyor (sıfırla doldurma yok), 260 km kutusunda NaN piksel 0; LOD geçişi test edilemedi (yalnız 240 m var) |
+| V-06 LOD/NoData | PASS (11:35Z) | NaN yayılımı; 5 çift medyan −0.09…+0.63 m (ölçüt < 5 m, önceden sabit); LOD 1 km→site, 10 km→80 m, 100 km→240 m |
 | V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı 27 ofset, maks hata 0.0028 (< 0.01); eğri arazi kapsanmadı |
-| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 site ERR ±1σ: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.028/0.036 m, bant ≤ 0.006°/0.104°. İstatistiksel doğrulama değil. Clone: NOT_RUN (veri yok) |
+| V-08 ERR/clone | PASS (yalnız tutarlılık, 11:35Z) | 240+80+5 m ERR ile: gözlemci σ 0.059/0.278 m, bant ≤ 0.016°/0.299°, sıralama doğru. İstatistiksel doğrulama değil. Clone: NOT_RUN |
+| SLOPE-01 5 m eğim | PASS (11:35Z) | resmi `_slp.tif` ile 290 noktada medyan \|Δ\| 0.08° (ölçüt ≤ 2°, önceden sabit); uçtan uca eğim kısıtlı worker analizi `site01_5m` `screening_only` |
 | V-09 kısıt doğruluğu | PASS | elle hesaplanmış girdilerde en uzun koşu, min/maks sınırları, SLOPE_UNKNOWN |
 | V-10 izlenebilirlik | PASS | gerçek 24 sa analiz (site 2): sources/cache_key/radius/mode/disclaimers/UTC Z mevcut; nominal → GRAY (GREEN değil) |
 
@@ -206,3 +211,57 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 09:11:56Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
   404→lost, unmount cleanup), sonuç özeti (Halk/Mühendis, ihlal UTC aralıkları, provenance, kopyalanabilir özet).
   Testler: polling 4, gerçek-fikstür ResultSummary 4 (mod değişimi kararı değiştirmiyor).
+- 10:43Z — **Faz 6 başladı** (kullanıcı isteği: 80 m + 5 m site DEM, V-06/eğim, Halk/Mühendis ayrımı). git: main = origin/main + 1 (aef6af9).
+- 10:45Z — Kaynak doğrulama: PGDA **ürün 90**'da 5 m site dosyası YOK (yeniden kontrol edildi). 5 m site DEM'leri **ürün 78**
+  (https://pgda.gsfc.nasa.gov/products/78, veri dizini /data/LOLA_5mpp/, README: Site01 = Connecting ridge, Site04 = Shackleton rim,
+  5 m/piksel güney polar stereografik, MOON_ME DE421, `_surf` yükseklik m — boş pikseller enterpolasyonla doldurulmuş, `_toterr` RMS m,
+  `_slp` eğim °; Barker vd. 2021 PSS 203:105119). HEAD boyutları: 80 m DEM 189.2 MB, 80 m ERR 254.8 MB, site surf/toterr/slp 41.0 MB.
+  Not: ürün 78'de site başına 100 DEM clone dosyası da yayımlanıyor (bu fazda kullanılmıyor; CLONE_NOT_PRECOMPUTED korunuyor).
+- 10:50Z — `download_data.py`: resmi CATALOG (ürün 90: 80 m + ERR; ürün 78: Site01/Site04 surf/toterr/slp), bayraklar
+  `--include-lola-80m`, `--include-lola-80m-err`, `--include-site-5m`; doğrulayıcı kutup içermeyen site rasterlarında merkezden örnekler.
+  terrain_engine: ERR modunda ERR'si olmayan katman kullanılmaz ve `excluded_layers` ile raporlanır (aksi hâlde 80 m ERR inmeden
+  ERR analizleri GRAY'e düşerdi); `layer_resolution_m`; `raster_footprint`; eğim örnekleri `_slope_points`; HORIZON_SCHEMA=3.
+  `/sites`: `region_name` (PGDA README), ürün 78 sayfası, gerçek `footprint`. validation: V-06 LOD (katman çifti medyan sapma
+  < 5 m ölçütü önceden sabitlendi) + yeni **SLOPE-01** (resmi `_slp.tif` ile medyan |Δ| ≤ 2°, önceden sabitlendi) + uçtan uca eğim.
+- 10:52Z — `python -m pytest -q` → 68 passed (yeni: tests/test_lod_layers.py 6 — sentetik fikstür, işaretli).
+- 10:54Z — Site01_final_adj_5mpp_surf.tif staged (40,980,810 B = Content-Length): CRS Polar Stereographic B, küre 1737400 m,
+  3200×3200 × 5 m (16×16 km), NoData NaN, AREA_OR_POINT=Area, merkez (−89.46316°, −137.48955°), merkez kotu ~1939–1948 m.
+  Test konumu 2 (−89.4512, −137.1427) bu karonun içinde.
+- 10:55Z — Frontend mod ayrımı: Halk'ta "Gelişmiş görev ayarları" akordeonu (tampon/adım/yarıçap/err_k/karanlık eşiği/eğim/ayak izi),
+  KPI kartları, hikâye anlatımı, "Neden bu sonuç?", öne çıkarılmış Dünya–Ay kartı (Setup + Sky View); Mühendis'te tüm parametreler,
+  en üstte telemetri (frame, DEM katman+çözünürlük, h_DEM + h_obs → r, cache key, eğim) + ihlal UTC tablosu, Sky View ufuk
+  min/maks + panel–anten farkı + ERR bant genişliği, Timeline'da yükseklik grafiği üstte + JSON/CSV ham veri dışa aktarma.
+  **Karar:** CLAUDE.md "DEM_MISSING/SPICE_MISSING/GRAY… kodlarını kesinlikle gizleme" kuralı nedeniyle Halk modunda veri-eksikliği/
+  hata kodları (Notice çipi) gizlenmedi; gizlenenler ham durum etiketleri, metrik/provenance tabloları, cache key, ihlal kodları.
+- 10:57Z — `npx vitest run` → 85 passed (yeni: telemetry 8, ModeSeparation 6). tsc + lint temiz.
+- 10:58Z — Paralel indirme süreçleri (Claude): A `--include-site-5m` zinciri (log logs/download_faz6.log), B 80 m→80 m ERR
+  (logs/download_faz6_80m.log), C Site04 surf/slp/toterr (logs/download_faz6_site04.log), D 80 m ERR (logs/download_faz6_80m_err.log).
+  Bağlantı başına ~80–130 KB/s. Dosya kilidi çakışmayı önler; kesilirse aynı komut güvenle tekrar çalıştırılabilir.
+- 11:00Z — uvicorn yeniden başlatıldı (Faz 6 kodu). `/sites`: site01_5m region_name "Connecting ridge", ürün 78, footprint merkez (−89.46316, −137.48955).
+- 11:00Z — `npm run e2e` (gerçek backend): Halk akordeonu kapalı; Mühendis CSV (121 satır, ham sütunlar) + JSON gerçek indirme;
+  JSON `dem_layers=lola_240m=240m site01_5m=5m` → ufukta 5 m LOD kullanıldı; axe 10/10 ekran 0 ihlal; mobil taşma 0; konsol 0.
+- 11:03Z — **Gerçek HTTP API eğim analizleri** (Site01 karo merkezi, 2026-12-17 00:00Z, 48+12 sa; `logs/slope_api_runs.json`):
+  eğim maks 9.34° / ort 5.86° (site01_5m, Δ 5 m, 29 nokta, r 30 m). nominal + ≤10° → GRAY (nominal kuralı);
+  err + ≤10° → GREEN (gözlemci σ 0.253 m; site04_5m ERR'si o an yoktu → `excluded_layers`); err + ≤5° → RED (MAX_SLOPE nominal+ihtiyatlı).
+- 11:06Z — Site01 `_slp`, Site04 `_surf`/`_slp` staged. İndirme zinciri A, Site04 toterr ve 80 m için **aktif kilitleri görüp çakışan
+  indirme başlatmadan durdu** (EXIT_SITE=1 / EXIT_80M=1 — beklenen §11.3 davranışı; dosyalar B/C/D süreçlerince iniyor).
+- 11:07Z — Ön koşular: **SLOPE-01 PASS** — resmi PGDA `_slp.tif` ile 290 noktada medyan |Δ| 0.08° (ölçüt ≤ 2°; satır başına
+  0.02–0.24°); Site04 karo merkezi eğimi ~31–34° (Shackleton iç duvarı — karo merkezi iniş noktası değildir). Uçtan uca worker
+  analizi eğimi site01_5m'den `screening_only` olarak değerlendirdi. **V-06 PASS (80 m'siz ön koşu)**: site01−240 m medyan +0.63 m
+  (p95 9.8 m), site04−240 m −0.09 m (p95 8.0 m); LOD 1 km→site, 10/100 km→240 m. 80 m inince final koşu yapılacak.
+- 11:17Z — Site04 `_toterr` staged; tüm Site01/Site04 surf/toterr/slp dosyaları mevcut (her biri ~40.98 MB = Content-Length).
+- 11:21Z — **80 m DEM ilk deneme FAIL (gerçek kısmi aktarım):** `Size mismatch: received 187358688 bytes, server reported 189158392`.
+  İndirici dosyayı reddetti, `.part` silindi, eksik dosya yerleşmedi (yanlış-boyut koruması gerçek koşuda doğrulandı).
+- 11:23Z — PGDA `Accept-Ranges: bytes` + 206/`Content-Range` doğrulandı (curl). `download_data.py`'ye aynı çağrı içinde HTTP Range ile
+  devam eklendi (en fazla 4 deneme; 206 + Content-Range başlangıç/toplam ve ETag eşleşmeli; sunucu Range'i yok sayarsa baştan;
+  yetim `.part` hâlâ silinir). Yeni 6 test (işaretli mock): kesik aktarım devamı, ETag değişimi reddi, tutarsız Content-Range reddi,
+  Range yok sayılınca temiz yeniden başlama, akış ortasında bağlantı kopması, deneme sınırı. tests/test_download_lola.py 23 passed.
+- 11:24Z — 80 m DEM yeniden indirme başlatıldı (log logs/download_faz6_80m_retry.log); 80 m ERR süreci D devam ediyor.
+- 11:26Z — 80 m ERR staged (254,808,965 B). 11:31Z — 80 m DEM 2. deneme staged (189,158,392 B, devam gerekmedi).
+- 11:35Z — `python -m backend.validation` (ağ dahil) → **12/12 PASS** (A-04, V-01…V-10, SLOPE-01); `logs/validation_report_faz6.json`.
+  V-05 (5 m + 80 m LOD ile): site 2'de 135→200 km 0.762° / azimutların %10'u; 200→250 km 0. V-08: σ 0.059/0.278 m, bant ≤ 0.299°.
+- 11:36Z — ERR analizleri (2026-12-17, k=1) yeni katmanlarla yeniden: iki konum GREEN, /compare 200 iki GREEN baskın değil (`logs/err_mode_runs_faz6.json`).
+- 11:36Z — `npm run e2e` nominal (2 site, katmanlar 240/80/5/5 m) ve ERR (GREEN + Pareto) → geçti; axe 10/10 ekran 0 ihlal, mobil 0, konsol 0.
+  `npm run e2e:states` ilk denemede FAIL: "gerçek DEM_MISSING" adımı artık mevcut olan `lola_80m`'i seçiyordu → `lola_20m` ile düzeltildi → 8/8.
+- 11:37Z — **Final:** `python -m pytest -q` 75 passed · `npx vitest run` 85 passed · `npm run build` OK (349 kB) · `npm run lint` 0.
+- 11:39Z — **Faz 6 DONE**, yerel commit. Push yapılmadı (kullanıcı onayı bekleniyor).

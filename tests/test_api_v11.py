@@ -97,3 +97,21 @@ def test_cache_quota_prunes_oldest(tmp_path):
     left = sorted(p.name for p in tmp_path.glob('*.json'))
     assert removed == 3
     assert '0.json' in left and '4.json' in left
+
+
+def test_sites_v12_region_names_and_footprints():
+    """v1.2: PGDA region names and footprints from the raster's own georeferencing (null if absent)."""
+    from backend.config import DATASETS
+    with TestClient(app) as client:
+        sites = {s['id']: s for s in client.get('/sites').json()['sites']}
+    assert sites['site01_5m']['region_name'] == 'Connecting ridge'
+    assert sites['site04_5m']['region_name'] == 'Shackleton rim'
+    assert sites['site01_5m']['source_page'] == 'https://pgda.gsfc.nasa.gov/products/78'
+    assert sites['lola_80m']['source_page'] == 'https://pgda.gsfc.nasa.gov/products/90'
+    for name, site in sites.items():
+        if DATASETS[name]['path'].is_file():
+            fp = site['footprint']
+            assert set(fp) >= {'center', 'lat_range', 'width_km', 'height_km', 'contains_pole', 'pixel_size_m'}
+            assert fp['lat_range'][0] <= fp['center']['lat'] <= fp['lat_range'][1]
+        else:
+            assert site['footprint'] is None

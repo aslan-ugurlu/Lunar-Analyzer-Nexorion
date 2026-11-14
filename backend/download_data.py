@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import json
 import math
 import os
@@ -27,7 +28,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-from backend.config import DATA, LOLA, SPICE
+from backend.config import DATA, LOLA, SITES, SPICE
 
 URLS = {
     "naif0012.tls": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
@@ -46,6 +47,27 @@ LOLA_240M_URL = "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ.
 LOLA_240M_ERR_NAME = "LDEM_60S_240MPP_ADJ_ERR.TIF"
 LOLA_240M_ERR_URL = "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_ERR.TIF"
 LOLA_PRODUCT_PAGE = "https://pgda.gsfc.nasa.gov/products/90"
+SITE_PRODUCT_PAGE = "https://pgda.gsfc.nasa.gov/products/78"
+
+# Official PGDA file catalogue (checked 2026-11-14). Only these (name, url) pairs can be
+# downloaded from the network; nothing is built from user input.
+#  - product 90 (Barker et al. 2023): 80 m regional DEM + ERR, same directory as the 240 m files.
+#  - product 78 (Barker et al. 2021, PSS 203:105119): 5 m site DEMs. README: "_surf" = surface height Z
+#    in metres with interpolation filling empty pixels, "_toterr" = total Z RMS error (m),
+#    "_slp" = official slope map (deg). Site01 = Connecting ridge, Site04 = Shackleton rim.
+_P90 = "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/"
+_P78 = "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/"
+CATALOG = {
+    'lola_240m': (LOLA, LOLA_240M_NAME, LOLA_240M_URL, LOLA_PRODUCT_PAGE),
+    'lola_240m_err': (LOLA, LOLA_240M_ERR_NAME, LOLA_240M_ERR_URL, LOLA_PRODUCT_PAGE),
+    'lola_80m': (LOLA, 'LDEM_80S_80MPP_ADJ.TIF', _P90 + 'LDEM_80S_80MPP_ADJ.TIF', LOLA_PRODUCT_PAGE),
+    'lola_80m_err': (LOLA, 'LDEM_80S_80MPP_ADJ_ERR.TIF', _P90 + 'LDEM_80S_80MPP_ADJ_ERR.TIF', LOLA_PRODUCT_PAGE),
+}
+for _site in ('Site01', 'Site04'):
+    for _suffix, _kind in (('surf', ''), ('toterr', '_err'), ('slp', '_slp')):
+        _name = f'{_site}_final_adj_5mpp_{_suffix}.tif'
+        CATALOG[f'{_site.lower()}_5m{_kind}'] = (SITES, _name, f'{_P78}{_site}/{_name}', SITE_PRODUCT_PAGE)
+_CATALOG_PAIRS = {(name, url) for _, name, url, _ in CATALOG.values()}
 MOON_RADIUS_M = 1737400.0
 LOCK_STALE_SECONDS = 15 * 60       # a live download refreshes its lock at least every 30 s
 DISK_MARGIN_BYTES = 64 * 1024 * 1024
@@ -228,7 +250,7 @@ class DownloadLock:
 
 # --------------------------------------------------------------------------- GeoTIFF validation
 
-def validate_lola_geotiff(path: Path) -> dict:
+def validate_lola_geotiff(path: Path, require_pole: bool = True) -> dict:
     """Open with rasterio and check structure/metadata. Raises DownloadError when invalid.
 
     This is a structural/metadata validation, NOT a scientific accuracy validation.
@@ -263,25 +285,32 @@ def validate_lola_geotiff(path: Path) -> dict:
             raise DownloadError(f'CRS is not south polar stereographic (proj={proj.get("proj")}, lat_0={lat_0})')
         if ds.transform.determinant == 0:
             raise DownloadError('Degenerate affine transform')
-        # Read a small window around the south pole (transformed, not assumed at x=y=0).
+        # Read a small window around the south pole (transformed, not assumed at x=y=0);
+        # site-scale rasters (PGDA product 78) do not contain the pole -> sample their centre.
         import numpy as np
         from pyproj import Transformer
         from rasterio.windows import Window
         geo = CRS.from_proj4(f'+proj=longlat +a={a} +b={b} +no_defs')
         px, py = Transformer.from_crs(geo, crs, always_xy=True).transform(0.0, -90.0)
         row, col = ds.index(px, py)
-        if not (0 <= row < ds.height and 0 <= col < ds.width):
-            raise DownloadError('South pole lies outside the raster footprint')
+        pole_inside = 0 <= row < ds.height and 0 <= col < ds.width
+        if not pole_inside:
+            if require_pole:
+                raise DownloadError('South pole lies outside the raster footprint')
+            row, col = ds.height // 2, ds.width // 2
         c0, r0 = max(0, col - 8), max(0, row - 8)
         win = Window(c0, r0, min(16, ds.width - c0), min(16, ds.height - r0))
         sample = ds.read(1, window=win, masked=True).astype('float64').filled(math.nan)
         finite = sample[np.isfinite(sample)]
         if finite.size == 0:
-            raise DownloadError('No valid elevation pixels near the south pole')
+            raise DownloadError('No valid pixels in the validation sample window')
         lo, hi = float(finite.min()), float(finite.max())
         if lo < -20000 or hi > 20000:
-            raise DownloadError(f'Elevation sample outside plausible metres range: {lo}..{hi}')
+            raise DownloadError(f'Sample outside plausible metres/degrees range: {lo}..{hi}')
+        sample_info = {'min': lo, 'max': hi, 'n_valid': int(finite.size)}
         return {
+            'sample_location': 'south_pole' if pole_inside else 'raster_centre',
+            ('south_pole_sample_m' if pole_inside else 'centre_sample'): sample_info,
             'driver': ds.driver, 'dtype': ds.dtypes[0], 'width': ds.width, 'height': ds.height,
             'bands': ds.count, 'nodata': None if ds.nodata is None else float(ds.nodata),
             'crs_wkt_name': crs.name, 'projection_method': method or str(proj.get('proj')),
@@ -289,7 +318,7 @@ def validate_lola_geotiff(path: Path) -> dict:
             'sphere_radius_m': float(a),
             'pixel_size_m': [float(ds.transform.a), float(ds.transform.e)],
             'bounds_m': [float(v) for v in ds.bounds],
-            'south_pole_sample_m': {'min': lo, 'max': hi, 'n_valid': int(finite.size)},
+            'area_or_point': ds.tags().get('AREA_OR_POINT'),
             'units_note': 'PGDA product page states LDEM values are surface height in metres; '
                           'reference sphere radius taken from GeoTIFF CRS',
         }
@@ -305,28 +334,30 @@ def _content_length(response) -> int | None:
 def download_lola_240m(dest_dir: Path = LOLA, manifest_path: Path = DATA / 'manifest.json',
                        url: str = LOLA_240M_URL, opener=urllib.request.urlopen,
                        disk_usage=shutil.disk_usage, timeout: float = 120,
-                       log=print, name: str = LOLA_240M_NAME) -> dict:
+                       log=print, name: str = LOLA_240M_NAME, max_attempts: int = 4) -> dict:
     """Idempotently stage a PGDA LOLA GeoTIFF (default LDEM_60S_240MPP_ADJ.TIF).
 
     `name`/`url` are fixed constants from this module (never user input).
     Returns the manifest record.
     """
-    if (name, url) not in ((LOLA_240M_NAME, LOLA_240M_URL), (LOLA_240M_ERR_NAME, LOLA_240M_ERR_URL)) \
-            and opener is urllib.request.urlopen:
+    if (name, url) not in _CATALOG_PAIRS and opener is urllib.request.urlopen:
         raise DownloadError('Only catalogued PGDA products may be downloaded')
+    product_page = next((page for _, n, u, page in CATALOG.values() if (n, u) == (name, url)), LOLA_PRODUCT_PAGE)
+    # Site-scale rasters (product 78) do not contain the pole; validate them at their centre.
+    require_pole = dest_dir.name != SITES.name and 'Site' not in name
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / name
     part = dest.with_name(dest.name + '.part')
     lock = DownloadLock(dest.with_name(dest.name + '.download.lock'))
     manifest = _read_manifest(manifest_path)
-    record: dict = {'path': f'lola/{name}', 'url': url, 'product_page': LOLA_PRODUCT_PAGE,
+    record: dict = {'path': f'{dest_dir.name}/{name}', 'url': url, 'product_page': product_page,
                     'official_checksum': 'NOT_PUBLISHED_BY_PGDA',
                     'official_sha256_matched': False}
 
     if dest.exists():
         # Never overwrite an existing file silently; validate it instead.
         try:
-            meta = validate_lola_geotiff(dest)
+            meta = validate_lola_geotiff(dest, require_pole=require_pole)
         except DownloadError as exc:
             raise DownloadError(f'Existing {dest.name} failed validation ({exc}); '
                                 f'move it aside explicitly and retry') from None
@@ -345,49 +376,99 @@ def download_lola_240m(dest_dir: Path = LOLA, manifest_path: Path = DATA / 'mani
         if part.exists():
             log(f'[WARN] orphaned partial file {part.name} ({part.stat().st_size} bytes) discarded; restarting')
             part.unlink()
-        request = urllib.request.Request(url, headers={'User-Agent': 'LunarMissionWindowAnalyzer/1.0'})
         started = time.monotonic()
+        expected = None
+        etag = None
+        attempts = 0
+        resumed = 0
         try:
-            try:
-                response_cm = opener(request, timeout=timeout)
-            except urllib.error.HTTPError as exc:
-                raise DownloadError(f'HTTP {exc.code} from PGDA; download manually from {LOLA_PRODUCT_PAGE}') from None
-            except (urllib.error.URLError, TimeoutError, OSError) as exc:
-                raise DownloadError(f'Network unavailable ({type(exc).__name__}); retry later or download '
-                                    f'manually from {LOLA_PRODUCT_PAGE}') from None
-            with response_cm as response:
-                status = getattr(response, 'status', 200)
-                if status != 200:
-                    raise DownloadError(f'HTTP {status} from PGDA')
-                expected = _content_length(response)
-                if expected is None:
-                    raise DownloadError('Server did not report Content-Length; refusing unverifiable download')
-                free = disk_usage(dest_dir).free
-                if free < expected + DISK_MARGIN_BYTES:
-                    raise DownloadError(f'Insufficient disk space: need {expected + DISK_MARGIN_BYTES} bytes, '
-                                        f'free {free}')
-                log(f'[DOWNLOAD] {dest.name} ({expected / 1e6:.1f} MB reported by server)')
-                received = 0
-                last_report = 0.0
+            while True:
+                attempts += 1
+                have = part.stat().st_size if part.exists() else 0
+                headers = {'User-Agent': 'LunarMissionWindowAnalyzer/1.0'}
+                if have:
+                    headers['Range'] = f'bytes={have}-'
+                request = urllib.request.Request(url, headers=headers)
                 try:
-                    with part.open('wb') as out:
+                    response_cm = opener(request, timeout=timeout)
+                except urllib.error.HTTPError as exc:
+                    raise DownloadError(f'HTTP {exc.code} from PGDA; download manually from {LOLA_PRODUCT_PAGE}') from None
+                except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                    if have and attempts < max_attempts:
+                        log(f'[WARN] connection failed ({type(exc).__name__}); retrying from byte {have}')
+                        continue
+                    raise DownloadError(f'Network unavailable ({type(exc).__name__}); retry later or download '
+                                        f'manually from {LOLA_PRODUCT_PAGE}') from None
+                with response_cm as response:
+                    status = getattr(response, 'status', 200)
+                    remote_etag = response.headers.get('ETag')
+                    if have and status == 206:
+                        # Resume only if the server returns exactly the missing tail of the SAME file.
+                        crange = response.headers.get('Content-Range', '')
+                        try:
+                            unit, rest = crange.split(' ', 1)
+                            span, total = rest.split('/', 1)
+                            first = int(span.split('-', 1)[0])
+                            total = int(total)
+                        except ValueError:
+                            raise DownloadError(f'Malformed Content-Range {crange!r}; refusing to resume') from None
+                        if unit != 'bytes' or first != have or total != expected:
+                            raise DownloadError(f'Content-Range {crange!r} does not continue byte {have} of {expected}')
+                        if etag and remote_etag and remote_etag != etag:
+                            raise DownloadError('Remote file changed during download (ETag differs); restart later')
+                        mode = 'ab'
+                        resumed += 1
+                        log(f'[RESUME] {dest.name} from byte {have} (HTTP 206)')
+                    elif status == 200:
+                        length = _content_length(response)
+                        if length is None:
+                            raise DownloadError('Server did not report Content-Length; refusing unverifiable download')
+                        if expected is None:
+                            expected = length
+                            etag = remote_etag
+                            free = disk_usage(dest_dir).free
+                            if free < expected + DISK_MARGIN_BYTES:
+                                raise DownloadError(f'Insufficient disk space: need {expected + DISK_MARGIN_BYTES} bytes, '
+                                                    f'free {free}')
+                            log(f'[DOWNLOAD] {dest.name} ({expected / 1e6:.1f} MB reported by server)')
+                        elif length != expected or (etag and remote_etag and remote_etag != etag):
+                            raise DownloadError('Remote file changed between attempts; restart later')
+                        else:
+                            log(f'[RESTART] server ignored Range; downloading {dest.name} from the start')
+                        mode = 'wb'
+                    else:
+                        raise DownloadError(f'HTTP {status} from PGDA')
+                    received = part.stat().st_size if (mode == 'ab' and part.exists()) else 0
+                    last_report = 0.0
+                    stream_error = None
+                    with part.open(mode) as out:
                         while True:
-                            chunk = response.read(1024 * 1024)
+                            try:
+                                chunk = response.read(1024 * 1024)
+                            except (OSError, http.client.HTTPException) as exc:  # connection dropped mid-stream
+                                stream_error = exc
+                                break
                             if not chunk:
                                 break
-                            out.write(chunk)
+                            try:
+                                out.write(chunk)
+                            except OSError as exc:
+                                raise DownloadError(f'Write failed ({type(exc).__name__}: {exc.strerror or exc}); '
+                                                    f'check free disk space') from None
                             received += len(chunk)
                             now = time.monotonic()
                             if now - last_report > 5:
                                 log(f'  {received / 1e6:.1f}/{expected / 1e6:.1f} MB')
                                 last_report = now
-                except OSError as exc:
-                    raise DownloadError(f'Write failed ({type(exc).__name__}: {exc.strerror or exc}); '
-                                        f'check free disk space') from None
-            size = part.stat().st_size
-            if size != expected:
+                size = part.stat().st_size
+                if size == expected:
+                    break
+                if size < expected and attempts < max_attempts:
+                    why = type(stream_error).__name__ if stream_error else 'stream ended early'
+                    log(f'[WARN] incomplete transfer ({size}/{expected} bytes, {why}); resuming')
+                    continue
                 raise DownloadError(f'Size mismatch: received {size} bytes, server reported {expected}')
-            meta = validate_lola_geotiff(part)
+            meta = validate_lola_geotiff(part, require_pole=require_pole)
             os.replace(part, dest)
         finally:
             part.unlink(missing_ok=True)
@@ -395,8 +476,9 @@ def download_lola_240m(dest_dir: Path = LOLA, manifest_path: Path = DATA / 'mani
     record.update({'bytes': dest.stat().st_size, 'content_length': expected,
                    'sha256_local': sha256(dest), 'status': 'PRESENT_UNVERIFIED',
                    'validation': meta,
-                   'validation_scope': 'HTTP 200 + Content-Length match + rasterio structure/CRS/NoData/sample; '
-                                       'local SHA-256 is NOT publisher authentication',
+                   'validation_scope': 'HTTP 200 (+ 206 resume with matching Content-Range/ETag) + Content-Length match + '
+                                       'rasterio structure/CRS/NoData/sample; local SHA-256 is NOT publisher authentication',
+                   'attempts': attempts, 'resumed_transfers': resumed,
                    'download_seconds': round(time.monotonic() - started, 1),
                    'downloaded_utc': datetime.now(timezone.utc).isoformat()})
     manifest = _read_manifest(manifest_path)  # re-read: never clobber concurrent kernel records
@@ -443,21 +525,46 @@ def download_kernels(manifest_path: Path = DATA / 'manifest.json') -> None:
     print('SPICE files staged. SHA-256 is LOCAL provenance, not NASA authentication.')
 
 
+def download_product(key: str, **kwargs) -> dict:
+    """Download one catalogued PGDA file by catalogue key (see CATALOG)."""
+    dest_dir, name, url, _ = CATALOG[key]
+    return download_lola_240m(dest_dir=kwargs.pop('dest_dir', dest_dir), name=name, url=url, **kwargs)
+
+
+FLAG_PRODUCTS = {
+    'include_lola_240m': ['lola_240m'],
+    'include_lola_240m_err': ['lola_240m_err'],
+    'include_lola_80m': ['lola_80m'],
+    'include_lola_80m_err': ['lola_80m_err'],
+    'include_site_5m': ['site01_5m', 'site01_5m_err', 'site01_5m_slp', 'site04_5m', 'site04_5m_err', 'site04_5m_slp'],
+}
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog='python -m backend.download_data',
-                                     description='Stage NAIF kernels and optionally the PGDA LOLA 240 m DEM.')
+                                     description='Stage NAIF kernels and optionally official PGDA LOLA GeoTIFFs.')
     parser.add_argument('--include-lola-240m', action='store_true',
-                        help=f'also download {LOLA_240M_NAME} (~210 MB) from {LOLA_PRODUCT_PAGE}')
+                        help=f'also download {LOLA_240M_NAME} (~219 MB) from {LOLA_PRODUCT_PAGE}')
     parser.add_argument('--include-lola-240m-err', action='store_true',
-                        help=f'also download {LOLA_240M_ERR_NAME} (~255 MB; enables ERR sensitivity mode)')
+                        help=f'also download {LOLA_240M_ERR_NAME} (~267 MB; enables ERR sensitivity mode)')
+    parser.add_argument('--include-lola-80m', action='store_true',
+                        help=f'also download LDEM_80S_80MPP_ADJ.TIF (~189 MB) from {LOLA_PRODUCT_PAGE}')
+    parser.add_argument('--include-lola-80m-err', action='store_true',
+                        help='also download LDEM_80S_80MPP_ADJ_ERR.TIF (~255 MB; 80 m layer in ERR mode)')
+    parser.add_argument('--include-site-5m', action='store_true',
+                        help=f'also download Site01 + Site04 5 m surf/toterr/slp GeoTIFFs (6 x ~41 MB) from {SITE_PRODUCT_PAGE}')
     args = parser.parse_args(argv)
     download_kernels()
-    if args.include_lola_240m:
-        download_lola_240m()
-    if args.include_lola_240m_err:
-        download_lola_240m(name=LOLA_240M_ERR_NAME, url=LOLA_240M_ERR_URL)
-    if not (args.include_lola_240m or args.include_lola_240m_err):
-        print(f'LOLA GeoTIFFs not requested. Use --include-lola-240m or download manually from {LOLA_PRODUCT_PAGE}')
+    requested = [key for flag, keys in FLAG_PRODUCTS.items() if getattr(args, flag) for key in keys]
+    for key in requested:
+        if key == 'lola_240m':
+            download_lola_240m()  # default arguments (backwards compatible)
+        elif key == 'lola_240m_err':
+            download_lola_240m(name=LOLA_240M_ERR_NAME, url=LOLA_240M_ERR_URL)
+        else:
+            download_product(key)
+    if not requested:
+        print(f'LOLA GeoTIFFs not requested. Use --include-lola-240m (etc.) or download manually from {LOLA_PRODUCT_PAGE}')
 
 
 if __name__ == '__main__':
