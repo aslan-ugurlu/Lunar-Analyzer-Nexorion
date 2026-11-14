@@ -5,9 +5,9 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T09:40Z
-- **Faz:** Faz 0 DONE (84bf2f5) · Faz 1 DONE (1199213) · Faz 2 DONE (bc4cb58) · Faz 3 DONE (bu commit) → Faz 4
-- **Alt adım:** Compare + Data & Validation + erişilebilirlik/performans
+- **Zaman (UTC):** 2026-11-14T09:55Z
+- **Faz:** Faz 0–3 DONE · Faz 4 DONE (bu commit) → Faz 5 (README, final doğrulama)
+- **Alt adım:** README + son koşular; ERR indirmesi sürüyor (~180/267 MB)
 - **Durum:** IN_PROGRESS
 
 ## Tamamlanan iş
@@ -65,6 +65,10 @@
 | `npx vitest run` | 09:39Z | 0 | 70 passed (8 dosya) |
 | `npm run build` / `npm run lint` | 09:39Z | 0 / 0 | ana JS 315 kB, Plotly lazy 4.65 MB |
 | `python -m pytest -q` | 09:39Z | 0 | 55 passed |
+| `python -m backend.validation` | 09:28Z | 0 | 9 PASS, 2 BLOCKED (V-06, V-08); A-04 ağ ile PASS |
+| `npm run e2e` (+ axe-core) | 09:52Z | 0 | Halk/Mühendis × 5 sekme = 10 tarama, **0 axe ihlali** (ilk koşuda 1: scrollable-region-focusable → düzeltildi); gerçek /compare; 429 RATE_LIMITED UX gerçek sunucuda görüldü |
+| `python -m pytest -q` | 09:54Z | 0 | 59 passed |
+| `npx vitest run` / build / lint | 09:54Z | 0 | 71 passed / OK / 0 sorun |
 
 ## Veri durumu
 | Dosya | Durum | Boyut (bayt) | Kaynak | Doğrulama |
@@ -91,19 +95,22 @@
 - İlgisiz: `@21st-dev/magic` MCP node süreçleri (PID 15336, 58236) — dokunulmayacak.
 
 ## Bilimsel doğrulama
-| Test | Durum | Kanıt / risk |
+Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Data & Validation). Son tam koşu 2026-11-14T09:28Z
+(ağ dahil, çıkış 0); kopya `logs/validation_report_*.json`. PASS yalnızca kayıtlı vaka ve ölçütleri kapsar.
+
+| Test | Durum | Kanıt / kalan risk |
 |---|---|---|
-| A-04 Horizons | PASS (sınırlı) | 3 site × 2 cisim, maks 3.3e-7°; sentetik yükseklik, 3 tarih; arazi doğrulaması değil |
-| V-01 veri kaynakları + kernel kapsamı | NOT_RUN | |
-| V-02 frame/koordinat uyumu | NOT_RUN | |
-| V-03 UTC dönüşümü | PASS (sınırlı) | tests/test_spice_time.py: 3 tarih, bağımsız TT−UTC=69.184 s, tol 0.01 s |
-| V-04 Horizons karşılaştırması | PASS (sınırlı) | = A-04 |
-| V-05 ufuk 135/200/250 km | NOT_RUN | DEM yok |
-| V-06 raster LOD/NoData | NOT_RUN | DEM yok |
-| V-07 Güneş diski quadrature yakınsaması | NOT_RUN | |
-| V-08 ERR/clone | NOT_RUN | ERR yok, clone yok |
-| V-09 kısıt doğruluğu | NOT_RUN | |
-| V-10 izlenebilirlik | NOT_RUN | |
+| A-04 Horizons | PASS (sınırlı) | 3 site × Güneş/Dünya, 3 tarih; maks ayrım 4.14e-7° (eşik 0.005°). Horizons: `MEAN_ME`, küre 1737.4. Yükseklikler sentetik; tüm yıl/arazi kanıtı değil |
+| V-01 kaynak + kernel kapsamı | PASS | de440s: Sun/Earth/Moon/EMB 1849–2150; moon_pa bpc 1550–2650 ⊇ 2026–2035; LOLA manifest kaydı |
+| V-02 frame/koordinat | PASS | MOON_ME_DE440_ME421 (id 31009); PA→ME 103.9″ (2026-12-01); raster "Moon (2015) Sphere / Ocentric / South Polar", R 1737400, kutup (0,0), +90°E → +x |
+| V-03 UTC→ET | PASS | 4 tarih, bağımsız TT−UTC = 69.184 s ile < 0.01 s; 2035'e kadar yeni artık saniye olmadığı varsayımı |
+| V-04 Horizons | PASS (sınırlı) | = A-04 |
+| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0.0000° (eğrilik ≥3.3° düşürür); **135→200 km zirvede 0.457°, azimutların %7.1'i** → 135 km hızlı mod yüksek konumlarda yetersiz olabilir |
+| V-06 LOD/NoData | BLOCKED | NoData NaN olarak yayılıyor (sıfırla doldurma yok), 260 km kutusunda NaN piksel 0; LOD geçişi test edilemedi (yalnız 240 m var) |
+| V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı 27 ofset, maks hata 0.0028 (< 0.01); eğri arazi kapsanmadı |
+| V-08 ERR/clone | BLOCKED | ERR dosyası henüz inmedi; clone verisi yok → CLONE_NOT_PRECOMPUTED |
+| V-09 kısıt doğruluğu | PASS | elle hesaplanmış girdilerde en uzun koşu, min/maks sınırları, SLOPE_UNKNOWN |
+| V-10 izlenebilirlik | PASS | gerçek 24 sa analiz (site 2): sources/cache_key/radius/mode/disclaimers/UTC Z mevcut; nominal → GRAY (GREEN değil) |
 
 ## §11 kabul girdileri
 | Madde | Durum |
@@ -115,8 +122,8 @@
 | 11.5 Dünya vs Ay kartı | PASS: NSSDC Earth/Moon fact sheet, NASA SVS 5229, NASA Science (kaynaklar 2026-11-14 kontrol); 4 test (metin, linkler, yalnız Halk modu, karar motorundan bağımsızlık) |
 
 ## Blokajlar ve bir sonraki tam adım
-- Sonraki: Faz 4 — `ComparePanel.tsx` (/compare, priority, INCOMPARABLE, site linkleri), `DataValidation.tsx` (/health, /sites,
-  /validation, kaynaklar, sınırlamalar), erişilebilirlik kontrolleri. Ölçüt: iki gerçek analizle /compare çağrısı UI'da görünür.
+- Sonraki: Faz 5 — README (kurulum, veri, komutlar, sınırlamalar, test durumu, demo), son pytest/vitest/build/e2e,
+  ERR inerse `python -m backend.validation` ile V-08 ve bir `err` modu analizi.
 
 ## Olay günlüğü (append-only)
 - 2026-11-14T08:38Z — Faz 0 başladı; denetim yapıldı; PROGRESS.md oluşturuldu.
@@ -158,6 +165,9 @@
   tıklayarak seçim, klavye kaydırıcı, mühendis yükseklik grafiği, /scenarios/shift + polling, ebeveyn korunur).
   E2E'de bulunan ve düzeltilen hatalar: mobil 300 px taşma, MIN_* ihlallerinde ters karşılaştırma işareti, zoom'da eksen etiketi
   kaybı/elips disk, kayma sonrası ebeveynden otomatik atlama, Türkçe yüzde ekleri.
+- 09:55Z — **Faz 4 DONE**: Compare (yalnız aynı profil seçilebilir, backend sıralama anahtarları açıklanır, RED/GRAY gerekçeli
+  kartlar, deep-link'ler), Data & Validation (/health, /sites, gerçek /validation raporu, kaynaklar, sınırlamalar),
+  `backend/validation.py`, axe-core 0 ihlal, mobil taşma 0, Plotly lazy chunk.
 - 09:22Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
   404→lost, unmount cleanup), sonuç özeti (Halk/Mühendis, ihlal UTC aralıkları, provenance, kopyalanabilir özet).
   Testler: polling 4, gerçek-fikstür ResultSummary 4 (mod değişimi kararı değiştirmiyor).

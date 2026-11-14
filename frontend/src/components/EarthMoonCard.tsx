@@ -57,7 +57,7 @@ export function EarthMoonCard() {
         Eğitim kartı: sabit fiziksel farklar, yaklaşık değerler. Bu kart hiçbir hesaba girmez ve analiz kararını etkilemez;
         gerçek zamanlı Dünya simülasyonu veya konum bilgisi kullanmaz.
       </p>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Dünya–Ay karşılaştırma tablosu (yatay kaydırılabilir)">
         <table className="w-full min-w-[520px] text-left text-sm">
           <caption className="sr-only">Dünya ve Ay karşılaştırması</caption>
           <thead className="text-xs uppercase tracking-wider text-muted">

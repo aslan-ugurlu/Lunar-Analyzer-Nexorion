@@ -68,7 +68,7 @@ function PublicAnswers({ scenario }: { scenario: Scenario }) {
 
 function EngineerTable({ mission }: { mission: Mission }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Senaryo metrik tablosu (yatay kaydırılabilir)">
       <table className="w-full min-w-[640px] text-left text-xs">
         <caption className="sr-only">Senaryo ve varyant metrikleri</caption>
         <thead className="text-muted">

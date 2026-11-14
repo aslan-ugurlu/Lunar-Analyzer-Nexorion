@@ -4,6 +4,7 @@
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5173';
 const OUT = process.argv[2] ?? '../logs/e2e';
@@ -78,6 +79,45 @@ try {
   const decisionEngineer = await page.locator('[data-decision]').first().getAttribute('data-decision');
   note(`decision after mode switch: ${decisionEngineer} (badges on timeline tab: ${decision2})`);
   if (decisionEngineer !== decision) throw new Error('Decision changed when switching mode!');
+
+  // Real /compare between the two site analyses (same mission profile).
+  await page.getByRole('tab', { name: 'Compare' }).click();
+  // The two site analyses share one mission profile; the shift child (different shifts) must not be mixed in.
+  const siteBoxes = page.locator('label', { hasNotText: 'kayma' }).locator('input[type=checkbox]');
+  const boxes = await siteBoxes.count();
+  if (boxes >= 2) {
+    await siteBoxes.nth(0).check();
+    await siteBoxes.nth(1).check();
+    await page.getByRole('button', { name: /^Karşılaştır \(2\)$/ }).click();
+    await page.getByRole('heading', { name: /Sıralama dışı bırakılanlar/ }).waitFor({ timeout: 20000 });
+    note(`compare rendered; disabled (incomparable) checkboxes: ${await page.locator('input[type=checkbox][disabled]').count()}`);
+    await page.screenshot({ path: join(OUT, '09_compare.png'), fullPage: true });
+  } else {
+    note(`compare skipped: only ${boxes} comparable analyses`);
+  }
+  await page.getByRole('tab', { name: 'Data & Validation' }).click();
+  await page.getByRole('heading', { name: /Bilimsel doğrulama/ }).waitFor();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: join(OUT, '10_data_validation.png'), fullPage: true });
+
+  // Automated accessibility scan (axe-core) on every tab in both modes.
+  await page.addScriptTag({ path: fileURLToPath(new URL('../node_modules/axe-core/axe.min.js', import.meta.url)) });
+  const axeSummary = [];
+  for (const mode of ['Halk', 'Mühendis']) {
+    await page.getByRole('button', { name: mode }).click();
+    for (const tab of ['Mission Setup', 'Sky View', 'Timeline', 'Compare', 'Data & Validation']) {
+      await page.getByRole('tab', { name: tab }).click();
+      await page.waitForTimeout(700);
+      const res = await page.evaluate(async () => {
+        const r = await window.axe.run(document, { resultTypes: ['violations'] });
+        return r.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, sample: v.nodes[0]?.target?.join(' ') }));
+      });
+      axeSummary.push({ mode, tab, violations: res });
+      const serious = res.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+      note(`axe ${mode}/${tab}: ${res.length} rule(s) violated, serious/critical: ${serious.map((v) => `${v.id}×${v.nodes}`).join(', ') || 'none'}`);
+    }
+  }
+  writeFileSync(join(OUT, 'axe.json'), JSON.stringify(axeSummary, null, 2), 'utf-8');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(500);

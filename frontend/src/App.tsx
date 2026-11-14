@@ -5,6 +5,8 @@ import { MissionSetup } from './components/MissionSetup';
 import { SkyView } from './components/SkyView';
 import { TimelineView } from './components/TimelineView';
 import { CursorProvider } from './state/Cursor';
+import { ComparePanel } from './components/ComparePanel';
+import { DataValidation } from './components/DataValidation';
 import { Header } from './components/Header';
 import { Tabs, TabPanel, type TabDef } from './components/Tabs';
 import { Notice, ExternalLink } from './components/ui';
@@ -64,13 +66,12 @@ function Shell() {
         <TabPanel id="timeline" active={tab === 'timeline'}>
           <TimelineView />
         </TabPanel>
-        {TABS.filter((t) => !['setup', 'sky', 'timeline'].includes(t.key)).map((t) => (
-          <TabPanel key={t.key} id={t.key} active={tab === t.key}>
-            <div className="panel">
-              <p className="text-sm text-muted">{t.label} — yapım aşamasında.</p>
-            </div>
-          </TabPanel>
-        ))}
+        <TabPanel id="compare" active={tab === 'compare'}>
+          <ComparePanel />
+        </TabPanel>
+        <TabPanel id="data" active={tab === 'data'}>
+          <DataValidation health={health.data} healthError={health.error} sites={sites.data} />
+        </TabPanel>
       </main>
       <footer className="border-t border-line px-4 py-4 text-xs text-muted">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
