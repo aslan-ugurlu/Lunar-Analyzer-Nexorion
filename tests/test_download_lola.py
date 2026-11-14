@@ -335,3 +335,36 @@ def test_gives_up_after_max_attempts(env, tmp_path):
     with pytest.raises(dd.DownloadError, match='Size mismatch'):
         dd.download_lola_240m(dest_dir=env[0], manifest_path=env[1], opener=ScriptedOpener(short),
                               disk_usage=big_disk, log=lambda *_: None, max_attempts=3)
+
+
+def test_manifest_sharing_violation_is_retried_not_reported_as_invalid(tmp_path, monkeypatch):
+    """Windows parallel downloads: a transient PermissionError on read/replace must be retried."""
+    from backend import download_data as dd
+    m = tmp_path / 'manifest.json'
+    m.write_text('{"lola": {"a": 1}}', encoding='utf-8')
+    real_read = type(m).read_text
+    calls = {'read': 0, 'replace': 0}
+
+    def flaky_read(self, *a, **k):
+        calls['read'] += 1
+        if calls['read'] < 3:
+            raise PermissionError(5, 'Access is denied')
+        return real_read(self, *a, **k)
+    monkeypatch.setattr(type(m), 'read_text', flaky_read)
+    monkeypatch.setattr(dd.time, 'sleep', lambda s: None)
+    assert dd._read_manifest(m) == {'lola': {'a': 1}}
+    real_replace = dd.os.replace
+
+    def flaky_replace(src, dst):
+        calls['replace'] += 1
+        if calls['replace'] < 3:
+            raise PermissionError(5, 'Access is denied')
+        return real_replace(src, dst)
+    monkeypatch.setattr(dd.os, 'replace', flaky_replace)
+    dd._write_manifest(m, {'lola': {'b': 2}})
+    assert calls['replace'] == 3
+    assert not list(tmp_path.glob('manifest.json.*.part'))
+    monkeypatch.setattr(type(m), 'read_text', real_read)
+    m.write_text('{not json', encoding='utf-8')
+    with pytest.raises(IOError, match='invalid JSON'):
+        dd._read_manifest(m)

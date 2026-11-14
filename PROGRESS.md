@@ -380,3 +380,11 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   site karolarında "yayımlanmıyor" (PGDA ürün 78 EFFRES yayımlamaz; açıklama ipucunda), indirilmemiş katmanlarda "indirilmedi".
   README: doğrulama tablosu (A-04 14 durum, V-05/V-08 7 konum, V-07 eğri ufuk), YELLOW araştırması bölümü, EFFRES yorumu, API v1.3 satırları.
   Clone indirmesi sürüyor (≈42/100).
+- 20:59Z — Kullanıcı yavaşlığı sordu; ölçüm: genel internet 5.7 MB/s (Cloudflare 20 MB), PGDA tek bağlantı 0.32 MB/s (sunucu tarafı
+  bağlantı başı sınır). Clone indirmesi 3 → 6 paralel sürece çıkarıldı (36–40, 64–70, 95–100 ek süreçler; kilitli). Hız ≈ 1.5 clone/dk.
+- 21:15–21:27Z — Altı süreç tekrar tekrar `Network unavailable (URLError)` aldı (bağlantı gidip geldi; döngüler 60 sn'de bir denedi,
+  bu arada 80 → 86 clone). **Ayrıca gerçek bir hata bulundu:** Windows'ta 6 süreç aynı `manifest.json`'u okuyup değiştirirken
+  paylaşım ihlali (WinError 5) → 3 süreçte `os.replace` başarısız, 2 süreçte okuma kilidi yanlışlıkla "manifest geçersiz" diye raporlandı.
+  Manifest bozulmadı (geçerli JSON; 86 clone kaydı = diskteki 86 dosya). Düzeltme: okuma ve değiştirmede PermissionError için kısa
+  yeniden deneme; yalnız gerçek JSON hatası "geçersiz"; yeni test. Ölü süreçlerin 3 geçici manifest dosyası silindi.
+- 21:28Z — pytest `tests/test_download_lola.py` 24 passed. İndirme 86/100, döngüler yeni kodla devam ediyor.

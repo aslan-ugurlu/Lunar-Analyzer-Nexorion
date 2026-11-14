@@ -141,20 +141,41 @@ def atomic_download(url: str, dest: Path) -> None:
 
 # --------------------------------------------------------------------------- manifest
 
+# Windows denies reading/replacing a file another process has open (WinError 5 / 32). With parallel
+# downloads that is a transient sharing violation, not corruption: retry briefly, then fail clearly.
+_SHARING_RETRIES = 40
+
+
 def _read_manifest(manifest_path: Path) -> dict:
-    if not manifest_path.exists():
-        return {}
-    try:
-        return json.loads(manifest_path.read_text(encoding='utf-8'))
-    except (ValueError, OSError):
-        raise IOError('Existing manifest is invalid; preserve and examine before continuing')
+    for attempt in range(_SHARING_RETRIES):
+        if not manifest_path.exists():
+            return {}
+        try:
+            text = manifest_path.read_text(encoding='utf-8')
+        except PermissionError:
+            time.sleep(0.05 * (attempt + 1))
+            continue
+        except OSError:
+            raise IOError('Manifest could not be read; preserve and examine before continuing') from None
+        try:
+            return json.loads(text)
+        except ValueError:
+            raise IOError('Existing manifest is invalid JSON; preserve and examine before continuing') from None
+    raise IOError('Manifest is locked by another process (sharing violation persisted); retry later')
 
 
 def _write_manifest(manifest_path: Path, manifest: dict) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = manifest_path.with_name(f'{manifest_path.name}.{os.getpid()}.part')  # per-process: parallel downloads
     tmp.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf-8')
-    os.replace(tmp, manifest_path)
+    for attempt in range(_SHARING_RETRIES):
+        try:
+            os.replace(tmp, manifest_path)
+            return
+        except PermissionError:
+            time.sleep(0.05 * (attempt + 1))
+    tmp.unlink(missing_ok=True)
+    raise IOError('Manifest is locked by another process (sharing violation persisted); retry later')
 
 
 # --------------------------------------------------------------------------- process / lock
