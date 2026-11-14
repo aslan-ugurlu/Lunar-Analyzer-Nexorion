@@ -34,7 +34,7 @@
 - `backend/* (1).py` dosyaları ilgili dosyaların **bayt bayt aynısı** (`cmp` ile doğrulandı) — tarayıcı
   kopyası olduğu değerlendiriliyor; commit edilmiyor, silinmedi (kullanıcı kararı).
 - **2026-11-14T13:17Z güncel:** kullanıcı talimatıyla 7 `(1).py` dosyası proje dışına taşındı:
-  `C:\Users\mehme\Documents\NasaSpaceApp2026_yedek\backend_ilk_teslim_kopyalari_2026-11-14\` (+ `SHA256SUMS.txt`, `NEDEN.txt`).
+  `%USERPROFILE%\Documents\NasaSpaceApp2026_yedek\backend_ilk_teslim_kopyalari_2026-11-14\` (+ `SHA256SUMS.txt`, `NEDEN.txt`).
   AST karşılaştırması: yalnız `(1)` sürümünde olan fonksiyon/sınıf/endpoint **yok**; farklı satırlar Faz 0+ ile düzeltilmiş
   eski mantık (eski Horizons başlık ayrıştırıcısı, eski `local_slope`, eski havuz yaşam döngüsü, eski NAIF `main()`).
   `decision_engine (1).py` = commit `84bf2f5` sürümü. Çalışma ağacı temiz.
@@ -408,3 +408,12 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 21:52Z — **Final:** `python -m pytest -q` **93 passed** · `npx vitest run` **97 passed** · `npm run lint` 0 · `npm run build` OK (361 kB).
   README: clone modu, CLONE-01/EFFRES-01 satırları, test sayıları, bilinen eksikler güncellendi.
 
+
+### Faz 8 — kullanıcı talimatı (2026-11-14T22:03Z): P1 kabul; push onayı, eski backend korunur, bilimsel sonuçların belgelenmesi
+- 22:05Z — **Push öncesi güvenlik kontrolü:** izlenen ağaçta ve TÜM geçmişte `data/`, `logs/`, `*.tif/TIF`, `*.bsp/bpc/tls/tpc/tf`, `*.npz/npy`,
+  `*.part`, `*.lock`, `.env`, `node_modules`, `dist`, `__pycache__`, `clone_profiles` **yok**; geçmişteki en büyük blob 245 kB
+  (`frontend/package-lock.json`). Gizli bilgi desenleri (API anahtarı, token, parola, özel anahtar, `ghp_`, `sk-`, `AKIA`) izlenen
+  dosyalarda ve geçmişte eklenen satırlarda **yok**; `.env.example` yalnız örnek. Bulgu: PROGRESS.md'deki yedek klasörü yolu yerel Windows
+  kullanıcı adını içeriyordu (7.1'de `d943820` ile zaten itildi; geçmiş yeniden yazılmadı) → güncel dosyada `%USERPROFILE%` yapıldı.
+  `.gitignore` önleyici eklemeler: `*.npz`, `*.npy`, `*.download.lock`, `.env.*` (`!.env.example`), `frontend/e2e/_tmp_*`,
+  `playwright-report/`, `test-results/` (izlenen dosya etkilenmedi).

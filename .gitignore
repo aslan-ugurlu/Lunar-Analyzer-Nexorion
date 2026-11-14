@@ -32,3 +32,13 @@ data/
 # --- Local logs (test evidence summaries live in PROGRESS.md) ---
 logs/
 *.log
+
+# --- Faz 7: derived clone profiles, download locks, local test artefacts (normally under data/ or logs/) ---
+*.npz
+*.npy
+*.download.lock
+.env.*
+!.env.example
+frontend/e2e/_tmp_*
+playwright-report/
+test-results/
