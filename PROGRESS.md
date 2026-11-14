@@ -338,24 +338,25 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 13:52Z — Testler: `python -m pytest -q` **92 passed** · `npx vitest run` **96 passed** · lint 0 · tsc 0.
   `python -m backend.scenario_search --days-step 150` kısa deneme çalıştı (21 analiz/7 konum; tam koşu veri inince).
 - 13:54Z — Düzeltme: 7.3 kayıtlarındaki 13:45Z–14:12Z zaman damgaları tahminle ileri tarihli yazılmıştı; dosya mtime'larına göre düzeltildi (≈ = yaklaşık).
-- 13:57Z — Site07/11/23 (9 dosya) indirildi + yapısal/CRS PASS. Değer kontrolü: Site07/11 3200² × 5 m, Site23 4200² × 5 m (21 × 21 km);
+- 13:53Z — Site07/11/23 (9 dosya) indirildi + yapısal/CRS PASS. Değer kontrolü: Site07/11 3200² × 5 m, Site23 4200² × 5 m (21 × 21 km);
   tümü %100 sonlu. Site23 `toterr` 0.071–10.5 m (medyan 0.465 m): ürün 78 sayfasındaki "Site23'te hata tahmini yok" notu güncel değil görünüyor.
-- ≈13:58Z — V-05 (gerçek, 7 konum) **PASS**: 200→250 km değişim 0° her konumda; 135→200 km maks 1.509° (Site11 merkezi, azimutların
+- 13:53Z — V-05 (gerçek, 7 konum) **PASS**: 200→250 km değişim 0° her konumda; 135→200 km maks 1.509° (Site11 merkezi, azimutların
   %13.9'u), Site07 1.149°, ridge 0.762°, Site23 0.503°. V-07 **PASS**: düz analitik maks 0.0028; gerçek eğri ufuklarda 3 konumda
   321 kısmi örtülme örneği, yoğun Kartezyen referansa göre maks |Δ| 0.0060, medyan 0.00055 (ölçüt < 0.01).
-- ≈14:00Z — Clone zamanlaması: Site01 merkezi, clone #1 ile tam profil 2.1 s (nominal 1.9 s); gözlemci kotu 1944.832 → 1944.981 m,
+- ≈13:55Z — Clone zamanlaması: Site01 merkezi, clone #1 ile tam profil 2.1 s (nominal 1.9 s); gözlemci kotu 1944.832 → 1944.981 m,
   ufuk farkı maks 0.281°, medyan 0.027°. İndirme hızı için Site01 clone indirmesi 3 sürece bölündü (1–40 / 41–70 / 71–100; kilitli);
   manifest geçici dosyası süreç başına ayrıldı. Test kopyası: uvicorn :8001 + Vite :5174 (kullanıcının :8000/:5173'üne dokunulmadı).
-- 14:13Z — **YELLOW araştırması (önceden sabit tasarım, `python -m backend.scenario_search --days-step 3`)**: 7 konum × 121 iniş
+- 13:54–13:58Z — **YELLOW araştırması (önceden sabit tasarım, `python -m backend.scenario_search --days-step 3`)**: 7 konum × 121 iniş
   (2026-12-01 … 2027-11-26, 3 günde bir), 48 + 12 sa, ERR k=1, 200 km, 4/4 m, +0/24/48/72 sa → `logs/scenario_search_faz7.json` (240 s).
   - `form_default` (karanlık ≤ 8 sa, Güneş ≥ %50, DTE ≥ %50, DTE kesintisi ≤ 8 sa): RED 729 · GREEN 110 · **YELLOW 8**.
   - `sun_only` (karanlık ≤ 8 sa, Güneş ≥ %50): RED 513 · GREEN 314 · **YELLOW 20**.
   - YELLOW konumları: Site01, Site07, Site11, Site23 merkezleri (iki sabit test noktasında ve Site04 merkezinde YELLOW yok).
     Sebepler: MIN_ILLUMINATION, MAX_DARKNESS ve MAX_DTE_GAP (yalnız ihtiyatlı ERR +1σ ufkunda).
   - Kural kopyası kontrolü: `form_default` için betiğin yeniden sınıflandırması her analizde `analyze_mission` kararıyla aynı (assert).
-- 14:15Z — Hata düzeltmesi: önbellekten okunan ufuklar eski `excluded_layers` notunu taşıyordu (profil değerleri etkilenmez) →
+- 13:58Z — Hata düzeltmesi: önbellekten okunan ufuklar eski `excluded_layers` notunu taşıyordu (profil değerleri etkilenmez) →
   önbellek okumasında güncel bağlamdan yeniden yazılıyor.
-- 14:16Z — **YELLOW gerçek API'de doğrulandı** (:8001, `logs/yellow_api_faz7.json`): Site01 merkezi, `site01_5m`, 2027-11-14T00:00Z,
+- 13:59Z — **YELLOW gerçek API'de doğrulandı** (:8001, `logs/yellow_api_faz7.json`): Site01 merkezi, `site01_5m`, 2027-11-14T00:00Z,
   ERR k=1, form varsayılanları → **YELLOW**; nominal ihlal yok, ihtiyatlı `MAX_DTE_GAP` 41,400 s > 28,800 s (+72 sa senaryosu
   2027-11-17 00:00 → 2027-11-19 12:00Z; nominal kesinti 7.0 sa, ihtiyatlı 11.5 sa). Eğim ≤ 10° ile de YELLOW (maks 9.34°);
   aynı istek nominal modda GRAY. Tarayıcı (:5174) → YELLOW rozeti, mod geçişinde değişmedi, axe 0, mobil 0, konsol 0 (`logs/e2e_yellow_faz7/`).
+- 14:00Z — Düzeltme (ikinci kez): 13:57Z–14:16Z kayıtları yine tahminle ileri tarihli yazılmıştı; dosya mtime'larıyla düzeltildi. Bundan sonra her kayıttan önce `date -u` alınıyor.
