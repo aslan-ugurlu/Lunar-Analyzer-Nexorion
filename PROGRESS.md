@@ -5,10 +5,10 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T11:39Z
-- **Faz:** Faz 6 (P1) DONE — 80 m + 5 m site DEM, V-06 LOD, 5 m eğim; Halk/Mühendis ayrımı
-- **Alt adım:** Final commit (yerel; push kullanıcı onayı bekliyor)
-- **Durum:** DONE
+- **Zaman (UTC):** 2026-11-14T13:20Z
+- **Faz:** Faz 7 (P1-2) — (1) `(1).py` temizliği + push, (2) Halk hata UX + 200 km GREEN kuralı, (3) EFFRES/Site07-11-23/YELLOW/doğrulama kapsamı, clone modu
+- **Alt adım:** 7.1 temizlik + push
+- **Durum:** IN_PROGRESS (Faz 0–6 kullanıcı tarafından kabul edildi, 2026-11-14)
 
 ## Tamamlanan iş
 - Talimat dosyaları okundu: `CLAUDE.md`, `CLAUDE_DEVIR_TALIMATI.md` (§0–§10).
@@ -33,6 +33,11 @@
 - Çalışma ağacında `backend/download_data.py` değişmiş, geri kalan backend/tests/doküman dosyaları izlenmiyor.
 - `backend/* (1).py` dosyaları ilgili dosyaların **bayt bayt aynısı** (`cmp` ile doğrulandı) — tarayıcı
   kopyası olduğu değerlendiriliyor; commit edilmiyor, silinmedi (kullanıcı kararı).
+- **2026-11-14T13:17Z güncel:** kullanıcı talimatıyla 7 `(1).py` dosyası proje dışına taşındı:
+  `C:\Users\mehme\Documents\NasaSpaceApp2026_yedek\backend_ilk_teslim_kopyalari_2026-11-14\` (+ `SHA256SUMS.txt`, `NEDEN.txt`).
+  AST karşılaştırması: yalnız `(1)` sürümünde olan fonksiyon/sınıf/endpoint **yok**; farklı satırlar Faz 0+ ile düzeltilmiş
+  eski mantık (eski Horizons başlık ayrıştırıcısı, eski `local_slope`, eski havuz yaşam döngüsü, eski NAIF `main()`).
+  `decision_engine (1).py` = commit `84bf2f5` sürümü. Çalışma ağacı temiz.
 
 ## Dosya envanteri
 | Yol | İşlem | Gerekçe |
@@ -265,3 +270,10 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   `npm run e2e:states` ilk denemede FAIL: "gerçek DEM_MISSING" adımı artık mevcut olan `lola_80m`'i seçiyordu → `lola_20m` ile düzeltildi → 8/8.
 - 11:37Z — **Final:** `python -m pytest -q` 75 passed · `npx vitest run` 85 passed · `npm run build` OK (349 kB) · `npm run lint` 0.
 - 11:39Z — **Faz 6 DONE**, yerel commit. Push yapılmadı (kullanıcı onayı bekleniyor).
+
+### Faz 7 — kullanıcı talimatı (2026-11-14T13:15Z): P0 + Faz 6 kabul; temizlik + push, Halk hata UX + 200 km kuralı, bilimsel P1
+- 13:17Z — `backend/* (1).py` (7 dosya) AST/satır karşılaştırması: eksik önemli işlev yok (bkz. "Git durumu"); proje dışı
+  yedek klasörüne taşındı (SHA-256 listesiyle). `git status` temiz.
+- 13:18Z — Push öncesi kontrol: `.gitignore` `data/`, `*.TIF`/`*.tif`, `*.bsp`, `*.bpc`, `logs/`, `node_modules/` içeriyor
+  (`git check-ignore -v` örnekleri doğruladı); `git ls-files` içinde `data/`/`logs/` yok; gönderilecek aralıkta (`origin/main..HEAD`)
+  yasak yol yok, en büyük blob 29.6 kB (`PROGRESS.md`).
