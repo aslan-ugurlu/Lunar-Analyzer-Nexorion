@@ -133,6 +133,24 @@ Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **h
 - Eğim: ≤ 20 m DEM gerekir; yoksa `SLOPE_UNKNOWN` → GRAY. Eğim iniş güvenliği değildir.
 - Zaman serisi örneklenmiştir; geçiş anları adım içinde belirsizdir. 200 km tarama eksiksizlik kanıtı değildir; 0.1° örnekleme tek başına %2 doğruluk garantisi değildir.
 
+### Gerçek veride karar sınıfları (Faz 7, önceden sabit tasarım)
+
+`python -m backend.scenario_search --days-step 3` → `logs/scenario_search_faz7.json`. Konumlar: 2 sabit test noktası + 5 site karo merkezi
+(raster merkezi, resmi iniş noktası değil); iniş 2026-12-01 … 2027-11-26 arasında 3 günde bir (121 tarih); 48 + 12 sa, ERR k=1, 200 km,
+4/4 m, +0/24/48/72 sa. Tasarım koşudan önce sabitlendi; hiçbir eşik sonuç üretmek için ayarlanmadı.
+
+| Kısıt profili | RED | GREEN | YELLOW |
+|---|---|---|---|
+| form varsayılanları (karanlık ≤ 8 sa, Güneş ≥ %50, DTE ≥ %50, DTE kesintisi ≤ 8 sa) | 729 | 110 | **8** |
+| yalnız Güneş (karanlık ≤ 8 sa, Güneş ≥ %50) | 513 | 314 | **20** |
+
+- YELLOW Site01, Site07, Site11 ve Site23 merkezlerinde görüldü (sebep yalnız ihtiyatlı ERR +1σ ufkunda `MIN_ILLUMINATION`, `MAX_DARKNESS` veya `MAX_DTE_GAP`).
+- Örnek, gerçek HTTP API + tarayıcıda doğrulandı: **Site01 karo merkezi (−89.46316, −137.48955), 2027-11-14 00:00 UTC, ERR k=1, form varsayılanları → YELLOW**:
+  nominal ihlal yok; +72 sa senaryosunda (2027-11-17 00:00 → 2027-11-19 12:00 UTC) DTE kesintisi nominal 7.0 sa, ihtiyatlı 11.5 sa > 8 sa.
+  Aynı istek nominal modda GRAY (nominal tek başına GREEN/YELLOW vermez).
+- EFFRES (etkin çözünürlük) yorumu: Site01 merkezinde 240 m ürünün EFFRES'i gözlemcide 16.9 m, 30–200 km bandında medyan 24.5 m
+  → LOLA ölçüm yoğunluğu 240 m ızgaradan çok daha ince; o katmanda çözünürlüğü piksel boyutu sınırlar. EFFRES karar girdisi değildir.
+
 ## API
 
 FastAPI, `http://127.0.0.1:8000/docs`. Uzun işler `202 + analysis_id`, durum `GET /analyses/{id}` (`queued | running | completed | partial | failed`).
@@ -148,6 +166,9 @@ FastAPI, `http://127.0.0.1:8000/docs`. Uzun işler `202 + analysis_id`, durum `G
 | `GET /validation` | **v1.1 yeni**: yalnız `python -m backend.validation` gerçek koşusunun raporu; yoksa tümü `NOT_RUN`. **v1.2**: `SLOPE-01` eklendi |
 | ufuk sonucu (`/horizon`) | **v1.2**: `layer_resolution_m`, `excluded_layers`; cache şeması 3 |
 | görev sonucu (`result.mission`) | **v1.3**: `radius_policy` {`code` `REDUCED_HORIZON_RADIUS`/`REFERENCE_RADIUS`, `radius_km`, `reference_radius_km`, `below_reference`, `status_before_policy`, `status_after_policy`, `capped`, `note`}; mühendis açıklamasında `radius_policy=` |
+| ufuk sonucu (`/horizon`) | **v1.3**: `effective_resolution` {`units`, `note`, `layers`: katman başına `status` (`OK`/`MISSING`/`NOT_PUBLISHED`), `pixel_m`, `band_km`, `at_observer_m`, `median_m`, `p90_m`, `max_m`}; önbelleğe yazılmaz, karar girdisi değildir. Clone modunda `uncertainty_mode: "clone"`, `clone_ensemble` (clone sayısı, karo, profil anahtarı, p05–p95 bant notu) ve `profiles.*.cautious/optimistic` = clone p95/p05 (yalnız gösterim) |
+| `GET /health` | **v1.3**: `clones` {`sites`: site başına `present/expected/complete`, `precomputed_profile_sets`}; `clone_profiles` dizgesi korunur (`AVAILABLE`/`NOT_PRECOMPUTED`) |
+| `POST /analyses` `uncertainty_mode: "clone"` | **v1.3**: ön hesaplanmış gerçek clone profili varsa her clone için metrik; ihtiyatlı varyant = kısıt başına clone p95-kötü değer (`metrics.method: clone_p95`), `variants.cautious.clone` {`n`, `pass_count`, `pass_fraction`, `fail_count_by_code`}; yoksa gerekçeli `CLONE_NOT_PRECOMPUTED` (GRAY) |
 
 v1.1 değişiklikleri **eklemelidir** (mevcut alanlar korunur) ve `tests/test_api_v11.py` ile test edilir. Ayrıca: kontrollü localhost CORS, iş zaman aşımı (`ANALYSIS_TIMEOUT`, 1800 s), havuz yalnız `lifespan` içinde.
 
@@ -171,14 +192,14 @@ Bilimsel doğrulama (`GET /validation`, PASS yalnız kayıtlı vakaları kapsar)
 
 | Test | Durum | Kanıt |
 |---|---|---|
-| A-04 / V-04 Horizons | PASS (sınırlı) | 3 site × 2 cisim × 3 tarih; Horizons merkez `MEAN_ME`, küre 1737.4; yükseklikler sentetik |
+| A-04 / V-04 Horizons | PASS (sınırlı) | **14 durum × 2 cisim = 28 yön** (Faz 7): 2026–2035, enlem −80.5…−89.98°, ±180° dikişi, gözlemci 0–5 km, 29 Şubat 2028; maks ayrım **5.77×10⁻⁷°** (eşik 0.005°). Horizons merkez `MEAN_ME`, küre 1737.4; yükseklikler sentetik. Tam yıl/tüm konum kanıtı değildir |
 | V-01 kaynak + kapsam | PASS | de440s 1849–2150; moon PA bpc 1550–2650 ⊇ 2026–2035 |
 | V-02 frame/koordinat | PASS | raster küresi 1737.4 km, kutup = (0,0), +90°E → +x; PA→ME 103.9″ |
 | V-03 UTC→ET | PASS | 4 tarih, bağımsız TT−UTC = 69.184 s ile < 0.01 s |
-| V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0°; **135→200 km: 1950 m'lik sırt noktasında 0.762°, azimutların %10'u** (5 m + 80 m LOD ile) → hızlı mod yüksek konumlarda yetersiz olabilir |
+| V-05 135/200/250 km | PASS (7 konum) | 2 sabit nokta + 5 site karo merkezi: 200→250 km değişim **0°** her konumda; **135→200 km: maks 1.509° (Site11 merkezi, azimutların %13.9'u)**, Site07 1.149°, sırt noktası 0.762°, Site23 0.503° → 200 km'den kısa tarama GREEN veremez (v1.3 kuralı) |
 | V-06 LOD/NoData | PASS | NaN yayılımı doğru; 5 katman çifti medyan farkı −0.09…+0.63 m (ölçüt < 5 m; 80−240: −0.09 m, Site01−80: +0.09 m, Site04−80: −0.08 m); LOD 1 km → 5 m site, 10 km → 80 m, 100 km → 240 m |
-| V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı maks hata 0.0028 |
-| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 sitede ERR ±1σ (240 + 80 m + 5 m ERR): tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.059 / 0.278 m, bant ≤ 0.016° / 0.299°. İstatistiksel doğrulama değildir. Clone: NOT_RUN |
+| V-07 disk quadrature | PASS (düz + gerçek eğri ufuk) | düz: analitik daire segmentine karşı maks 0.0028; **gerçek ufuklar**: 3 konumda 321 kısmi örtülme örneği (0.01 < f < 0.99), bağımsız 401×401 Kartezyen referansa göre maks \|Δ\| **0.0060**, medyan 0.00055 (ölçüt < 0.01). Yalnız disk integralini sınar (aynı ufuk enterpolasyonu), ufuk doğruluğunu değil |
+| V-08 ERR | PASS (yalnız tutarlılık) | **7 konum × k=1,2**: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, band(k=2) ≥ band(k=1) her azimutta; k=1 maks bant 0.016° (−89.54/0) … 1.548° (Site23 merkezi, gözlemci σ 0.597 m), Site01 merkezi 0.739°. İstatistiksel doğrulama değildir |
 | V-09 kısıt mantığı | PASS | elle hesaplanmış girdiler |
 | V-10 izlenebilirlik | PASS | gerçek analizde provenance alanları; nominal → GRAY |
 | SLOPE-01 5 m eğim | PASS | bizim 5 m merkezi-fark eğimimiz ile **resmi PGDA `_slp.tif`** 290 noktada: medyan \|Δ\| 0.08° (ölçüt ≤ 2°); Site01 merkezi maks 9.34° / ort 5.86°, Site04 karo merkezi ~31–34° (Shackleton iç duvarı). Uçtan uca: eğim kısıtlı gerçek analiz eğimi `site01_5m`'den değerlendirdi; HTTP API'de err + ≤ 10° → GREEN, err + ≤ 5° → RED (`MAX_SLOPE`). Eğim iniş güvenliği değildir |
@@ -217,10 +238,9 @@ Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.na
 
 ## Bilinen eksikler
 
-- YELLOW (nominal geçer, ERR +k ihlal) durumu gerçek veriyle henüz gözlenmedi; mantığı birim testleriyle doğrulandı.
-- Yalnız Site01 ve Site04 5 m karoları indirilir; diğer konumlarda eğim `SLOPE_UNKNOWN` (GRAY katkısı) kalır. 20 m katmanı yok.
+- 5 m karolar Site01/04/07/11/23 ile sınırlı; dışında eğim `SLOPE_UNKNOWN` (GRAY katkısı) kalır. 20 m katmanı ve Site06/20/Haworth/Shoemaker/DM2 indirilmez.
 - DEM clone belirsizliği uygulanmadı (`CLONE_NOT_PRECOMPUTED`).
-- A-04 yalnız 3 geometri/tarih; V-05 yalnız 2 konum; V-07 yalnız düz ufuk. Tam yıl ve eğri arazi kanıtı değildir.
+- A-04 14 durum, V-05/V-08 7 konum, V-07 3 konumda 321 örnek: kapsam genişledi ama tam yıl / tüm konum kanıtı değildir.
 - Moon Trek koordinata odaklanma güvenilir değil (dış uygulama kaynaklı).
 - Rate-limit tek süreç içi; analiz kayıtları sunucu yeniden başlayınca kaybolur (UI 404'ü "kayboldu" olarak gösterir).
 

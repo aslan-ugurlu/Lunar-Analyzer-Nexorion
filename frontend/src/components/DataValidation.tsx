@@ -79,7 +79,10 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
                       <td className="mono py-1">{s.id} · {s.resolution_m} m{s.region_name ? <span className="block font-sans text-muted">{s.region_name}</span> : null}</td>
                       <td className={s.available ? 'text-go' : 'text-stop'}>{s.available ? 'var' : 'indirilmeli'}</td>
                       <td className={s.uncertainty_err_available ? 'text-go' : 'text-muted'}>{s.uncertainty_err_available ? 'var' : 'yok'}</td>
-                      <td className={s.effres_available ? 'text-go' : 'text-muted'}>{s.effres_available ? 'var' : 'yok'}</td>
+                      <td className={s.effres_available ? 'text-go' : 'text-muted'}
+                        title={s.kind === 'site' ? 'PGDA ürün 78 site karoları için EFFRES haritası yayımlanmaz; kalite göstergesi _toterr (ERR) katmanıdır.' : undefined}>
+                        {s.effres_available ? 'var' : s.kind === 'site' ? 'yayımlanmıyor' : 'indirilmedi'}
+                      </td>
                       <td className="mono break-all">{s.expected_folder}/{s.expected_file}</td>
                     </tr>
                   ))}

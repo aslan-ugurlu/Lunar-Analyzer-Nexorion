@@ -372,3 +372,11 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 20:29Z — **V-08 genişletilmiş:** **PASS** — 7 konum × k=1,2: tam kapsama, sıralama, band(k=2) ≥ band(k=1) her azimutta;
   k=1 maks bant 0.016° (−89.54/0) … 1.548° (Site23 merkezi, gözlemci σ 0.597 m); Site01 merkezi 0.739° (σ 0.253 m)
   → `logs/v08_extended_faz7.json`. Tutarlılık kontrolüdür, istatistiksel doğrulama değil.
+- 20:39Z — 80 m EFFRES indirildi (250,228,467 B; yeniden deneme döngüsünün 1. denemesi). **EFFRES-01 PASS**: 240 m ve 80 m EFFRES
+  DEM ile aynı ızgara (boyut, affine, CRS parametreleri); 7 konumda asıl LOD bandında ≥ %99 geçerli/pozitif. Bant medyanları:
+  80 m (0–30 km) 15.5–18.6 m, 240 m (30–200 km) 24.5–27.0 m → LOLA veri yoğunluğu her iki ızgaradan ince; çözünürlüğü piksel sınırlıyor
+  (`logs/effres01_faz7.json`).
+- 20:40Z — Kullanıcı ekran görüntüsü (Data & Validation): site karolarında "EFFRES: yok" eksik veri gibi okunuyordu → hücre artık
+  site karolarında "yayımlanmıyor" (PGDA ürün 78 EFFRES yayımlamaz; açıklama ipucunda), indirilmemiş katmanlarda "indirilmedi".
+  README: doğrulama tablosu (A-04 14 durum, V-05/V-08 7 konum, V-07 eğri ufuk), YELLOW araştırması bölümü, EFFRES yorumu, API v1.3 satırları.
+  Clone indirmesi sürüyor (≈42/100).
