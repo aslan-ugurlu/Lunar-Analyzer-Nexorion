@@ -71,19 +71,19 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
             </ul>
             <h3 className="text-sm font-semibold text-ink">NASA LOLA arazi katmanları</h3>
             <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="LOLA katman tablosu (yatay kaydırılabilir)">
-              <table className="w-full min-w-[480px] text-left text-xs">
+              <table className="w-full min-w-[560px] text-left text-xs [&_td]:pr-3 [&_td]:align-top [&_th]:pr-3">
                 <thead className="text-muted"><tr><th className="py-1">Katman</th><th>DEM</th><th>ERR</th><th>EFFRES</th><th>Beklenen dosya</th></tr></thead>
                 <tbody>
                   {(sites?.sites ?? []).map((s) => (
                     <tr key={s.id} className="border-t border-line">
-                      <td className="mono py-1">{s.id} · {s.resolution_m} m{s.region_name ? <span className="block font-sans text-muted">{s.region_name}</span> : null}</td>
-                      <td className={s.available ? 'text-go' : 'text-stop'}>{s.available ? 'var' : 'indirilmeli'}</td>
-                      <td className={s.uncertainty_err_available ? 'text-go' : 'text-muted'}>{s.uncertainty_err_available ? 'var' : 'yok'}</td>
-                      <td className={s.effres_available ? 'text-go' : 'text-muted'}
+                      <td className="py-1"><span className="mono whitespace-nowrap">{s.id} · {s.resolution_m} m</span>{s.region_name ? <span className="block text-muted">{s.region_name}</span> : null}</td>
+                      <td className={`whitespace-nowrap py-1 ${s.available ? 'text-go' : 'text-stop'}`}>{s.available ? 'var' : 'indirilmeli'}</td>
+                      <td className={`whitespace-nowrap py-1 ${s.uncertainty_err_available ? 'text-go' : 'text-muted'}`}>{s.uncertainty_err_available ? 'var' : 'yok'}</td>
+                      <td className={`whitespace-nowrap py-1 ${s.effres_available ? 'text-go' : 'text-muted'}`}
                         title={s.kind === 'site' ? 'PGDA ürün 78 site karoları için EFFRES haritası yayımlanmaz; kalite göstergesi _toterr (ERR) katmanıdır.' : undefined}>
                         {s.effres_available ? 'var' : s.kind === 'site' ? 'yayımlanmıyor' : 'indirilmedi'}
                       </td>
-                      <td className="mono break-all">{s.expected_folder}/{s.expected_file}</td>
+                      <td className="mono py-1">{s.expected_folder}/<wbr />{s.expected_file}</td>
                     </tr>
                   ))}
                 </tbody>
