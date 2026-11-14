@@ -1,0 +1,34 @@
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# --- Secrets / local env ---
+.env
+.env.local
+!.env.example
+
+# --- Node / frontend build ---
+node_modules/
+dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# --- NASA data, caches and partial downloads: NEVER commit ---
+data/
+*.TIF
+*.tif
+*.TIFF
+*.tiff
+*.bsp
+*.bpc
+*.tls
+*.tpc
+*.tf
+*.part
+
+# --- Local logs (test evidence summaries live in PROGRESS.md) ---
+logs/
+*.log
