@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/* Mission-control palette. All text/background pairs below were chosen for
+   WCAG AA contrast on the panel colours (muted text ≥ 7:1 on --color-panel). */
+@theme {
+  --color-space: #070b16;
+  --color-panel: #0e1528;
+  --color-panel-2: #141d36;
+  --color-line: #2a3758;
+  --color-ink: #e8edf7;
+  --color-muted: #aab5ca;
+  --color-accent: #6cd0ff;
+  --color-accent-ink: #04121c;
+  --color-sun: #ffcc4d;
+  --color-earth: #5aa9ff;
+  --color-go: #3ddc97;
+  --color-caution: #ffd166;
+  --color-stop: #ff7b7b;
+  --color-unknown: #b3bccd;
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  html {
+    background: var(--color-space);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    min-height: 100dvh;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, #12224a55, transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, #1b153a55, transparent 60%),
+      var(--color-space);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  input, select, textarea, button {
+    font: inherit;
+  }
+  /* Avoid iOS zoom-on-focus: inputs at least 16px on small screens. */
+  @media (max-width: 640px) {
+    input, select, textarea { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-line bg-panel/90 p-4 shadow-lg shadow-black/30 sm:p-5;
+  }
+  .panel-title {
+    @apply text-base font-semibold tracking-wide text-ink sm:text-lg;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-ink;
+  }
+  .hint {
+    @apply mt-1 text-xs text-muted;
+  }
+  .input {
+    @apply w-full rounded-md border border-line bg-panel-2 px-3 py-2 text-sm text-ink placeholder:text-muted/70
+      focus:border-accent focus:outline-none aria-[invalid=true]:border-stop;
+  }
+  .btn {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-line bg-panel-2 px-3 py-2
+      text-sm font-medium text-ink hover:border-accent disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-accent bg-accent text-accent-ink hover:bg-accent/90;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium;
+  }
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .link {
+    @apply text-accent underline decoration-accent/50 underline-offset-2 hover:decoration-accent;
+  }
+}
