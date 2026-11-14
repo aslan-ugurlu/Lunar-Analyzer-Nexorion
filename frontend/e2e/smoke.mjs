@@ -30,8 +30,9 @@ try {
   const adv = page.getByTestId('advanced-settings');
   note(`public accordion present: ${await adv.count() === 1}, open: ${await adv.evaluate((d) => d.open)}`);
 
-  // Optional real-data variants: UNCERTAINTY=err, LANDING_DATE=YYYY-MM-DD, LANDING_TIME=HH:MM (UTC).
+  // Optional real-data variants: UNCERTAINTY=err|clone, LANDING_DATE=YYYY-MM-DD, LANDING_TIME=HH:MM (UTC).
   if (process.env.UNCERTAINTY === 'err') await page.getByRole('radio', { name: /ERR ±k/ }).check();
+  if (process.env.UNCERTAINTY === 'clone') await page.getByRole('radio', { name: /DEM clone/ }).check();
   if (process.env.LANDING_DATE) await page.getByLabel('İniş tarihi (UTC)').fill(process.env.LANDING_DATE);
   if (process.env.LANDING_TIME) await page.getByLabel('İniş saati (UTC, 24 saat)').fill(process.env.LANDING_TIME);
   note(`mode=${process.env.UNCERTAINTY ?? 'nominal'} landing=${process.env.LANDING_DATE ?? 'default'} ${process.env.LANDING_TIME ?? ''}`);

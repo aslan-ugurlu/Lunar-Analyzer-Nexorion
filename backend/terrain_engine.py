@@ -339,7 +339,9 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
         cache_path = CACHE / (key+'.json')
         if cache_path.exists():
             cached = json.loads(cache_path.read_text(encoding='utf-8'))
-            # Quality metadata is recomputed (not cached): it may change when EFFRES files are added.
+            # Metadata that does not change the profiles is recomputed from the CURRENT context, so a
+            # cache entry never carries stale notes (e.g. excluded layers, EFFRES added later).
+            cached['excluded_layers'] = dict(ctx.excluded)
             cached['effective_resolution'] = effective_resolution_summary(lat_deg, lon_deg, list(cached['sources']), radius_km)
             return cached
         profiles = {}

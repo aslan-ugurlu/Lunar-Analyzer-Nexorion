@@ -31,6 +31,11 @@ python -m backend.download_data --include-lola-240m
 python -m backend.download_data --include-lola-240m-err
 #    İsteğe bağlı (LOD + eğim): 80 m DEM (~189 MB) + 80 m ERR (~255 MB), Site01/Site04 5 m surf/toterr/slp (6 × ~41 MB)
 python -m backend.download_data --include-lola-80m --include-lola-80m-err --include-site-5m
+#    İsteğe bağlı (Faz 7): Site07/11/23 5 m (~0.5 GB), EFFRES etkin çözünürlük (240 + 80 m, ~510 MB),
+#    DEM clone'ları (site başına 100 × ~41 MB) + clone ufuk ön hesabı (konum başına ~4 dk)
+python -m backend.download_data --include-site-5m-extra --include-lola-effres
+python -m backend.download_data --include-site-clones Site01 [--clone-range 1-100]
+python -m backend.clone_engine --lat -89.46316 --lon -137.48955
 
 # 3) Backend (tek API worker; --reload yalnız yerel geliştirmede)
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
@@ -61,7 +66,10 @@ Ortam değişkenleri:
 | `lola/LDEM_60S_240MPP_ADJ_ERR.TIF` (267,005,175 B) | aynı ürün sayfası | mevcut (isteğe bağlı indirme) | aynı zincir; aynı CRS/ızgara, NoData NaN, kutup örneği σ 0.02–0.17 m |
 | `lola/LDEM_80S_80MPP_ADJ.TIF` (+ `_ERR`) | [PGDA ürün 90](https://pgda.gsfc.nasa.gov/products/90) `/data/LOLA_20mpp/` | `--include-lola-80m` / `--include-lola-80m-err` | aynı zincir; 30 km içindeki ufuk halkasında kullanılır (LOD) |
 | `sites/Site01_final_adj_5mpp_{surf,toterr,slp}.tif`, `sites/Site04_…` | [PGDA ürün 78](https://pgda.gsfc.nasa.gov/products/78) `/data/LOLA_5mpp/` (Barker et al. 2021, PSS 203:105119) | `--include-site-5m` | 5 m/piksel, 16 × 16 km karo, güney polar stereografik (R 1737.4 km), NoData NaN; `_surf` boş pikselleri **enterpolasyonla doldurulmuş** (README); `_toterr` RMS (m); `_slp` resmi eğim (°) yalnız doğrulamada kullanılır. Site01 = *Connecting ridge*, Site04 = *Shackleton rim* (PGDA README; karo adıdır, iniş noktası değildir) |
-| `LDEM_80S_20MPP_ADJ.TIF`, diğer siteler, DEM clone'lar | PGDA | **indirilmez** | ürün 78'de site başına 100 clone yayımlanıyor; clone modu hâlâ `CLONE_NOT_PRECOMPUTED` |
+| `sites/Site07_…`, `Site11_…` (3200² × 5 m), `Site23_…` (4200² × 5 m, 21 × 21 km) `{surf,toterr,slp}` | [PGDA ürün 78](https://pgda.gsfc.nasa.gov/products/78) | `--include-site-5m-extra` | aynı zincir; Site07 Peak near Shackleton, Site11 de Gerlache rim, Site23 Malapert massif (README). Ürün sayfası "Site23'te hata tahmini yok" diyor, fakat `Site23_…_toterr.tif` mevcut ve 0.07–10.5 m (medyan 0.47 m) değer içeriyor (2026-11-14) |
+| `lola/LDEM_60S_240MPP_ADJ_EFFRES.TIF` (259,831,703 B), `lola/LDEM_80S_80MPP_ADJ_EFFRES.TIF` (250,228,467 B) | [PGDA ürün 90](https://pgda.gsfc.nasa.gov/products/90): "LDEM effective resolution (in meters)" | `--include-lola-effres` | aynı zincir + EFFRES-01 (DEM ile aynı ızgara). **Yalnız veri kalitesi bilgisi**: ufku, metrikleri veya kararı değiştirmez |
+| `sites/clones/Site01/Site01_final_adj_5mpp_NNNN_err.tif` (100 × ~41 MB) | ürün 78 `SiteNN/Clones/` ("100 clones of LDEM") | `--include-site-clones Site01` (Site01/04/07/11 katalogda) | her clone tam 5 m yükseklik haritası, `_surf` ile aynı ızgara (eşleme her dosyada kontrol edilir); clone − surf std 0.44 m (Site01 #1) |
+| `LDEM_80S_20MPP_ADJ.TIF`, Site06/20/Haworth/Shoemaker/DM2 | PGDA | **indirilmez** | — |
 
 - Not: 5 m site DEM'leri **ürün 90'da değil, ürün 78'de** yayımlanıyor (2026-11-14 kontrol). İndirici yalnız katalogdaki resmi (ad, URL) çiftlerini kabul eder.
 - LOD: ufuk ışınının 0–5 km'si en ince mevcut katmandan (5 m site → 80 m → 240 m), 5–30 km'si 80 m'den, ötesi 240 m'den örneklenir. **ERR modunda yalnız ERR katmanı olan DEM'ler kullanılır**; diğerleri `excluded_layers` alanında gerekçesiyle raporlanır (karışık katman ERR ışınlarını NaN yapıp GRAY'e düşürürdü).

@@ -91,8 +91,15 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
               <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m</p>
               <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m-err</p>
               <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-80m --include-lola-80m-err</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-5m</p>
-              <p>80 m: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink> · 5 m site (Site01, Site04): <ExternalLink href="https://pgda.gsfc.nasa.gov/products/78">PGDA ürün 78</ExternalLink>; 20 m ve diğer siteler otomatik indirilmez. Site `_surf` dosyalarında boş pikseller enterpolasyonla doldurulmuştur (PGDA README). Clone profilleri: <span className="mono">{health.clone_profiles ?? 'bilinmiyor'}</span>.</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-5m --include-site-5m-extra</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-effres</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-clones Site01   # 100 × ~41 MB</p>
+              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.clone_engine --lat … --lon …   # clone ufuk profilleri (çevrimdışı ön hesap)</p>
+              <p>80 m ve EFFRES: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink> · 5 m site (Site01, 04, 07, 11, 23) ve DEM clone'ları: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/78">PGDA ürün 78</ExternalLink>; 20 m otomatik indirilmez. Site `_surf` dosyalarında boş pikseller enterpolasyonla doldurulmuştur (PGDA README). EFFRES yalnız veri kalitesi bilgisidir; ufku veya kararı değiştirmez.</p>
+              <p>
+                DEM clone dosyaları: {health.clones ? Object.values(health.clones.sites).map((c) => `${c.site_tile} ${c.present}/${c.expected}`).join(' · ') : 'bilinmiyor'} ·
+                ön hesaplanmış profil seti: <span className="mono">{health.clones?.precomputed_profile_sets ?? health.clone_profiles ?? 'bilinmiyor'}</span>.
+              </p>
             </div>
             {health.limits && mode === 'engineer' && (
               <p className="mono text-xs text-muted">

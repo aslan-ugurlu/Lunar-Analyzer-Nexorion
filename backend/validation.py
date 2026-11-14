@@ -501,9 +501,84 @@ def v10_traceability() -> dict:
     return entry('PASS' if ok else 'FAIL', f"Real 24 h analysis at test site 2: status {m.get('status')}; provenance fields present", {'checks': checks, 'status': m.get('status')})
 
 
+def clone01_ensemble() -> dict:
+    """PGDA DEM clones: mapping to the tile, consistency with _toterr, and precomputed horizon sets.
+
+    Pre-registered criteria: (1) all 100 clone files on exactly the `_surf` grid; (2) for every clone the
+    median of |clone - surf| / toterr (decimated 400x400 read) lies in [0.55, 0.80] (Gaussian expectation
+    0.674); (3) at least one precomputed profile set with 100 complete clone horizons. The comparison of
+    the clone p05-p95 spread with the ERR k=2 band is reported, not used as a criterion.
+    """
+    import rasterio
+    from rasterio.enums import Resampling
+    from backend.clone_engine import (CLONE_PROFILES, CLONE_SITES, CloneError, check_clone_grid, clone_paths,
+                                      clone_status, envelope)
+    from backend.terrain_engine import compute_horizon
+    statuses = {t: clone_status(t) for t in CLONE_SITES}
+    complete = [t for t, st in statuses.items() if st['complete']]
+    if not complete:
+        return entry('BLOCKED', 'No complete clone set: ' + ', '.join(f"{t} {st['present']}/{st['expected']}" for t, st in statuses.items()))
+    rows, ok = [], True
+    shape = (400, 400)
+    for tile in complete:
+        d = DATASETS[f'{tile.lower()}_5m']
+        with rasterio.open(d['path']) as sf, rasterio.open(d['err']) as ef:
+            surf = sf.read(1, out_shape=shape, resampling=Resampling.nearest, masked=True).astype('float64').filled(np.nan)
+            err = ef.read(1, out_shape=shape, resampling=Resampling.nearest, masked=True).astype('float64').filled(np.nan)
+        ratios, grid_errors = [], []
+        for path in clone_paths(tile):
+            try:
+                check_clone_grid(path, d['path'])
+            except CloneError as exc:
+                grid_errors.append(str(exc))
+                continue
+            with rasterio.open(path) as cf:
+                clone = cf.read(1, out_shape=shape, resampling=Resampling.nearest, masked=True).astype('float64').filled(np.nan)
+            r = np.abs(clone - surf) / err
+            ratios.append(float(np.nanmedian(r[np.isfinite(r) & (err > 0)])))
+        ratio_ok = bool(ratios) and all(0.55 <= x <= 0.80 for x in ratios)
+        sets = []
+        for meta_path in sorted(CLONE_PROFILES.glob('*.json')) if CLONE_PROFILES.is_dir() else []:
+            meta = json.loads(meta_path.read_text(encoding='utf-8'))
+            if meta.get('site_tile') != tile:
+                continue
+            with np.load(meta_path.with_suffix('.npz')) as z:
+                arrays = {k: z[k].astype(float) for k in z.files if k.startswith('h')}
+            n_complete = {k: int(np.isfinite(v).all(axis=1).sum()) for k, v in arrays.items()}
+            info = {'key': meta['key'][:12], 'latlon': [meta['latitude'], meta['longitude']], 'complete_profiles': n_complete,
+                    'seconds': meta.get('seconds')}
+            try:
+                h = compute_horizon(meta['latitude'], meta['longitude'], radius_km=meta['radius_km'],
+                                    sun_height_m=meta['observer_height_m']['sun'], earth_height_m=meta['observer_height_m']['earth'],
+                                    uncertainty_mode='err', k=2.0)
+                env = envelope(arrays[f"h{float(meta['observer_height_m']['sun']):g}"])
+                p05, p95 = np.asarray(env['p05'], dtype=float), np.asarray(env['p95'], dtype=float)
+                cau, opt = np.asarray(h['profiles']['sun']['cautious'], dtype=float), np.asarray(h['profiles']['sun']['optimistic'], dtype=float)
+                info['clone_p05_p95_within_err_k2_band_share'] = float(np.mean((p05 >= opt - 1e-9) & (p95 <= cau + 1e-9)))
+                info['clone_spread_deg_max'] = float(np.nanmax(p95 - p05))
+                info['err_k2_band_deg_max'] = float(np.nanmax(cau - opt))
+            except Exception as exc:  # comparison is informational only
+                info['err_comparison'] = f'{type(exc).__name__}: {str(exc)[:120]}'
+            sets.append(info)
+        sets_ok = any(all(v == 100 for v in x['complete_profiles'].values()) for x in sets)
+        rows.append({'tile': tile, 'files': statuses[tile], 'grid_errors': grid_errors[:5], 'grid_ok': not grid_errors,
+                     'ratio_median_of_medians': float(np.median(ratios)) if ratios else None,
+                     'ratio_min': min(ratios) if ratios else None, 'ratio_max': max(ratios) if ratios else None,
+                     'ratio_ok': ratio_ok, 'profile_sets': sets, 'profile_sets_ok': sets_ok})
+        ok &= (not grid_errors) and ratio_ok and sets_ok
+    incomplete = {t: st for t, st in statuses.items() if not st['complete']}
+    summary = '; '.join(f"{r['tile']}: grid {'OK' if r['grid_ok'] else 'FAIL'}, |clone-surf|/toterr median {r['ratio_median_of_medians']:.3f} "
+                        f"(range {r['ratio_min']:.3f}-{r['ratio_max']:.3f}; criterion 0.55-0.80), complete profile sets "
+                        f"{sum(all(v == 100 for v in x['complete_profiles'].values()) for x in r['profile_sets'])}" for r in rows)
+    return entry('PASS' if ok else 'FAIL',
+                 summary + f". Not downloaded: {', '.join(incomplete) or 'none'}. Empirical ensemble consistency only; "
+                 'not a statistical validation of the DEM.', rows)
+
+
 CHECKS = [('V-01', v01_sources_and_coverage), ('V-02', v02_frames), ('V-03', v03_utc), ('V-05', v05_radius_sensitivity),
           ('V-06', v06_lod_nodata), ('V-07', v07_disk_quadrature), ('V-08', v08_err_clone), ('V-09', v09_constraints),
-          ('V-10', v10_traceability), ('SLOPE-01', slope01_cross_check), ('EFFRES-01', effres01_effective_resolution)]
+          ('V-10', v10_traceability), ('SLOPE-01', slope01_cross_check), ('EFFRES-01', effres01_effective_resolution),
+          ('CLONE-01', clone01_ensemble)]
 
 
 def main(argv=None) -> int:

@@ -152,7 +152,7 @@ def _read_manifest(manifest_path: Path) -> dict:
 
 def _write_manifest(manifest_path: Path, manifest: dict) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = manifest_path.with_name(manifest_path.name + '.part')
+    tmp = manifest_path.with_name(f'{manifest_path.name}.{os.getpid()}.part')  # per-process: parallel downloads
     tmp.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding='utf-8')
     os.replace(tmp, manifest_path)
 
