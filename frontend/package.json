@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node e2e/smoke.mjs ../logs/e2e"
   },
   "dependencies": {
     "plotly.js-dist-min": "^4.3.0",
@@ -32,6 +33,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
     "jsdom": "^29.1.1",
+    "playwright-core": "^1.65.1",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2",

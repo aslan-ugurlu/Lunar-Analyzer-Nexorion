@@ -44,8 +44,8 @@ function PublicAnswers({ scenario }: { scenario: Scenario }) {
       <div className="rounded-lg border border-sun/40 bg-sun/5 p-3">
         <p className="flex items-center gap-2 font-semibold text-sun"><Icon name="sun" /> Bu bölgede Güneş ne kadar görünüyor?</p>
         <p className="mt-1 text-sm text-ink">
-          Görev süresince Güneş diskinin ortalama <strong>{formatPercent(m.mean_sun_visible_fraction)}</strong>’i arazinin üzerinde görünüyor
-          (%100 = disk tamamen açıkta).
+          Görev süresince Güneş diskinin arazi üzerinde kalan ortalama payı: <strong>{formatPercent(m.mean_sun_visible_fraction)}</strong>
+          (%100 = disk sürekli tamamen açıkta).
         </p>
         <p className="mt-1 text-sm text-ink">
           En uzun kesintisiz karanlık: <strong>{formatHours(m.max_continuous_darkness_s)}</strong>
@@ -55,7 +55,7 @@ function PublicAnswers({ scenario }: { scenario: Scenario }) {
       </div>
       <div className="rounded-lg border border-earth/40 bg-earth/5 p-3">
         <p className="flex items-center gap-2 font-semibold text-earth"><Icon name="earth" /> Dünya ile doğrudan görüş ne zaman kapanıyor?</p>
-        <p className="mt-1 text-sm text-ink">Dünya’nın merkezi zamanın <strong>{formatPercent(m.dte_visible_fraction)}</strong>’inde arazi ufkunun üzerinde.</p>
+        <p className="mt-1 text-sm text-ink">Dünya’nın merkezinin arazi ufkunun üzerinde olduğu süre: zamanın <strong>{formatPercent(m.dte_visible_fraction)}</strong> kadarı.</p>
         <p className="mt-1 text-sm text-ink">
           En uzun kesinti: <strong>{formatHours(m.max_continuous_dte_gap_s)}</strong>
           {gap ? <> ({formatUtc(gap.start)} → {formatUtc(gap.end)})</> : ' (kesinti yok)'}.

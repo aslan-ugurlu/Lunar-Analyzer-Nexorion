@@ -5,9 +5,9 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T09:22Z
-- **Faz:** Faz 0 DONE (84bf2f5) · Faz 1 DONE (1199213) · Faz 2 DONE (bu commit) → Faz 3 başlıyor
-- **Alt adım:** Sky View + Timeline (Plotly) gerçek horizon/timeline ile
+- **Zaman (UTC):** 2026-11-14T09:40Z
+- **Faz:** Faz 0 DONE (84bf2f5) · Faz 1 DONE (1199213) · Faz 2 DONE (bc4cb58) · Faz 3 DONE (bu commit) → Faz 4
+- **Alt adım:** Compare + Data & Validation + erişilebilirlik/performans
 - **Durum:** IN_PROGRESS
 
 ## Tamamlanan iş
@@ -61,6 +61,10 @@
 | `npm run lint` | 09:21Z | 0 | 0 sorun |
 | `npx vitest run` | 09:21Z | 0 | 56 passed (7 dosya) |
 | Gerçek uçtan uca analiz (API) | 09:08Z | — | `62e783c2…` completed < 1 dk; RED; ufuk 3600/3600 tam kapsama; `logs/first_real_analysis.json` |
+| `npm run e2e` (playwright-core + sistem Chrome, GERÇEK backend) | 09:38Z | 0 | 2 site + kayma akışı; sky view 7 iz; slider klavye 10 adım = +5 sa; mod değişimi kararı değiştirmedi; mobil 390 px taşma 0; konsol hatası 0. Görseller `logs/e2e/*.png` |
+| `npx vitest run` | 09:39Z | 0 | 70 passed (8 dosya) |
+| `npm run build` / `npm run lint` | 09:39Z | 0 / 0 | ana JS 315 kB, Plotly lazy 4.65 MB |
+| `python -m pytest -q` | 09:39Z | 0 | 55 passed |
 
 ## Veri durumu
 | Dosya | Durum | Boyut (bayt) | Kaynak | Doğrulama |
@@ -111,8 +115,8 @@
 | 11.5 Dünya vs Ay kartı | PASS: NSSDC Earth/Moon fact sheet, NASA SVS 5229, NASA Science (kaynaklar 2026-11-14 kontrol); 4 test (metin, linkler, yalnız Halk modu, karar motorundan bağımsızlık) |
 
 ## Blokajlar ve bir sonraki tam adım
-- Sonraki: Faz 3 — `SkyView.tsx` (/horizon + timeline diskleri, 0/360 sarma), `TimelineView.tsx` (scrubber, f_sun/DTE grafikleri,
-  /scenarios/shift), sözleşme testleri. Başarı ölçütü: gerçek analiz 62e783c2 benzeri bir sonuçla grafikler çiziliyor, build/test geçiyor.
+- Sonraki: Faz 4 — `ComparePanel.tsx` (/compare, priority, INCOMPARABLE, site linkleri), `DataValidation.tsx` (/health, /sites,
+  /validation, kaynaklar, sınırlamalar), erişilebilirlik kontrolleri. Ölçüt: iki gerçek analizle /compare çağrısı UI'da görünür.
 
 ## Olay günlüğü (append-only)
 - 2026-11-14T08:38Z — Faz 0 başladı; denetim yapıldı; PROGRESS.md oluşturuldu.
@@ -147,6 +151,13 @@
   Bu, örnek koordinatın bir çukurda olduğunu gösteren gerçek sonuçtur; aday önerisi değildir.
 - 09:12Z — **Faz 1 DONE**, commit 1199213 (build/lint/48 test).
 - 09:20Z — ERR indirmesi yavaş (~15 kB/s; sunucu kaynaklı olabilir). Bloklamıyor: ERR yokken `err` modu GRAY döner ve UI bunu söyler.
+- 09:30Z — İkinci test konumu DEM'den türetildi: kutba 40 km içindeki en yüksek piksel 1954.3 m @ (−89.4512°, −137.1427°)
+  (resmi aday değildir). Gerçek sonuç: f_sun %100, karanlık 0 sa; Dünya ufkun altında (DTE %0) → RED. Yeni 200 km ufuk ~2 sn.
+- 09:38Z — **Faz 3 DONE**: Sky View (gerçek /horizon, gerçek açısal boyutlu diskler, 0/360 sarma, ERR bandı yalnız varsa,
+  eksik ışın işareti, Güneş/Dünya izleri, gövdeye yakınlaştırma eşit ölçekli), Timeline (f_sun + DTE, en uzun aralık vurgusu,
+  tıklayarak seçim, klavye kaydırıcı, mühendis yükseklik grafiği, /scenarios/shift + polling, ebeveyn korunur).
+  E2E'de bulunan ve düzeltilen hatalar: mobil 300 px taşma, MIN_* ihlallerinde ters karşılaştırma işareti, zoom'da eksen etiketi
+  kaybı/elips disk, kayma sonrası ebeveynden otomatik atlama, Türkçe yüzde ekleri.
 - 09:22Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
   404→lost, unmount cleanup), sonuç özeti (Halk/Mühendis, ihlal UTC aralıkları, provenance, kopyalanabilir özet).
   Testler: polling 4, gerçek-fikstür ResultSummary 4 (mod değişimi kararı değiştirmiyor).

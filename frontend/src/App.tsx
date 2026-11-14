@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { AppStateProvider } from './state/AppState';
 import { useHealth, useSites } from './hooks/useBackend';
 import { MissionSetup } from './components/MissionSetup';
+import { SkyView } from './components/SkyView';
+import { TimelineView } from './components/TimelineView';
+import { CursorProvider } from './state/Cursor';
 import { Header } from './components/Header';
 import { Tabs, TabPanel, type TabDef } from './components/Tabs';
 import { Notice, ExternalLink } from './components/ui';
@@ -55,7 +58,13 @@ function Shell() {
         <TabPanel id="setup" active={tab === 'setup'}>
           <MissionSetup sites={sites.data} sitesError={sites.error} health={health.data} />
         </TabPanel>
-        {TABS.filter((t) => t.key !== 'setup').map((t) => (
+        <TabPanel id="sky" active={tab === 'sky'}>
+          <SkyView />
+        </TabPanel>
+        <TabPanel id="timeline" active={tab === 'timeline'}>
+          <TimelineView />
+        </TabPanel>
+        {TABS.filter((t) => !['setup', 'sky', 'timeline'].includes(t.key)).map((t) => (
           <TabPanel key={t.key} id={t.key} active={tab === t.key}>
             <div className="panel">
               <p className="text-sm text-muted">{t.label} — yapım aşamasında.</p>
@@ -80,7 +89,9 @@ function Shell() {
 export default function App() {
   return (
     <AppStateProvider>
-      <Shell />
+      <CursorProvider>
+        <Shell />
+      </CursorProvider>
     </AppStateProvider>
   );
 }

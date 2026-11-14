@@ -25,7 +25,7 @@ interface State {
 
 type Action =
   | { type: 'mode'; mode: Mode }
-  | { type: 'add'; entry: AnalysisEntry }
+  | { type: 'add'; entry: AnalysisEntry; select: boolean }
   | { type: 'job'; id: string; job: JobRecord }
   | { type: 'lost'; id: string }
   | { type: 'pollError'; id: string; code: string | null }
@@ -41,7 +41,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         entries: { ...state.entries, [action.entry.id]: action.entry },
         order: [action.entry.id, ...state.order],
-        selectedId: action.entry.id,
+        selectedId: action.select ? action.entry.id : state.selectedId,
       };
     case 'job': {
       const prev = state.entries[action.id];
@@ -153,6 +153,8 @@ export function AppStateProvider({ children, initialMode = 'public' }: { childre
     (id: string, input: AnalysisInput, kind: AnalysisEntry['kind'] = 'analysis', parentId: string | null = null) =>
       dispatch({
         type: 'add',
+        // New analyses become the selection; shift children do not, so the parent stays on screen.
+        select: kind === 'analysis',
         entry: { id, input, kind, parentId, createdAtMs: Date.now(), job: null, lost: false, pollErrorCode: null },
       }),
     [],
