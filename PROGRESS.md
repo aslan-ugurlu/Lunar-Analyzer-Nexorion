@@ -5,9 +5,9 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T09:10Z
-- **Faz:** Faz 0 DONE → Faz 1 (frontend çekirdek) IN_PROGRESS, Faz 2 bileşenleri yazılıyor
-- **Alt adım:** Faz 0 commit'i; LOLA 240 m ERR indirmesi arka planda sürüyor
+- **Zaman (UTC):** 2026-11-14T09:22Z
+- **Faz:** Faz 0 DONE (84bf2f5) · Faz 1 DONE (1199213) · Faz 2 DONE (bu commit) → Faz 3 başlıyor
+- **Alt adım:** Sky View + Timeline (Plotly) gerçek horizon/timeline ile
 - **Durum:** IN_PROGRESS
 
 ## Tamamlanan iş
@@ -38,12 +38,29 @@
 | Yol | İşlem | Gerekçe |
 |---|---|---|
 | `PROGRESS.md` | oluşturuldu | §11.1 |
+| `.gitignore` | sertleştirildi | data/, *.TIF/*.tif, *.bsp, *.bpc, kernel uzantıları, *.part, .venv/, node_modules/, __pycache__/, logs/ |
+| `backend/astro_engine.py` | 2 satır düzeltme | SPICE(UNPARSEDTIME) — her analizi bozuyordu |
+| `backend/verify_horizons.py` | ayrıştırıcı | gerçek Horizons AIRLESS başlıkları |
+| `backend/download_data.py` | genişletildi | §11.3 `--include-lola-240m` (+ `-err`) |
+| `backend/main.py` | v1.1 (eklemeli) | §11.2 spawn/timeout/kapanış, CORS, 422 details, /health katmanları, /sites rehberi, /validation |
+| `backend/terrain_engine.py` | küçük | cache kotası, eşit yükseklik tek profil, POSIX `sources` yolu |
+| `backend/config.py` | küçük | ANALYSIS_TIMEOUT_S, VALIDATION, 240 m EFFRES yolu |
+| `tests/test_spice_time.py`, `test_download_lola.py`, `test_spawn_pool.py`, `test_api_v11.py` | yeni | 40 yeni test |
+| `frontend/**` | yeni | React/Vite/TS/Tailwind/Plotly uygulaması |
+| `frontend/src/test/fixtures/real_analysis_62e783c2.json` | yeni | GERÇEK API yanıtının kısaltılmış kopyası (UI testleri için; `_provenance` alanında açıklama) |
 
 ## Test kanıtları
 | Komut | Tarih (UTC) | Çıkış | Sonuç |
 |---|---|---|---|
-| `python -m pytest -q` | — | — | NOT_RUN (sıradaki adım) |
-| `python -m backend.verify_horizons` | — | — | NOT_RUN |
+| `python -m pytest -q` | 2026-11-14T08:39Z | 0 | 15 passed (başlangıç durumu) |
+| `python -m backend.verify_horizons` | 08:39Z | 1 | FAIL SPICE(UNPARSEDTIME) → düzeltildi |
+| `python -m backend.verify_horizons` | 08:40Z | 1 | FAIL başlık ayrıştırma → düzeltildi |
+| `python -m backend.verify_horizons` | 08:40Z | 0 | all_passed=true (6 satır, maks 3.3e-7°) — `logs/verify_horizons_faz0.json` |
+| `python -m pytest -q` | 09:21Z | 0 | 55 passed |
+| `npm run build` (frontend) | 09:21Z | 0 | tsc + vite OK (ilk yük 286 kB JS; Plotly ayrı chunk) |
+| `npm run lint` | 09:21Z | 0 | 0 sorun |
+| `npx vitest run` | 09:21Z | 0 | 56 passed (7 dosya) |
+| Gerçek uçtan uca analiz (API) | 09:08Z | — | `62e783c2…` completed < 1 dk; RED; ufuk 3600/3600 tam kapsama; `logs/first_real_analysis.json` |
 
 ## Veri durumu
 | Dosya | Durum | Boyut (bayt) | Kaynak | Doğrulama |
@@ -90,11 +107,12 @@
 | 11.1 PROGRESS.md | IN_PROGRESS (bu dosya) |
 | 11.2 Windows spawn | PASS (tests/test_spawn_pool.py 7/7, gerçek spawn alt süreçleri) |
 | 11.3 `--include-lola-240m` | kod+17 test PASS (HTTP mock + sentetik TIFF fikstürü); gerçek indirme IN_PROGRESS |
-| 11.4 Moon Trek / QuickMap deep-link | NOT_STARTED |
-| 11.5 Dünya vs Ay kartı | NOT_STARTED |
+| 11.4 Moon Trek / QuickMap deep-link | QuickMap PASS (URL şeması uygulama JS'inden + headless Chrome'da iki sitede tam ortalama, 2026-11-14); Moon Trek URL biçimi PASS, koordinata odaklanma **NOT_VERIFIED/UNRELIABLE** (1. site 4/4, 2. site 2/7) → arayüzde açıkça etiketli. 13 URL sözleşme testi geçti. |
+| 11.5 Dünya vs Ay kartı | PASS: NSSDC Earth/Moon fact sheet, NASA SVS 5229, NASA Science (kaynaklar 2026-11-14 kontrol); 4 test (metin, linkler, yalnız Halk modu, karar motorundan bağımsızlık) |
 
 ## Blokajlar ve bir sonraki tam adım
-- Sonraki: Faz 1 commit (frontend iskeleti, `npm run build`/lint/test) → Faz 2 Mission Setup + polling + ilk gerçek analiz.
+- Sonraki: Faz 3 — `SkyView.tsx` (/horizon + timeline diskleri, 0/360 sarma), `TimelineView.tsx` (scrubber, f_sun/DTE grafikleri,
+  /scenarios/shift), sözleşme testleri. Başarı ölçütü: gerçek analiz 62e783c2 benzeri bir sonuçla grafikler çiziliyor, build/test geçiyor.
 
 ## Olay günlüğü (append-only)
 - 2026-11-14T08:38Z — Faz 0 başladı; denetim yapıldı; PROGRESS.md oluşturuldu.
@@ -123,4 +141,12 @@
 - 09:07Z — QuickMap/Moon Trek deep-link araştırması (alt ajan, uygulama JS'i + headless Chrome): QuickMap VERIFIED,
   Moon Trek biçim VERIFIED / koordinata odaklanma UNRELIABLE (bir sitede 7 denemenin 2'si).
 - 09:10Z — `python -m pytest -q` → 55 passed (exit 0), uvicorn yeniden başlatıldı, `/health` → `ready`, lola_240m dem=true err=false.
-- 09:10Z — **Faz 0 DONE**, commit.
+- 09:10Z — **Faz 0 DONE**, commit 84bf2f5.
+- 09:08Z — İlk gerçek analiz (örnek koordinat −89.54°, 0°; nominal; 48+12 sa; 4 senaryo): < 1 dk, `completed`, karar RED.
+  Gözlemci DEM −754.1 m, ufuk −0.21°…10.68°, Güneş 1.50° → f_sun 0, Dünya −1.90° → DTE 0, eğim `high_resolution_dem_missing`.
+  Bu, örnek koordinatın bir çukurda olduğunu gösteren gerçek sonuçtur; aday önerisi değildir.
+- 09:12Z — **Faz 1 DONE**, commit 1199213 (build/lint/48 test).
+- 09:20Z — ERR indirmesi yavaş (~15 kB/s; sunucu kaynaklı olabilir). Bloklamıyor: ERR yokken `err` modu GRAY döner ve UI bunu söyler.
+- 09:22Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
+  404→lost, unmount cleanup), sonuç özeti (Halk/Mühendis, ihlal UTC aralıkları, provenance, kopyalanabilir özet).
+  Testler: polling 4, gerçek-fikstür ResultSummary 4 (mod değişimi kararı değiştirmiyor).

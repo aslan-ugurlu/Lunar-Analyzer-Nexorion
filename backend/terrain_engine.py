@@ -345,7 +345,7 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
             geometry = {'observer_dem_m': obs_height, 'observer_err_m': obs_sigma,
                         'observer_height_m': {'sun': sun_height_m, 'earth': earth_height_m}}
         output = {'azimuth_deg': az.tolist(), 'profiles': profiles, 'geometry': geometry,
-                  'sources': {name:str(src.path.relative_to(src.path.parents[1])) for name,src in ctx.sources.items()},
+                  'sources': {name:src.path.relative_to(src.path.parents[1]).as_posix() for name,src in ctx.sources.items()},
                   'reference_radius_km':radius_km, 'selected_dataset_id':dataset_id, 'uncertainty_mode':uncertainty_mode,
                   'k':k if uncertainty else None, 'cache_key':key,
                   'status':'complete' if all(np.isfinite(np.asarray(profiles[b]['nominal'],dtype=float)).all() for b in profiles)
