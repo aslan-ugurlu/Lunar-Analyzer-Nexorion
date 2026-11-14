@@ -56,7 +56,7 @@ Ortam değişkenleri:
 |---|---|---|---|
 | `spice/naif0012.tls`, `pck00011.tpc`, `de440s.bsp`, `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf` | [NASA JPL NAIF generic_kernels](https://naif.jpl.nasa.gov/naif/) | mevcut | başlık (`KPL/`, `DAF/`) + yerel SHA-256; kapsam V-01 ile doğrulandı |
 | `lola/LDEM_60S_240MPP_ADJ.TIF` (218,961,039 B) | [PGDA ürün 90](https://pgda.gsfc.nasa.gov/products/90) — `https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ.TIF` | mevcut | HTTP 200 + Content-Length eşleşmesi + rasterio: 1 bant float32, 7760×7760, 240 m, CRS *Moon (2015) - Sphere / Ocentric / South Polar* (Polar Stereographic B, lat_ts −90°, lon_0 0°, R = 1,737,400 m), NoData = NaN, z −9127…7025 m |
-| `lola/LDEM_60S_240MPP_ADJ_ERR.TIF` | aynı ürün sayfası | isteğe bağlı | aynı zincir |
+| `lola/LDEM_60S_240MPP_ADJ_ERR.TIF` (267,005,175 B) | aynı ürün sayfası | mevcut (isteğe bağlı indirme) | aynı zincir; aynı CRS/ızgara, NoData NaN, kutup örneği σ 0.02–0.17 m |
 | `lola/LDEM_80S_80MPP_ADJ.TIF`, `LDEM_80S_20MPP_ADJ.TIF`, `sites/*5mpp*` | PGDA | **otomatik indirilmez** | yalnız 240 m kullanılır; eğim kısıtı ≤ 20 m DEM ister |
 
 - LOLA: *A New View of the Lunar South Pole from LOLA* — Barker et al. 2023, PSJ 4:183, DOI 10.3847/PSJ/acf3e1; veri DOI 10.60903/gsfcpgda-lola-spole. Ürün sayfasına göre yükseklikler metre, konumlar **MOON_ME (DE421)** çerçevesinde polar stereografiktir.
@@ -89,7 +89,7 @@ Hata/boş durumlar: backend yok (`BACKEND_OFFLINE`), `SPICE_MISSING`, `DEM_MISSI
 6. **Compare**: iki konum analizini seçin → **Karşılaştır**. İkisi de RED olduğundan Pareto sıralaması yok; gerekçeler ve QuickMap/Moon Trek bağlantıları gösterilir.
 7. Üst sağdan **Mühendis** moduna geçin: aynı karar, ek olarak az/el, UTC, metrik tablosu, ihlal aralıkları, DEM kaynağı, cache anahtarı.
 8. **Data & Validation**: kernel/katman durumu ve kayıtlı gerçek doğrulama sonuçları.
-9. ERR katmanı indirildiyse belirsizlik modunu **ERR ±k** seçin; GREEN/YELLOW yalnız bu modda mümkündür.
+9. **ERR ile GREEN örneği:** belirsizlik **ERR ±k** (k = 1), iniş **2026-12-17 00:00 UTC**, aynı kısıtlarla iki konum: (−89.4512, −137.1427) ve (−88.6663, −68.2302) (ikincisi DEM'de kutba 60 km içinde, ilkinden ≥ 8 km uzak ikinci en yüksek piksel, 1809.9 m; *resmi aday değildir*). Gerçek sonuç: ikisi de **GREEN** — tüm +0/24/48/72 senaryolarında nominal ve ihtiyatlı (ERR +1σ) varyantta Güneş diski %100, DTE %100, karanlık/kesinti 0 sa. **Compare**: iki GREEN aday, karşılıklı Pareto-baskın değil. Bu, tanımlı kısıtların bu 60 saatlik pencerede 240 m DEM ile sağlandığını söyler; eğim değerlendirilmedi, iniş güvenliği değildir. GREEN/YELLOW yalnız ERR modunda mümkündür.
 
 ## Bilimsel model ve sınırlamalar
 
@@ -125,12 +125,13 @@ Son gerçek koşular (2026-11-14, Windows 11):
 
 | Komut | Sonuç |
 |---|---|
-| `python -m pytest -q` | **59 passed** (sözleşme, SPICE UTC→ET, `--include-lola-240m` 17 senaryo, Windows spawn 7, API v1.1, doğrulama koşucusu) |
+| `python -m pytest -q` | **62 passed** (sözleşme, SPICE UTC→ET, `--include-lola-240m` 17 senaryo, Windows spawn 7, API v1.1, doğrulama koşucusu, Pareto regresyonu) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
-| `python -m backend.validation` | 9 PASS · 2 BLOCKED (aşağıda) → `data/validation/report.json` |
+| `python -m backend.validation` | **10 PASS · 1 BLOCKED** (V-06) → `data/validation/report.json` |
 | `cd frontend; npx vitest run` | **71 passed** (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
-| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0 |
+| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı |
+| `npm run e2e:states` | 8/8: gerçek `DEM_MISSING`; işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
 
 Mock kullanımı: yalnız UI/istemci sözleşme testlerinde ve indirici testlerinde (HTTP mock + `tmp_path` içinde sentetik minik GeoTIFF); her biri dosya başında işaretlidir. UI bileşen testleri, gerçek bir API yanıtının kısaltılmış kopyasını (`frontend/src/test/fixtures/real_analysis_62e783c2.json`, `_provenance` alanı) kullanır.
 
@@ -145,7 +146,7 @@ Bilimsel doğrulama (`GET /validation`, PASS yalnız kayıtlı vakaları kapsar)
 | V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0°; **135→200 km: 1950 m'lik sırt noktasında 0.457°, azimutların %7.1'i** → hızlı mod yüksek konumlarda yetersiz olabilir |
 | V-06 LOD/NoData | BLOCKED | NaN yayılımı doğru; LOD geçişi yalnız 240 m olduğundan test edilemedi |
 | V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı maks hata 0.0028 |
-| V-08 ERR/clone | BLOCKED → ERR inince yeniden koşulur | clone: NOT_RUN (veri yok) |
+| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 sitede ERR ±1σ: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.028 / 0.036 m, bant ≤ 0.006° / 0.104°. İstatistiksel doğrulama değildir. Clone: NOT_RUN (veri yok) |
 | V-09 kısıt mantığı | PASS | elle hesaplanmış girdiler |
 | V-10 izlenebilirlik | PASS | gerçek analizde provenance alanları; nominal → GRAY |
 
@@ -162,6 +163,17 @@ Her iki araç da bu parametreleri resmi olarak belgelemiyor; uygulamalar değiş
 
 Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html) ve [Moon](https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html) fact sheet'leri (gün 24.0000 sa, eğiklik 23.44°; sinodik 29.53 g, yıldız dönmesi 655.72 sa, gece yüzey basıncı 3×10⁻¹⁵ bar), [NASA SVS 5229](https://svs.gsfc.nasa.gov/5229/) (Ay ekseni 1.5°), [NASA Science — Shadows near the Moon's South Pole](https://science.nasa.gov/resource/shadows-near-the-moons-south-pole/) (kutuplarda Güneş ufkun en fazla 1.5° üstünde/altında).
 
+## Bu çalışmada bulunan ve düzeltilen backend hataları
+
+| Hata | Etki | Düzeltme + test |
+|---|---|---|
+| `str2et('YYYY-MM-DDTHH:MM:SS UTC')` → `SPICE(UNPARSEDTIME)` | **Her** analiz ve A-04 başarısızdı | boşluklu UTC biçimi; `tests/test_spice_time.py` |
+| Horizons AIRLESS başlıkları `Azimuth_/Elevation_(a-app)` | A-04 ayrıştırılamıyordu | regex ile iki biçim; gerçek başlıkla test |
+| `pareto_compare` döngü içinde `costs` silme | ≥ 2 GREEN/YELLOW adayda `/compare` → 500 | ilişkiler önce hesaplanır; `tests/test_pareto.py` |
+| ERR modunda `geometry.observer_err_m` hep `None` | provenance eksik | ihtiyatlı çağrının σ'sı raporlanır; V-08 ölçütü; cache şema sürümü |
+| `MAX_CACHE_MB` tanımlı ama uygulanmıyordu | sınırsız önbellek | `prune_cache` + test |
+| Zaman aşımı / kapanışta takılı native iş | süreç asılı kalabilirdi | `ANALYSIS_TIMEOUT` + worker terminate; spawn testleri |
+
 ## Güvenlik ve kaynak sınırları
 
 - En fazla **2 `spawn` worker**, en fazla **6 bekleyen/çalışan iş** (`429 QUEUE_FULL`), istemci başına **5 analiz/dk** (`429 RATE_LIMITED`; tek instance, bellek içi — internete açılırsa paylaşımlı limit ve reverse proxy gerekir).
@@ -172,7 +184,7 @@ Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.na
 
 ## Bilinen eksikler
 
-- ERR katmanı ile V-08 ve `err` modunda GREEN/YELLOW gösterimi bu belgenin yazıldığı anda indirme sürüyordu; güncel durum için `PROGRESS.md`.
+- YELLOW (nominal geçer, ERR +k ihlal) durumu gerçek veriyle henüz gözlenmedi; mantığı birim testleriyle doğrulandı.
 - 80 m / 20 m / 5 m katmanları yok → LOD geçişi (V-06) ve eğim kısıtı test edilmedi; eğim her zaman `SLOPE_UNKNOWN`.
 - DEM clone belirsizliği uygulanmadı (`CLONE_NOT_PRECOMPUTED`).
 - A-04 yalnız 3 geometri/tarih; V-05 yalnız 2 konum; V-07 yalnız düz ufuk. Tam yıl ve eğri arazi kanıtı değildir.

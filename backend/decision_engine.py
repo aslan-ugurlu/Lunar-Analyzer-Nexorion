@@ -205,11 +205,14 @@ def pareto_compare(candidates:list[dict], priority='balanced'):
         good.append({'id':candidate['id'],'status':result['status'],'costs':values,
                      'metrics':{k:m[k] for k in ('mean_sun_visible_fraction',
                        'max_continuous_darkness_s','dte_visible_fraction','max_continuous_dte_gap_s')}})
+    # Compute every dominance relation first; costs are removed only afterwards
+    # (deleting inside the loop raised KeyError as soon as >= 2 candidates qualified).
     for item in good:
         item['dominated_by']=[other['id'] for other in good if other['id']!=item['id']
                               and other['status']==item['status']
                               and all(a<=b for a,b in zip(other['costs'],item['costs']))
                               and any(a<b for a,b in zip(other['costs'],item['costs']))]
+    for item in good:
         del item['costs']
     # Ranking never changes scientific status; no universal hidden weighted score.
     keymap={'balanced':lambda x:(bool(x['dominated_by']),x['metrics']['max_continuous_darkness_s'],

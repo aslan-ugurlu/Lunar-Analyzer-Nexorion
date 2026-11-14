@@ -222,9 +222,11 @@ def v08_err_clone() -> dict:
         rows.append({'site': [lat, lon], 'status': h['status'], 'observer_err_m': h['geometry']['observer_err_m'],
                      'ordered_cautious_ge_nominal_ge_optimistic': bool(np.all(cau >= nom - 1e-9) and np.all(nom >= opt - 1e-9)) if cau.size else None,
                      'max_band_width_deg': float(np.nanmax(cau - opt)) if cau.size else None})
-    ok = all(r['ordered_cautious_ge_nominal_ge_optimistic'] for r in rows)
+    ok = all(r['ordered_cautious_ge_nominal_ge_optimistic'] and r['status'] == 'complete'
+             and isinstance(r['observer_err_m'], float) and r['observer_err_m'] >= 0 for r in rows)
     return entry('PASS' if ok else 'FAIL',
-                 'ERR +/-1 sigma sensitivity ran; checks band ordering only (not statistical validation). DEM clones NOT_RUN.', rows)
+                 'ERR +/-1 sigma sensitivity ran at 2 sites: complete coverage, cautious >= nominal >= optimistic, observer sigma reported. '
+                 'Band ordering/consistency only - not a statistical validation. DEM clones NOT_RUN.', rows)
 
 
 def v09_constraints() -> dict:

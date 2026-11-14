@@ -33,6 +33,8 @@ R_M = R_MOON_KM * 1000.0
 GEO = CRS.from_proj4(f'+proj=longlat +a={R_M:.0f} +b={R_M:.0f} +no_defs')
 GEOD = Geod(a=R_M, b=R_M)
 AZ_STEP_DEG = 0.1
+# Bump when the horizon JSON layout/semantics change so stale cache entries are not reused.
+HORIZON_SCHEMA = 2
 
 
 class TerrainError(RuntimeError):
@@ -290,7 +292,7 @@ def _fingerprint(lat, lon, radius_km, sun_h, earth_h, uncertainty, k, sources, d
     for name, src in sorted(sources):
         stat = src.stat()
         entries.append((name, str(src.resolve()), stat.st_size, stat.st_mtime_ns))
-    blob = json.dumps([lat,lon,radius_km,sun_h,earth_h,uncertainty,k, AZ_STEP_DEG,entries,dataset_id], sort_keys=True)
+    blob = json.dumps([HORIZON_SCHEMA,lat,lon,radius_km,sun_h,earth_h,uncertainty,k, AZ_STEP_DEG,entries,dataset_id], sort_keys=True)
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
@@ -335,8 +337,9 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
             az, nominal, cvg, obs_height, obs_sigma = _profile_compute(ctx, height, radius_km=radius_km)
             record = {'nominal': [None if not math.isfinite(x) else float(x) for x in nominal], 'coverage': cvg.tolist()}
             if uncertainty:
-                _, caution, _, _, _ = _profile_compute(ctx, height, sigma_multiplier=+k,
-                                                         uncertainty=True, radius_km=radius_km)
+                # The ERR call samples the observer's own sigma; report it in geometry.
+                _, caution, _, _, obs_sigma = _profile_compute(ctx, height, sigma_multiplier=+k,
+                                                               uncertainty=True, radius_km=radius_km)
                 _, optimistic, _, _, _ = _profile_compute(ctx, height, sigma_multiplier=-k,
                                                             uncertainty=True, radius_km=radius_km)
                 record.update({'cautious': [None if not math.isfinite(x) else float(x) for x in caution], 'optimistic': [None if not math.isfinite(x) else float(x) for x in optimistic]})

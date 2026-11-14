@@ -27,6 +27,11 @@ try {
   note('header + backend Online chip visible');
   await page.screenshot({ path: join(OUT, '01_setup_public.png'), fullPage: true });
 
+  // Optional real-data variants: UNCERTAINTY=err, LANDING_DATE=YYYY-MM-DD, LANDING_TIME=HH:MM (UTC).
+  if (process.env.UNCERTAINTY === 'err') await page.getByRole('radio', { name: /ERR ±k/ }).check();
+  if (process.env.LANDING_DATE) await page.getByLabel('İniş tarihi (UTC)').fill(process.env.LANDING_DATE);
+  if (process.env.LANDING_TIME) await page.getByLabel('İniş saati (UTC, 24 saat)').fill(process.env.LANDING_TIME);
+  note(`mode=${process.env.UNCERTAINTY ?? 'nominal'} landing=${process.env.LANDING_DATE ?? 'default'} ${process.env.LANDING_TIME ?? ''}`);
   for (const [lat, lon] of SITES) {
     await page.getByLabel('Enlem (°, planetosentrik)').fill(String(lat));
     await page.getByLabel('Boylam (°, doğu-pozitif)').fill(String(lon));

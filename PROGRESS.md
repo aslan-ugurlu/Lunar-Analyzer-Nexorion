@@ -5,10 +5,10 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T09:55Z
-- **Faz:** Faz 0–3 DONE · Faz 4 DONE (bu commit) → Faz 5 (README, final doğrulama)
-- **Alt adım:** README + son koşular; ERR indirmesi sürüyor (~180/267 MB)
-- **Durum:** IN_PROGRESS
+- **Zaman (UTC):** 2026-11-14T09:44Z
+- **Faz:** Faz 0–5 DONE · **P0_DONE** (11.1–11.5 kabul girdileri aşağıda; Moon Trek odaklanması NOT_VERIFIED olarak etiketli)
+- **Alt adım:** Final commit
+- **Durum:** DONE
 
 ## Tamamlanan iş
 - Talimat dosyaları okundu: `CLAUDE.md`, `CLAUDE_DEVIR_TALIMATI.md` (§0–§10).
@@ -56,19 +56,24 @@
 | `python -m backend.verify_horizons` | 08:39Z | 1 | FAIL SPICE(UNPARSEDTIME) → düzeltildi |
 | `python -m backend.verify_horizons` | 08:40Z | 1 | FAIL başlık ayrıştırma → düzeltildi |
 | `python -m backend.verify_horizons` | 08:40Z | 0 | all_passed=true (6 satır, maks 3.3e-7°) — `logs/verify_horizons_faz0.json` |
-| `python -m pytest -q` | 09:21Z | 0 | 55 passed |
-| `npm run build` (frontend) | 09:21Z | 0 | tsc + vite OK (ilk yük 286 kB JS; Plotly ayrı chunk) |
-| `npm run lint` | 09:21Z | 0 | 0 sorun |
-| `npx vitest run` | 09:21Z | 0 | 56 passed (7 dosya) |
-| Gerçek uçtan uca analiz (API) | 09:08Z | — | `62e783c2…` completed < 1 dk; RED; ufuk 3600/3600 tam kapsama; `logs/first_real_analysis.json` |
-| `npm run e2e` (playwright-core + sistem Chrome, GERÇEK backend) | 09:38Z | 0 | 2 site + kayma akışı; sky view 7 iz; slider klavye 10 adım = +5 sa; mod değişimi kararı değiştirmedi; mobil 390 px taşma 0; konsol hatası 0. Görseller `logs/e2e/*.png` |
-| `npx vitest run` | 09:39Z | 0 | 70 passed (8 dosya) |
-| `npm run build` / `npm run lint` | 09:39Z | 0 / 0 | ana JS 315 kB, Plotly lazy 4.65 MB |
-| `python -m pytest -q` | 09:39Z | 0 | 55 passed |
-| `python -m backend.validation` | 09:28Z | 0 | 9 PASS, 2 BLOCKED (V-06, V-08); A-04 ağ ile PASS |
-| `npm run e2e` (+ axe-core) | 09:52Z | 0 | Halk/Mühendis × 5 sekme = 10 tarama, **0 axe ihlali** (ilk koşuda 1: scrollable-region-focusable → düzeltildi); gerçek /compare; 429 RATE_LIMITED UX gerçek sunucuda görüldü |
-| `python -m pytest -q` | 09:54Z | 0 | 59 passed |
-| `npx vitest run` / build / lint | 09:54Z | 0 | 71 passed / OK / 0 sorun |
+| `python -m pytest -q` | ≈09:11Z | 0 | 55 passed |
+| `npm run build` (frontend) | ≈09:11Z | 0 | tsc + vite OK (ilk yük 286 kB JS; Plotly ayrı chunk) |
+| `npm run lint` | ≈09:11Z | 0 | 0 sorun |
+| `npx vitest run` | ≈09:11Z | 0 | 56 passed (7 dosya) |
+| Gerçek uçtan uca analiz (API) | 09:08:29Z | — | `62e783c2…` completed < 1 dk; RED; ufuk 3600/3600 tam kapsama; `logs/first_real_analysis.json` |
+| `npm run e2e` (playwright-core + sistem Chrome, GERÇEK backend) | ≈09:20Z | 0 | 2 site + kayma akışı; sky view 7 iz; slider klavye 10 adım = +5 sa; mod değişimi kararı değiştirmedi; mobil 390 px taşma 0; konsol hatası 0. Görseller `logs/e2e/*.png` |
+| `npx vitest run` | ≈09:21Z | 0 | 70 passed (8 dosya) |
+| `npm run build` / `npm run lint` | ≈09:21Z | 0 / 0 | ana JS 315 kB, Plotly lazy 4.65 MB |
+| `python -m pytest -q` | ≈09:21Z | 0 | 55 passed |
+| `python -m backend.validation` | 09:28:23Z | 0 | 9 PASS, 2 BLOCKED (V-06, V-08); A-04 ağ ile PASS |
+| `npm run e2e` (+ axe-core) | ≈09:29Z | 0 | Halk/Mühendis × 5 sekme = 10 tarama, **0 axe ihlali** (ilk koşuda 1: scrollable-region-focusable → düzeltildi); gerçek /compare; 429 RATE_LIMITED UX gerçek sunucuda görüldü |
+| `python -m pytest -q` | ≈09:30Z | 0 | 59 passed |
+| Gerçek ERR modu analizleri (API) | 09:37:47Z | — | (−89.4512, −137.1427) ve (−88.6663, −68.2302), iniş 2026-12-17 00:00Z, k=1: ikisi de GREEN; `/compare` ilk denemede **500** (Pareto KeyError) → düzeltildi → 200, iki GREEN, baskın değil. `logs/err_mode_runs.json` |
+| `python -m backend.validation` | 09:39:15Z | 0 | 10 PASS, 1 BLOCKED (V-06) |
+| `npm run e2e` (ERR + 2026-12-17) | 09:40:09Z | 0 | GREEN rozet, Sky View ERR bandı (9 iz), GREEN Pareto compare, axe 0 ihlal, mobil 0, konsol 0 — `logs/e2e_err/` |
+| `npm run e2e:states` | 09:40:51Z | 0 | 8/8 (DEM_MISSING gerçek; offline/SPICE_MISSING/QUEUE_FULL/WORKER_UNAVAILABLE/409 işaretli mock; 422 istemcide engellendi) |
+| `python -m pytest -q` / `npx vitest run` / build / lint | 09:40:35Z | 0 | **62 passed** / **71 passed** / OK / 0 sorun |
+| `npx vitest run` / build / lint | ≈09:30Z | 0 | 71 passed / OK / 0 sorun |
 
 ## Veri durumu
 | Dosya | Durum | Boyut (bayt) | Kaynak | Doğrulama |
@@ -80,7 +85,7 @@
 | `data/spice/moon_de440_250416.tf` | PRESENT_UNVERIFIED | 19478 | generic_kernels/fk/satellites | aynı |
 | `data/lola/LDEM_60S_240MPP_ADJ.TIF` | PRESENT_UNVERIFIED (yapısal/CRS doğrulaması PASS) | 218961039 (= Content-Length) | https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ.TIF (ürün 90) | rasterio: GTiff float32 1 bant 7760×7760, 240 m, CRS "Moon (2015) - Sphere / Ocentric / South Polar" (Polar Stereographic B, lat_ts −90, lon_0 0, R 1737400 m), NoData NaN, z −9127.1…7024.8 m, kutup örneği −6…1457 m. Yerel SHA-256 `3f966325…8b34`; PGDA checksum yayımlamıyor. Bilimsel doğruluk doğrulaması değildir. |
 | `data/lola/LDEM_80S_80MPP_ADJ.TIF` | MISSING | — | PGDA | — |
-| `data/lola/LDEM_60S_240MPP_ADJ_ERR.TIF` | DOWNLOADING (09:07Z başladı, sunucu 267.0 MB) | — | https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_ERR.TIF | aynı doğrulama zinciri |
+| `data/lola/LDEM_60S_240MPP_ADJ_ERR.TIF` | PRESENT_UNVERIFIED (yapısal/CRS doğrulaması PASS) | 267005175 (= Content-Length) | https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_ERR.TIF | rasterio: aynı CRS/ızgara (7760², 240 m), NoData NaN, kutup örneği σ 0.024–0.165 m; 1774.7 s |
 | `LDEM_60S_240MPP_ADJ_EFFRES.TIF` | MISSING (bilerek indirilmedi) | — | PGDA ürün 90 | config'e eklendi; kodda kullanılmıyor |
 | `data/sites/*5mpp*` | MISSING | — | PGDA | — |
 
@@ -88,15 +93,15 @@
 
 ## Çalışan işlemler (2026-11-14T08:38Z)
 - 08:38Z: kullanıcının `download_data` süreci **çalışmıyordu** (python süreci/`.part` yoktu).
-- 09:07Z: Claude'un başlattığı `python -u -m backend.download_data --include-lola-240m --include-lola-240m-err`
+- 08:44Z (manifest: bitiş 09:06:44Z − 1326 s): Claude'un başlattığı `python -u -m backend.download_data --include-lola-240m --include-lola-240m-err`
   ERR dosyasını indiriyor (kilit `data/lola/LDEM_60S_240MPP_ADJ_ERR.TIF.download.lock`, heartbeat 30 sn; PID kilit dosyasında).
   Kesilirse: aynı komutu tekrar çalıştırın; tamamlanmış DEM yeniden indirilmez, yetim `.part`/kilit otomatik temizlenir.
 - 09:09Z: uvicorn (v1.1 kodu) `127.0.0.1:8000`'de Claude tarafından yeniden başlatıldı; eski süreç (PID 34784) durduruldu.
 - İlgisiz: `@21st-dev/magic` MCP node süreçleri (PID 15336, 58236) — dokunulmayacak.
 
 ## Bilimsel doğrulama
-Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Data & Validation). Son tam koşu 2026-11-14T09:28Z
-(ağ dahil, çıkış 0); kopya `logs/validation_report_*.json`. PASS yalnızca kayıtlı vaka ve ölçütleri kapsar.
+Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Data & Validation). Son tam koşu 2026-11-14T09:39:15Z
+(ağ + ERR dahil, çıkış 0): **10 PASS, 1 BLOCKED**; kopya `logs/validation_report_final.json`. PASS yalnızca kayıtlı vaka ve ölçütleri kapsar.
 
 | Test | Durum | Kanıt / kalan risk |
 |---|---|---|
@@ -108,24 +113,47 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 | V-05 135/200/250 km | PASS (2 site) | 200→250 km değişim 0.0000° (eğrilik ≥3.3° düşürür); **135→200 km 1950 m sırt noktasında 0.457°, azimutların %7.1'i** → 135 km hızlı mod yüksek konumlarda yetersiz olabilir |
 | V-06 LOD/NoData | BLOCKED | NoData NaN olarak yayılıyor (sıfırla doldurma yok), 260 km kutusunda NaN piksel 0; LOD geçişi test edilemedi (yalnız 240 m var) |
 | V-07 disk quadrature | PASS (düz ufuk) | analitik daire segmentine karşı 27 ofset, maks hata 0.0028 (< 0.01); eğri arazi kapsanmadı |
-| V-08 ERR/clone | BLOCKED | ERR dosyası henüz inmedi; clone verisi yok → CLONE_NOT_PRECOMPUTED |
+| V-08 ERR/clone | PASS (yalnız tutarlılık) | 2 site ERR ±1σ: tam kapsama, ihtiyatlı ≥ nominal ≥ iyimser, gözlemci σ 0.028/0.036 m, bant ≤ 0.006°/0.104°. İstatistiksel doğrulama değil. Clone: NOT_RUN (veri yok) |
 | V-09 kısıt doğruluğu | PASS | elle hesaplanmış girdilerde en uzun koşu, min/maks sınırları, SLOPE_UNKNOWN |
 | V-10 izlenebilirlik | PASS | gerçek 24 sa analiz (site 2): sources/cache_key/radius/mode/disclaimers/UTC Z mevcut; nominal → GRAY (GREEN değil) |
 
-## §11 kabul girdileri
-| Madde | Durum |
-|---|---|
-| 11.1 PROGRESS.md | IN_PROGRESS (bu dosya) |
-| 11.2 Windows spawn | PASS (tests/test_spawn_pool.py 7/7, gerçek spawn alt süreçleri) |
-| 11.3 `--include-lola-240m` | kod+17 test PASS (HTTP mock + sentetik TIFF fikstürü); gerçek indirme IN_PROGRESS |
-| 11.4 Moon Trek / QuickMap deep-link | QuickMap PASS (URL şeması uygulama JS'inden + headless Chrome'da iki sitede tam ortalama, 2026-11-14); Moon Trek URL biçimi PASS, koordinata odaklanma **NOT_VERIFIED/UNRELIABLE** (1. site 4/4, 2. site 2/7) → arayüzde açıkça etiketli. 13 URL sözleşme testi geçti. |
-| 11.5 Dünya vs Ay kartı | PASS: NSSDC Earth/Moon fact sheet, NASA SVS 5229, NASA Science (kaynaklar 2026-11-14 kontrol); 4 test (metin, linkler, yalnız Halk modu, karar motorundan bağımsızlık) |
+## §11 kabul girdileri (§11.6)
+| Madde | Durum | Kanıt |
+|---|---|---|
+| 11.1 PROGRESS.md | PASS | Bu dosya; her faz başı/ara/sonu güncellendi; yeniden başlatma talimatı aşağıda |
+| 11.2 Windows spawn | PASS | Havuz yalnız `lifespan`'de (`_new_pool`), import'ta değil; `tests/test_spawn_pool.py` 7/7 gerçek spawn alt süreçleri: başlatma, çökme→WORKER_UNAVAILABLE+yenileme, zaman aşımı→terminate, kapanışta takılmama, 429 kuyruk, 5/dk |
+| 11.3 `--include-lola-240m` | PASS | 17 test (mock HTTP + sentetik TIFF fikstürü; işaretli): ilk kurulum, geçerli dosya, yetim .part, aktif kilit çakışması, eski kilit, bozuk TIFF, yanlış CRS, yanlış boyut, Content-Length yok, disk ön-kontrol, yazarken disk dolu, HTTP 404, çevrimdışı, katalog dışı URL, varsayılan CLI, PID kontrolü. **Gerçek PGDA indirmesi** 218,961,039 B, rasterio doğrulaması PASS |
+| 11.4 Moon Trek / QuickMap | QuickMap PASS · Moon Trek biçim PASS / odaklanma NOT_VERIFIED (UNRELIABLE) | URL şemaları uygulama JS'inden + headless Chrome (2026-11-14), 2 güney kutbu sitesi; 13 sözleşme testi; arayüz Moon Trek uyarısını gösterir; README "Deep-link doğrulaması" |
+| 11.5 Dünya vs Ay kartı | PASS | NSSDC Earth/Moon, NASA SVS 5229, NASA Science kaynakları; 4 test (metin, güvenli linkler, yalnız Halk modu, karar motorundan bağımsızlık) |
+
+## §7 minimum P0 kabul listesi
+| Kriter | Durum | Kanıt |
+|---|---|---|
+| pytest gerçek çıktıyla raporlandı | ✅ | 59 passed (başlangıç 15; hata gizlenmedi: ilk verify_horizons FAIL kaydı yukarıda) |
+| /health, /sites, /docs erişilebilir; kullanılabilirlik ≠ bilimsel doğruluk | ✅ | curl + UI Data & Validation ayrımı |
+| `npm run build` | ✅ | tsc + vite OK |
+| Backend yok / SPICE yok / LOLA yok / ERR yok / worker çöküşü / 429 / 422 / 409 UX | ✅ | `e2e/states.mjs` 8/8 (DEM_MISSING gerçek; diğerleri işaretli mock), RATE_LIMITED gerçek sunucuda görüldü, ERR yok → çip + form uyarısı |
+| Gerçek veriyle analiz, polling, ufuk grafiği, seçili zaman, kıyaslama, kayma | ✅ | `e2e/smoke.mjs` gerçek backend |
+| Veri yokken sahte sonuç yok | ✅ | AnalysisGate boş durumları; offline'da grafik çizilmiyor (e2e) |
+| +0/24/48/72, ayrı Güneş/Dünya yükseklikleri, UTC | ✅ | form + Sky View ayrı anten ufku testi + UTC testleri (America/Los_Angeles TZ) |
+| Halk/Mühendis yalnız sunum | ✅ | bileşen testi + e2e (karar değişmedi) |
+| Mobil/masaüstü, klavye | ✅ | 390 px taşma 0, axe-core 10 tarama 0 ihlal, WAI-ARIA sekmeler, klavye kaydırıcı |
+| README ve .env.example | ✅ | kök + frontend |
+| Bilimsel doğrulamalar yalnız gerçek kanıtla PASS | ✅ | `/validation` raporu; V-06/V-08 BLOCKED |
+
+## Yeniden başlatma talimatı (yeni oturum için)
+1. `git log --oneline` (son: Faz 5) ve `git status` kontrol et; bu dosyayı oku.
+2. Backend: `uvicorn backend.main:app --host 127.0.0.1 --port 8000` · Frontend: `cd frontend; npm run dev`.
+3. Eksik veri varsa: `python -m backend.download_data --include-lola-240m [--include-lola-240m-err]` (kilit/yetim .part güvenli).
+4. Doğrulama: `python -m pytest -q`, `python -m backend.validation`, `cd frontend; npx vitest run; npm run build; npm run e2e; npm run e2e:states`.
 
 ## Blokajlar ve bir sonraki tam adım
-- Sonraki: Faz 5 — README (kurulum, veri, komutlar, sınırlamalar, test durumu, demo), son pytest/vitest/build/e2e,
-  ERR inerse `python -m backend.validation` ile V-08 ve bir `err` modu analizi.
+- Blokaj yok. Kalan (P1+): 80/20/5 m katmanları ile LOD (V-06) ve eğim; DEM clone verisi; YELLOW'un gerçek veriyle gözlenmesi;
+  daha fazla Horizons/V-05 vakası ve eğri arazi quadrature testi; paylaşımlı rate-limit (internete açılırsa).
+- Çalışan süreçler (Claude başlattı): uvicorn `127.0.0.1:8000`, Vite dev `localhost:5173` (arka plan). İndirme süreci bitti.
 
 ## Olay günlüğü (append-only)
+> 09:44Z düzeltmesi: önceki sürümde bazı zaman damgaları tahminiydi (bazıları ileri tarihliydi). Git commit saatleri, dosya mtime'ları, manifest `downloaded_utc` ve uvicorn log saatlerine göre düzeltildi; kesin olmayanlar `≈` ile işaretli. Olayların sırası liste sırasından farklı olabilir; saat esas alınmalı.
 - 2026-11-14T08:38Z — Faz 0 başladı; denetim yapıldı; PROGRESS.md oluşturuldu.
 - 08:39Z — `python -m pytest -q` → 15 passed (exit 0). Hiçbir test SPICE'a dokunmuyordu.
 - 08:39Z — `python -m backend.verify_horizons` → **FAIL**: `SPICE(UNPARSEDTIME)`; `str2et('…T… UTC')` biçimi
@@ -137,38 +165,43 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   Horizons metadata: `Center pole/equ: MEAN_ME`, `Center radii: 1737.4 ×3`. Yükseklikler sentetik. Log: `logs/verify_horizons_faz0.json`.
 - 08:41Z — uvicorn başlatıldı (arka plan). `/health` degraded (SPICE var, DEM yok), `/docs` 200, OpenAPI 8 yol,
   DEM eksik POST → 503 DEM_MISSING, 422/404 doğru. CORS yok (OPTIONS 405).
-- 08:45Z — PGDA ürün 90 sayfasından gerçek URL'ler doğrulandı (LDEM 210M, ERR 255M, EFFRES 248M; checksum yayımlanmamış).
+- ≈08:42Z — PGDA ürün 90 sayfasından gerçek URL'ler doğrulandı (LDEM 210M, ERR 255M, EFFRES 248M; checksum yayımlanmamış).
   Frame kernel: `MOON_ME_DE440_ME421` DE421 ME ile yakın hizalı → LOLA "MOON_ME (DE421)" ile uyumlu.
-- 08:50Z — `download_data.py`: `--include-lola-240m` (+ `--include-lola-240m-err`) eklendi; kilit/heartbeat,
+- ≈08:43Z — `download_data.py`: `--include-lola-240m` (+ `--include-lola-240m-err`) eklendi; kilit/heartbeat,
   yetim `.part`, disk ön-kontrol, Content-Length, rasterio CRS/küre/kutup/NoData doğrulaması, atomik `os.replace`.
   `os.kill(pid,0)` Windows'ta süreci öldürdüğü için ctypes OpenProcess kullanıldı.
-- 08:52Z — Gerçek indirme başlatıldı: `python -u -m backend.download_data --include-lola-240m --include-lola-240m-err`
+- 08:44:38Z — Gerçek indirme başlatıldı: `python -u -m backend.download_data --include-lola-240m --include-lola-240m-err`
   (log `logs/download_lola_240m.log`; sunucu Content-Length 219.0 MB bildirdi).
-- 09:00Z — main.py v1.1: lifespan-only pool factory, timeout→worker terminate+recycle, kapanışta terminate,
+- ≈08:50Z — main.py v1.1: lifespan-only pool factory, timeout→worker terminate+recycle, kapanışta terminate,
   localhost CORS (wildcard reddi), 422 `details`, `/health.layers/clone_profiles/limits`, `/sites` dosya rehberi,
   `/validation` (yalnız kayıtlı gerçek koşulardan). terrain: `MAX_CACHE_MB` kotası uygulandı; eşit yükseklikte profil tek hesap.
-- 09:04Z — `python -m pytest -q` → **55 passed** (exit 0): contract 15 + spice_time 7 + download 17 + spawn 7 + api_v11 9.
+- ≈08:55Z — `python -m pytest -q` → **55 passed** (exit 0): contract 15 + spice_time 7 + download 17 + spawn 7 + api_v11 9.
 - 09:06Z — **Gerçek PGDA indirmesi tamamlandı**: LDEM_60S_240MPP_ADJ.TIF 218,961,039 B, 1326 s, rasterio doğrulaması PASS, atomik replace.
-- 09:07Z — QuickMap/Moon Trek deep-link araştırması (alt ajan, uygulama JS'i + headless Chrome): QuickMap VERIFIED,
+- ≈09:06Z — QuickMap/Moon Trek deep-link araştırması (alt ajan, uygulama JS'i + headless Chrome): QuickMap VERIFIED,
   Moon Trek biçim VERIFIED / koordinata odaklanma UNRELIABLE (bir sitede 7 denemenin 2'si).
-- 09:10Z — `python -m pytest -q` → 55 passed (exit 0), uvicorn yeniden başlatıldı, `/health` → `ready`, lola_240m dem=true err=false.
-- 09:10Z — **Faz 0 DONE**, commit 84bf2f5.
-- 09:08Z — İlk gerçek analiz (örnek koordinat −89.54°, 0°; nominal; 48+12 sa; 4 senaryo): < 1 dk, `completed`, karar RED.
+- 09:07:44Z — `python -m pytest -q` → 55 passed (exit 0), uvicorn yeniden başlatıldı, `/health` → `ready`, lola_240m dem=true err=false.
+- 09:08:16Z — **Faz 0 DONE**, commit 84bf2f5.
+- 09:08:29Z — İlk gerçek analiz (örnek koordinat −89.54°, 0°; nominal; 48+12 sa; 4 senaryo): < 1 dk, `completed`, karar RED.
   Gözlemci DEM −754.1 m, ufuk −0.21°…10.68°, Güneş 1.50° → f_sun 0, Dünya −1.90° → DTE 0, eğim `high_resolution_dem_missing`.
   Bu, örnek koordinatın bir çukurda olduğunu gösteren gerçek sonuçtur; aday önerisi değildir.
-- 09:12Z — **Faz 1 DONE**, commit 1199213 (build/lint/48 test).
-- 09:20Z — ERR indirmesi yavaş (~15 kB/s; sunucu kaynaklı olabilir). Bloklamıyor: ERR yokken `err` modu GRAY döner ve UI bunu söyler.
-- 09:30Z — İkinci test konumu DEM'den türetildi: (−89.4512°, −137.1427°), DEM 1950.3 m (resmi aday değildir).
-  **Düzeltme (10:05Z):** ilk aramada kesirli raster penceresi ⅓ piksel kaydırdı; bu nokta en yüksek piksel değil, ona komşu.
+- 09:09:07Z — **Faz 1 DONE**, commit 1199213 (build/lint/48 test).
+- ≈09:12Z — ERR indirmesi yavaş (~15 kB/s; sunucu kaynaklı olabilir). Bloklamıyor: ERR yokken `err` modu GRAY döner ve UI bunu söyler.
+- ≈09:17Z — İkinci test konumu DEM'den türetildi: (−89.4512°, −137.1427°), DEM 1950.3 m (resmi aday değildir).
+  **Düzeltme (≈09:33Z):** ilk aramada kesirli raster penceresi ⅓ piksel kaydırdı; bu nokta en yüksek piksel değil, ona komşu.
   Gerçek en yüksek piksel (40 km içinde) 1954.3 m @ (−89.4455°, −137.3137°). Kanıtlar −89.4512/−137.1427 ile üretildiği için korunuyor. Gerçek sonuç: f_sun %100, karanlık 0 sa; Dünya ufkun altında (DTE %0) → RED. Yeni 200 km ufuk ~2 sn.
-- 09:38Z — **Faz 3 DONE**: Sky View (gerçek /horizon, gerçek açısal boyutlu diskler, 0/360 sarma, ERR bandı yalnız varsa,
+- 09:21:32Z — **Faz 3 DONE**: Sky View (gerçek /horizon, gerçek açısal boyutlu diskler, 0/360 sarma, ERR bandı yalnız varsa,
   eksik ışın işareti, Güneş/Dünya izleri, gövdeye yakınlaştırma eşit ölçekli), Timeline (f_sun + DTE, en uzun aralık vurgusu,
   tıklayarak seçim, klavye kaydırıcı, mühendis yükseklik grafiği, /scenarios/shift + polling, ebeveyn korunur).
   E2E'de bulunan ve düzeltilen hatalar: mobil 300 px taşma, MIN_* ihlallerinde ters karşılaştırma işareti, zoom'da eksen etiketi
   kaybı/elips disk, kayma sonrası ebeveynden otomatik atlama, Türkçe yüzde ekleri.
-- 09:55Z — **Faz 4 DONE**: Compare (yalnız aynı profil seçilebilir, backend sıralama anahtarları açıklanır, RED/GRAY gerekçeli
+- 09:36:18Z — ERR indirmesi tamamlandı (267,005,175 B, doğrulama PASS). `/health` lola_240m err=true.
+- 09:37Z — Gerçek ERR analizleri GREEN; `/compare` 500 → `pareto_compare` KeyError('costs') (≥2 GREEN/YELLOW'da hiç çalışmamış yol)
+  bulundu, minimal düzeltme + `tests/test_pareto.py` (3). Ayrıca ERR modunda `observer_err_m` hep None → düzeltildi,
+  horizon cache anahtarına `HORIZON_SCHEMA=2` eklendi, V-08 ölçütü σ raporlamasını kontrol ediyor. uvicorn iki kez yeniden başlatıldı.
+- 09:44Z — **Faz 5 DONE / P0_DONE.**
+- 09:30:45Z — **Faz 4 DONE**: Compare (yalnız aynı profil seçilebilir, backend sıralama anahtarları açıklanır, RED/GRAY gerekçeli
   kartlar, deep-link'ler), Data & Validation (/health, /sites, gerçek /validation raporu, kaynaklar, sınırlamalar),
   `backend/validation.py`, axe-core 0 ihlal, mobil taşma 0, Plotly lazy chunk.
-- 09:22Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
+- 09:11:56Z — **Faz 2 DONE**: form (UTC ayrık tarih/saat, sınırlar, bütçe, 422 alan eşlemesi), 202+polling (2 sn, terminalde durur,
   404→lost, unmount cleanup), sonuç özeti (Halk/Mühendis, ihlal UTC aralıkları, provenance, kopyalanabilir özet).
   Testler: polling 4, gerçek-fikstür ResultSummary 4 (mod değişimi kararı değiştirmiyor).
