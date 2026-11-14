@@ -199,6 +199,7 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   bulundu, minimal düzeltme + `tests/test_pareto.py` (3). Ayrıca ERR modunda `observer_err_m` hep None → düzeltildi,
   horizon cache anahtarına `HORIZON_SCHEMA=2` eklendi, V-08 ölçütü σ raporlamasını kontrol ediyor. uvicorn iki kez yeniden başlatıldı.
 - 09:44Z — **Faz 5 DONE / P0_DONE.**
+- Kullanıcı onayıyla `git push origin main`: f613c81..8a37e4f → github.com/aslan-ugurlu/Lunar-Mission-Window-Analyzer-Nasa-Space-App (main). Sıradaki iş: tasarım ve Halk/Mühendis modu güncellemeleri (kullanıcıdan ayrıntı bekleniyor).
 - 09:30:45Z — **Faz 4 DONE**: Compare (yalnız aynı profil seçilebilir, backend sıralama anahtarları açıklanır, RED/GRAY gerekçeli
   kartlar, deep-link'ler), Data & Validation (/health, /sites, gerçek /validation raporu, kaynaklar, sınırlamalar),
   `backend/validation.py`, axe-core 0 ihlal, mobil taşma 0, Plotly lazy chunk.
