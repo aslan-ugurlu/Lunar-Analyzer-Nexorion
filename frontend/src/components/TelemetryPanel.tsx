@@ -1,10 +1,30 @@
-import type { Horizon, Mission } from '../api/types';
+import type { EffresLayer, Horizon, Mission } from '../api/types';
 import { VIOLATION_TEXT } from '../api/errors';
 import { formatDeg, formatLatLon, formatNumber, formatViolationValue } from '../lib/format';
 import { FRAME, MOON_RADIUS_KM, observerAltitudes, violationRows } from '../lib/telemetry';
 import { formatUtc } from '../lib/utc';
 import type { AnalysisEntry } from '../state/AppState';
 import { KeyValue } from './ui';
+
+/** EFFRES per layer, copied from the API (metres): observer value and principal-band median/p90. */
+export function effresText(layers: Record<string, EffresLayer>): string {
+  return Object.entries(layers).map(([name, l]) => {
+    const band = `${l.band_km[0]}–${l.band_km[1]} km`;
+    if (l.status === 'OK') {
+      return `${name} (${l.pixel_m} m piksel, ${band}): gözlemci ${l.at_observer_m != null ? formatNumber(l.at_observer_m, 0, 'm') : '—'} · medyan ${formatNumber(l.median_m ?? null, 0, 'm')} · p90 ${formatNumber(l.p90_m ?? null, 0, 'm')}`;
+    }
+    const why = { MISSING: 'indirilmedi', NOT_PUBLISHED: 'PGDA yayımlamıyor (_toterr kullanılır)' }[l.status] ?? l.status;
+    return `${name}: ${why}`;
+  }).join('  |  ');
+}
+
+/** Clone ensemble provenance and joint pass share of the baseline scenario (copied from the API). */
+function cloneText(horizon: Horizon, mission: Mission | undefined): string {
+  const c = horizon.clone_ensemble!;
+  const base = mission?.scenarios.find((s) => s.shift_hours === 0)?.variants.cautious?.clone;
+  return `${c.n_clones} clone · ${c.cloned_layer} (${c.site_tile}) · ihtiyatlı = clone p${c.percentile} · gözlemci DEM ${c.observer_dem_m_range[0].toFixed(2)}–${c.observer_dem_m_range[1].toFixed(2)} m` +
+    (base?.pass_count != null ? ` · +0 sa: ${base.pass_count}/${base.n} clone tüm kısıtları sağlıyor` : '') + ` · profil ${c.profile_key.slice(0, 12)}`;
+}
 
 /** Engineer-only telemetry: every value is copied from the request or the API result. */
 export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEntry; horizon: Horizon | undefined; mission: Mission | undefined }) {
@@ -21,6 +41,7 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
           ['Konum', `${formatLatLon(i.latitude, i.longitude)} · (${i.latitude}, ${i.longitude}) ME planetosentrik, doğu-pozitif`],
           ['DEM katmanları', horizon ? layers.map((n) => `${n} · ${horizon.layer_resolution_m?.[n] ?? '?'} m · ${horizon.sources[n]}`).join('  |  ') : 'ufuk yok'],
           ['Seçili dataset', horizon?.selected_dataset_id ?? i.dataset_id],
+          ['Etkin çözünürlük (EFFRES)', horizon?.effective_resolution ? effresText(horizon.effective_resolution.layers) : '— (bu sonuçta alan yok)'],
           ...(horizon?.excluded_layers && Object.keys(horizon.excluded_layers).length > 0
             ? [['Kullanılmayan katmanlar', Object.entries(horizon.excluded_layers).map(([k, v]) => `${k}: ${v}`).join(' | ')] as [string, string]]
             : []),
@@ -29,6 +50,7 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
             ? `${mission.radius_policy.code} · r ${mission.radius_policy.radius_km} km / referans ${mission.radius_policy.reference_radius_km} km · ${mission.radius_policy.status_before_policy} → ${mission.radius_policy.status_after_policy}${mission.radius_policy.capped ? ' (GREEN tavanı)' : ''}`
             : '— (bu sonuçta alan yok)'],
           ['Belirsizlik', horizon ? `${horizon.uncertainty_mode}${horizon.k !== null ? ` · k = ${horizon.k}` : ''}${horizon.geometry.observer_err_m !== null ? ` · gözlemci σ = ${formatNumber(horizon.geometry.observer_err_m, 3, 'm')}` : ''}` : i.uncertainty_mode],
+          ...(horizon?.clone_ensemble ? [['DEM clone topluluğu', cloneText(horizon, mission)] as [string, string]] : []),
           ['Zaman', `iniş ${formatUtc(i.landing_utc, true)} · ${i.duration_hours} + ${i.buffer_hours} sa · Δt ${i.step_minutes} dk · kaymalar ${i.shifts_hours.map((s) => `+${s}`).join('/')} sa`],
           ['Eğim', slope ? (slope.slope_max_deg === null ? `bilinmiyor (${slope.status})` :
             `maks ${formatDeg(slope.slope_max_deg, 2)} · ort ${formatDeg(slope.slope_mean_deg, 2)} · ${slope.source} · Δ ${slope.sampling_interval_m} m · r ${slope.footprint_radius_m} m · ${slope.status}`) : '—'],

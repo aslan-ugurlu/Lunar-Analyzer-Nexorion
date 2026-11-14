@@ -307,3 +307,33 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   - Eğim maks 9.34° / ort 5.86° (`site01_5m`, Δ 5 m, `screening_only`); gözlemci DEM 1944.83 m, σ 0.253 m; katmanlar 240/80/5/5 m, dışlanan yok.
 - `npm run e2e` (nominal, varsayılan) → geçti: axe 10/10 ekran 0, mobil 0, konsol 0. `SITES=2 konum UNCERTAINTY=err 2026-12-17` →
   GREEN, Compare/Pareto, JSON katmanları 240/80/5/5 m, axe 0, mobil 0, konsol 0 (`logs/e2e_err_faz7/`).
+
+#### 7.3 — Bilimsel P1 (aşamalı) — 13:35Z'den itibaren
+- 13:36Z — Kullanıcıya 7.1/7.2 raporu + Site01 test senaryosu verildi (kullanıcının 8000/5173 sunucularına dokunulmuyor).
+- 13:38Z — **PGDA keşfi (gerçek):**
+  - Ürün 90 sayfası: `LDEM_60S_240MPP_ADJ_EFFRES.TIF` (259,831,703 B) ve `LDEM_80S_80MPP_ADJ_EFFRES.TIF` (250,228,467 B);
+    açıklama "LDEM effective resolution (in meters)". `/data/LOLA_20mpp/` dizini listelenemiyor (404), dosyalar doğrudan erişilebilir.
+  - Ürün 78 README: siteler 01, 04, 06, 07, 11, 20, 23, Haworth, Shoemaker, DM2; "Clones/: 100 clones of LDEM";
+    sayfa notu "Site23 does not yet have error estimates or clones", fakat `Site23_final_adj_5mpp_toterr.tif` HTTP 200 (70,586,811 B).
+  - Liste: Site01/04/07/11 için 100 clone (`SiteNN/Clones/SiteNN_final_adj_5mpp_NNNN_err.tif`, ~41 MB).
+  - Site01 clone 0001 örnek incelemesi: tam LDEM (yükseklik), `_surf` ile aynı 3200² × 5 m ızgara; clone − surf std 0.44 m,
+    medyan |clone − surf| / toterr = 0.73 (1σ Gauss beklentisi 0.674) → clone'lar toterr ile tutarlı gerçekleşimler.
+    CRS WKT adları farklı ("unknown"), parametreler aynı.
+- 13:45Z — İndirici: `--include-lola-effres`, `--include-site-5m-extra` (Site07/11/23), `--include-site-clones SITE`
+  + `--clone-range N-M`; katalog yalnız resmi PGDA (ad, URL) çiftleri (400 clone girdisi). `--include-site-5m` (Site01/04) değişmedi.
+  Testler +2 (katalog, CLI). İndirmeler başlatıldı (2 süreç; manifest yarışını önlemek için): site+EFFRES ve Site01 clone 1–100.
+- 13:50Z — **EFFRES entegrasyonu (kod):** `terrain_engine.effective_resolution_summary` her kullanılan katman için gözlemci
+  değeri + katmanın asıl LOD bandında (20 m: 0–5, 80 m: 0–30, 240 m: 30–200 km) medyan/p90/maks; site karoları `NOT_PUBLISHED`,
+  indirilmemiş `MISSING`. Önbelleğe yazılmaz (ufuk/karar değişmez). `/horizon.effective_resolution` (v1.3); Mühendis telemetri satırı.
+- 13:55Z — **Doğrulama genişletmesi (kod, kriterler koşudan önce sabit):** A-04 3 → 14 durum (2026–2035, −80.5…−89.98°,
+  ±180° dikişi, 0–5 km, 29 Şubat; bağlantı için 3 deneme); `validation_sites()` = 2 sabit nokta + mevcut her site karo merkezi;
+  V-05 ve V-08 bu konumların hepsinde, V-08'e k=2 ve band(k=2) ≥ band(k=1); V-07'ye gerçek eğri ufuklarda kısmi örtülme
+  (0.01 < f < 0.99) örnekleri için bağımsız 401×401 Kartezyen referans (ölçüt < 0.01, ≥ 20 örnek); yeni EFFRES-01.
+- 14:05Z — **Clone modu (kod):** `backend/clone_engine.py` (ön hesap CLI; 100 dosyanın tamamı + her birinin `_surf` ızgarası/CRS
+  eşlemesi zorunlu; yalnız gözlemcinin karosu klonlanır), `decision_engine._clone_variant` (her clone gerçek profille;
+  ihtiyatlı = kısıt başına clone p95 kötü taraf; ortak geçme oranı ayrıca), API clone modu: ön hesap yoksa gerekçeli
+  `CLONE_NOT_PRECOMPUTED`; `/health.clones` (ekleyici). Frontend: clone bandı etiketi, telemetri satırı, form ipucu gerçek sayılardan.
+- 14:10Z — Hata düzeltmesi: ERR modunda `excluded_layers` konumu kapsamayan katmanları da listeliyordu (ör. Site04 merkezinde
+  `site23_5m`) → yalnız kapsayan katmanlar raporlanıyor; regresyon testi.
+- 14:12Z — Testler: `python -m pytest -q` **92 passed** · `npx vitest run` **96 passed** · lint 0 · tsc 0.
+  `python -m backend.scenario_search --days-step 150` kısa deneme çalıştı (21 analiz/7 konum; tam koşu veri inince).

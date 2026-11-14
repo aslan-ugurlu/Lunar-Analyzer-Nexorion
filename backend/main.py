@@ -119,23 +119,60 @@ class ShiftInput(SafeBase):
         return values
 
 
+def _load_clones(payload:dict):
+    from backend.clone_engine import load_clone_ensemble
+    return load_clone_ensemble(payload['latitude'],payload['longitude'],payload['sun_observer_height_m'],
+                               payload['earth_observer_height_m'],payload['horizon_radius_km'])
+
+
+def _attach_clone(horizon:dict, ensemble:dict)->dict:
+    """Nominal horizon + clone p05/p95 display band (per azimuth) and provenance. Decision uses per-clone metrics."""
+    from backend.clone_engine import envelope, CLONE_CAUTIOUS_PERCENTILE
+    out=json.loads(json.dumps(horizon))
+    band_complete=True
+    for body in ('sun','earth'):
+        env=envelope(ensemble['profiles'][body])
+        band_complete&=env['complete']
+        out['profiles'][body]['cautious']=env['p95']
+        out['profiles'][body]['optimistic']=env['p05']
+    meta=ensemble['meta']
+    dem=ensemble['observer_dem_m']
+    out.update({'uncertainty_mode':'clone','k':None,
+                'clone_ensemble':{'n_clones':meta['n_clones'],'site_tile':meta['site_tile'],'cloned_layer':meta['cloned_layer'],
+                                  'profile_key':meta['key'],'created_utc':meta['created_utc'],'source':meta['source'],
+                                  'percentile':CLONE_CAUTIOUS_PERCENTILE,'band':'per-azimuth p05-p95 of clone horizons (display only)',
+                                  'observer_dem_m_range':[float(dem.min()),float(dem.max())],'band_complete':band_complete,
+                                  'note':meta['note']}})
+    if not band_complete:
+        out['status']='partial'
+    out['notes']=out.get('notes',[])+['DEM clones: empirical spread of PGDA realisations of the observer tile only; not a certified confidence level']
+    return out
+
+
 def _worker_calculate(payload:dict)->dict:
     from backend.terrain_engine import compute_horizon, TerrainMissing, TerrainError
     from backend.decision_engine import analyze_mission
     try:
-        if payload['uncertainty_mode']=='clone':
-            return {'status':'GRAY','error_code':'CLONE_NOT_PRECOMPUTED',
-                    'reason':'Clone profiles for exact site/observer/dataset/time have not been registered; no synthetic substitute'}
+        clone_mode=payload['uncertainty_mode']=='clone'
         horizon=compute_horizon(payload['latitude'],payload['longitude'],
                 radius_km=payload['horizon_radius_km'],
                 sun_height_m=payload['sun_observer_height_m'],
                 earth_height_m=payload['earth_observer_height_m'],
-                uncertainty_mode=payload['uncertainty_mode'],k=payload['err_k'],dataset_id=payload['dataset_id'])
+                uncertainty_mode='nominal' if clone_mode else payload['uncertainty_mode'],k=payload['err_k'],dataset_id=payload['dataset_id'])
+        ensemble=None
+        if clone_mode:
+            from backend.clone_engine import describe_gap
+            ensemble=_load_clones(payload)
+            if ensemble is None:
+                return {'status':'GRAY','error_code':'CLONE_NOT_PRECOMPUTED',
+                        'reason':describe_gap(payload['latitude'],payload['longitude'])}
+            horizon=_attach_clone(horizon,ensemble)
         mission=analyze_mission(horizon,payload['latitude'],payload['longitude'],payload['landing_utc'],
                 payload['duration_hours'],payload['buffer_hours'],payload['step_minutes'],
                 payload['constraints'],payload['shifts_hours'],
                 payload['sun_observer_height_m'],payload['earth_observer_height_m'],
-                dark_threshold=payload['dark_fraction_threshold'])
+                dark_threshold=payload['dark_fraction_threshold'],
+                clone_ensemble=ensemble['profiles'] if ensemble else None)
         return {'status':mission['status'],'mission':mission,'horizon':horizon}
     except TerrainMissing as exc:
         return {'status':'GRAY','error_code':'DEM_MISSING','reason':str(exc)}
@@ -147,10 +184,16 @@ def _worker_shift(horizon:dict,payload:dict,shifts:list[int]):
     from backend.decision_engine import analyze_mission
     if horizon is None:
         return {'status':'GRAY','reason':'No existing horizon result to reuse'}
+    ensemble=None
+    if horizon.get('uncertainty_mode')=='clone':
+        ensemble=_load_clones(payload)
+        if ensemble is None or ensemble['meta']['key']!=horizon.get('clone_ensemble',{}).get('profile_key'):
+            return {'status':'GRAY','error_code':'CLONE_NOT_PRECOMPUTED','reason':'Clone profiles of the parent analysis are no longer available'}
     result=analyze_mission(horizon,payload['latitude'],payload['longitude'],payload['landing_utc'],
              payload['duration_hours'],payload['buffer_hours'],payload['step_minutes'],
              payload['constraints'],shifts,payload['sun_observer_height_m'],
-             payload['earth_observer_height_m'],payload['dark_fraction_threshold'])
+             payload['earth_observer_height_m'],payload['dark_fraction_threshold'],
+             clone_ensemble=ensemble['profiles'] if ensemble else None)
     return {'status':result['status'],'mission':result,'horizon':horizon}
 
 
@@ -283,7 +326,10 @@ async def health():
     # Additive fields (v1.1): per-layer presence; still NOT scientific validation.
     info['layers']={name:{'dem':_present(d['path']),'err':_present(d.get('err')),
                           'effres':_present(d.get('effres'))} for name,d in DATASETS.items()}
-    info['clone_profiles']='NOT_PRECOMPUTED'
+    # v1.3 (additive): clone files per site + precomputed profile sets; legacy string kept.
+    from backend.clone_engine import summary_status
+    info['clones']=summary_status()
+    info['clone_profiles']='AVAILABLE' if info['clones']['precomputed_profile_sets'] else 'NOT_PRECOMPUTED'
     info['limits']={'max_workers':MAX_WORKERS,'max_pending':MAX_PENDING,
                     'analyses_per_minute_per_client':5,'analysis_timeout_s':ANALYSIS_TIMEOUT_S}
     info['scientific_validation']='Reported separately by GET /validation from real test runs only'
@@ -327,7 +373,7 @@ async def sites():
             'site_coordinates':'Choose explicitly; named landmark coordinates are not invented'}
 
 
-VALIDATION_IDS=('A-04','V-01','V-02','V-03','V-04','V-05','V-06','V-07','V-08','V-09','V-10','SLOPE-01')
+VALIDATION_IDS=('A-04','V-01','V-02','V-03','V-04','V-05','V-06','V-07','V-08','V-09','V-10','SLOPE-01','EFFRES-01','CLONE-01')
 
 
 @app.get('/validation')

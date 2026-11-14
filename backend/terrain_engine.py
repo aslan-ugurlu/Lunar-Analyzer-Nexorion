@@ -148,13 +148,18 @@ class TerrainContext:
                 if not path.is_file():
                     continue
                 err_path = definition.get('err')
-                if uncertainty and not (err_path is not None and err_path.is_file()):
-                    # Mixing a layer without ERR into an ERR run would make every ray it touches
-                    # NaN (-> partial -> GRAY). Use only layers whose ERR exists, and say so.
-                    self.excluded[name] = 'ERR layer missing for this dataset (ERR mode uses only layers with ERR)'
-                    continue
                 limit = min(radius_km, 5 if '5m' in name or '20m' in name else
                             30 if '80m' in name else radius_km)
+                if uncertainty and not (err_path is not None and err_path.is_file()):
+                    # Mixing a layer without ERR into an ERR run would make every ray it touches
+                    # NaN (-> partial -> GRAY). Use only layers whose ERR exists, and say so -
+                    # but only for layers that actually cover this location.
+                    try:
+                        RasterSampler.open(name, path, lon, lat, limit).close()
+                    except TerrainMissing:
+                        continue
+                    self.excluded[name] = 'ERR layer missing for this dataset (ERR mode uses only layers with ERR)'
+                    continue
                 try:
                     source = RasterSampler.open(name, path, lon, lat, limit)
                     self.sources[name] = source
@@ -333,7 +338,10 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
         CACHE.mkdir(parents=True, exist_ok=True)
         cache_path = CACHE / (key+'.json')
         if cache_path.exists():
-            return json.loads(cache_path.read_text(encoding='utf-8'))
+            cached = json.loads(cache_path.read_text(encoding='utf-8'))
+            # Quality metadata is recomputed (not cached): it may change when EFFRES files are added.
+            cached['effective_resolution'] = effective_resolution_summary(lat_deg, lon_deg, list(cached['sources']), radius_km)
+            return cached
         profiles = {}
         geometry = None
         computed = {}  # identical observer heights -> identical profiles; compute once
@@ -370,9 +378,74 @@ def compute_horizon(lat_deg: float, lon_deg: float, radius_km=200.0,
         tmp.write_text(json.dumps(output, allow_nan=False), encoding='utf-8')
         os.replace(tmp, cache_path)
         prune_cache(CACHE, MAX_CACHE_MB, keep=cache_path)
+        output['effective_resolution'] = effective_resolution_summary(lat_deg, lon_deg, list(output['sources']), radius_km)
         return output
     finally:
         ctx.close()
+
+
+EFFRES_NOTE = ('PGDA product 90: *_ADJ_EFFRES.TIF = "LDEM effective resolution (in meters)". Quality indicator only: '
+               'it never changes the horizon, visibility metrics or the decision.')
+
+
+def _principal_band_km(name: str, radius_km: float) -> tuple[float, float]:
+    """Distance band where a layer is the PREFERRED level of detail (see TerrainContext.sample)."""
+    if '5m' in name or '20m' in name:
+        return 0.0, min(5.0, radius_km)
+    if '80m' in name:
+        return 0.0, min(30.0, radius_km)
+    return (min(30.0, radius_km) if radius_km > 30.0 else 0.0), radius_km
+
+
+def effective_resolution_summary(lat_deg: float, lon_deg: float, layer_names, radius_km: float) -> dict:
+    """EFFRES statistics per used layer: at the observer and over its principal LOD band.
+
+    Layers without a published EFFRES map (PGDA product 78 site tiles) are reported as NOT_PUBLISHED,
+    downloadable-but-absent maps as MISSING. Values are copied from the raster (metres), not modelled.
+    """
+    layers = {}
+    for name in layer_names:
+        definition = DATASETS.get(name)
+        if definition is None:
+            continue
+        lo_km, hi_km = _principal_band_km(name, float(radius_km))
+        base = {'pixel_m': definition['resolution_m'], 'band_km': [lo_km, hi_km]}
+        path = definition.get('effres')
+        if path is None:
+            layers[name] = {**base, 'status': 'NOT_PUBLISHED',
+                            'note': 'No EFFRES map is published for this product (PGDA product 78 site tile); '
+                                    'its _toterr map is the available quality indicator.'}
+            continue
+        if not path.is_file():
+            layers[name] = {**base, 'status': 'MISSING', 'expected_file': path.name,
+                            'note': 'EFFRES not downloaded: python -m backend.download_data --include-lola-effres'}
+            continue
+        try:
+            sampler = RasterSampler.open(name + '_EFFRES', path, lon_deg, lat_deg, hi_km)
+        except TerrainMissing as exc:
+            layers[name] = {**base, 'status': 'NO_VALID_PIXELS', 'note': str(exc)[:200]}
+            continue
+        except TerrainError as exc:
+            layers[name] = {**base, 'status': 'UNREADABLE', 'note': str(exc)[:200]}
+            continue
+        try:
+            az = np.arange(0.0, 360.0, 5.0)
+            dist_km = np.linspace(max(lo_km, 0.1), hi_km, 25)
+            A, D = np.meshgrid(az, dist_km)
+            lons, lats, _ = GEOD.fwd(np.full(A.size, lon_deg), np.full(A.size, lat_deg), A.ravel(), D.ravel() * 1000.0)
+            values = sampler.sample(lons, lats)
+            at_observer = float(sampler.sample(np.array([lon_deg]), np.array([lat_deg]))[0])
+        finally:
+            sampler.close()
+        finite = values[np.isfinite(values)]
+        layers[name] = {**base, 'status': 'OK' if finite.size else 'NO_VALID_PIXELS',
+                        'file': f'{path.parent.name}/{path.name}',
+                        'at_observer_m': at_observer if math.isfinite(at_observer) else None,
+                        'median_m': float(np.median(finite)) if finite.size else None,
+                        'p90_m': float(np.percentile(finite, 90)) if finite.size else None,
+                        'max_m': float(finite.max()) if finite.size else None,
+                        'valid_fraction': float(finite.size / values.size), 'n_samples': int(values.size)}
+    return {'units': 'm', 'note': EFFRES_NOTE, 'layers': layers}
 
 
 def horizon_at(profile: dict, azimuth):

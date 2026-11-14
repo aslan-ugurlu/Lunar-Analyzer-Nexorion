@@ -20,6 +20,8 @@ const TEST_TITLES: Record<string, string> = {
   'V-09': 'Kısıt doğruluğu',
   'V-10': 'İzlenebilirlik (provenance)',
   'SLOPE-01': '5 m eğim: resmi PGDA eğim haritasıyla çapraz kontrol + uçtan uca eğim kısıtı',
+  'EFFRES-01': 'EFFRES etkin çözünürlük haritaları: DEM ile aynı ızgara, LOD bantlarında geçerli değer',
+  'CLONE-01': 'DEM clone topluluğu (PGDA ürün 78): clone ufuk profilleri ve ERR bandıyla tutarlılık',
 };
 
 function StatusPill({ status }: { status: ValidationStatus }) {

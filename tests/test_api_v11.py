@@ -45,7 +45,11 @@ def test_health_reports_layers_and_clone_state():
     with TestClient(app) as client:
         body = client.get('/health').json()
     assert set(body['layers']['lola_240m']) == {'dem', 'err', 'effres'}
-    assert body['clone_profiles'] == 'NOT_PRECOMPUTED'
+    # v1.3: legacy string reflects whether any real precomputed clone profile set exists on this machine.
+    sets = body['clones']['precomputed_profile_sets']
+    assert body['clone_profiles'] == ('AVAILABLE' if sets else 'NOT_PRECOMPUTED')
+    assert set(body['clones']['sites']) == {'Site01', 'Site04', 'Site07', 'Site11'}
+    assert all(v['expected'] == 100 and 0 <= v['present'] <= 100 for v in body['clones']['sites'].values())
     assert body['limits']['max_workers'] == 2 and body['limits']['max_pending'] == 6
     assert body['status'] in ('ready', 'degraded')
 

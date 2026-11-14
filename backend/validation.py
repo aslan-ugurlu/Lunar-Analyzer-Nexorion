@@ -30,6 +30,22 @@ from backend.config import DATASETS, FRAME, KERNELS, R_MOON_KM, VALIDATION
 SITES = [(-89.54, 0.0), (-89.4512, -137.1427)]
 
 
+def validation_sites() -> list[tuple[str, float, float]]:
+    """Faz 7: the two fixed test points + the raster centre of every PRESENT 5 m site tile.
+
+    Tile centres come from each GeoTIFF's own georeferencing (raster_footprint); they are coverage
+    centres, not landing coordinates. Sites are added only when their file exists, so the list (and
+    therefore the evidence) is recorded with every run.
+    """
+    from backend.terrain_engine import raster_footprint
+    out = [('test point -89.54/0', *SITES[0]), ('ridge test point', *SITES[1])]
+    for name, definition in DATASETS.items():
+        if definition.get('kind') == 'site' and definition['path'].is_file():
+            fp = raster_footprint(definition['path'])
+            out.append((f'{name} tile centre', round(fp['center']['lat'], 5), round(fp['center']['lon'], 5)))
+    return out
+
+
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
 
@@ -125,10 +141,12 @@ def v03_utc() -> dict:
 
 def a04_horizons() -> dict:
     from backend.verify_horizons import run_a04_suite
-    result = run_a04_suite()
+    result = run_a04_suite(extended=True)
     worst = max(r['difference_deg'] for r in result['rows'])
+    cases = len({r['case'] for r in result['rows']})
     return entry('PASS' if result['all_passed'] else 'FAIL',
-                 f"{len(result['rows'])} Sun/Earth directions at 3 sites/dates; max separation {worst:.2e} deg (threshold 0.005); synthetic heights",
+                 f"{len(result['rows'])} Sun/Earth directions at {cases} site/date cases (2026-2035, lat -80.5..-89.98, "
+                 f"heights 0-5 km); max separation {worst:.2e} deg (threshold 0.005); synthetic heights",
                  {'max_difference_deg': worst, 'rows': [{k: r[k] for k in ('case', 'body', 'utc', 'difference_deg', 'passed')} for r in result['rows']],
                   'horizons_site_metadata': result['rows'][0]['horizons_site_metadata']})
 
@@ -138,7 +156,7 @@ def v05_radius_sensitivity() -> dict:
         return entry('BLOCKED', 'LOLA 240 m raster missing')
     from backend.terrain_engine import compute_horizon
     rows = []
-    for lat, lon in SITES:
+    for label, lat, lon in validation_sites():
         prof = {}
         timings = {}
         for radius in (135.0, 200.0, 250.0):  # 250 km: offline validation only (API limit is 200)
@@ -148,13 +166,15 @@ def v05_radius_sensitivity() -> dict:
             prof[radius] = np.asarray(h['profiles']['sun']['nominal'], dtype=float)
         d1 = np.abs(prof[200.0] - prof[135.0])
         d2 = np.abs(prof[250.0] - prof[200.0])
-        rows.append({'site': [lat, lon], 'seconds': timings,
+        rows.append({'site': [lat, lon], 'label': label, 'seconds': timings,
                      'max_abs_diff_deg_135_vs_200': float(np.nanmax(d1)), 'share_az_diff_gt_0.01deg_135_vs_200': float(np.mean(d1 > 0.01)),
                      'max_abs_diff_deg_200_vs_250': float(np.nanmax(d2)), 'share_az_diff_gt_0.01deg_200_vs_250': float(np.mean(d2 > 0.01))})
     worst = max(r['max_abs_diff_deg_200_vs_250'] for r in rows)
     ok = worst < 0.05
+    worst135 = max(r['max_abs_diff_deg_135_vs_200'] for r in rows)
     return entry('PASS' if ok else 'FAIL',
-                 f'Criterion: 200->250 km max horizon change < 0.05 deg at both test sites; observed {worst:.4f} deg. 2 sites only; not exhaustive.',
+                 f'Criterion: 200->250 km max horizon change < 0.05 deg at every site; observed {worst:.4f} deg over {len(rows)} sites. '
+                 f'135->200 km max change {worst135:.3f} deg (why <200 km may not end GREEN). Not exhaustive.',
                  rows)
 
 
@@ -321,10 +341,70 @@ def v07_disk_quadrature() -> dict:
         rows.append({'el_offset_deg': round(float(el), 4), 'analytic': analytic, 'quadrature': got['fraction'],
                      'abs_err': abs(got['fraction'] - analytic), 'reported_refinement_diff': got['numerical_diff']})
     worst = max(x['abs_err'] for x in rows)
-    ok = worst < 0.01
+    curved = _v07_curved_terrain()
+    ok = worst < 0.01 and curved['status'] == 'PASS'
+    if curved['status'] == 'BLOCKED':
+        return entry('PASS' if worst < 0.01 else 'FAIL',
+                     f'Flat analytic part: max |error| {worst:.4f} (criterion < 0.01). Curved terrain BLOCKED: {curved["reason"]}',
+                     {'max_abs_error': worst, 'rows': rows, 'curved': curved})
     return entry('PASS' if ok else 'FAIL',
-                 f'Disc fraction vs analytic circular segment (flat horizon, r=0.27 deg, 27 offsets): max |error| {worst:.4f} (criterion < 0.01). Curved terrain not covered.',
-                 {'max_abs_error': worst, 'rows': rows})
+                 f'Flat: max |error| {worst:.4f} vs analytic segment (27 offsets). Curved REAL horizons: {curved["n_partial"]} partially '
+                 f'occluded Sun samples at {curved["n_sites"]} sites, max |default - dense Cartesian reference| {curved["max_abs_error"]:.4f} '
+                 '(criterion < 0.01 for both). Tests disc quadrature only (same horizon interpolation), not horizon accuracy.',
+                 {'max_abs_error': worst, 'rows': rows, 'curved': curved})
+
+
+def _dense_reference_fraction(sun_az, sun_el, radius_deg, horizon, n=401):
+    """Independent Cartesian-grid integral of the uniform solar disc above the interpolated horizon."""
+    from backend.terrain_engine import horizon_at
+    axis = (np.arange(n) + 0.5) / n * 2.0 - 1.0
+    gx, gy = np.meshgrid(axis, axis)
+    inside = gx * gx + gy * gy <= 1.0
+    dx, dy = gx[inside] * radius_deg, gy[inside] * radius_deg
+    cos_el = max(1e-8, math.cos(math.radians(sun_el)))
+    hs = horizon_at(horizon, sun_az + dx / cos_el)
+    return float(np.mean(sun_el + dy >= hs))
+
+
+def _v07_curved_terrain() -> dict:
+    """Pre-registered: every partially occluded sample (0.01 < f < 0.99) must agree within 0.01."""
+    if not dem_present():
+        return {'status': 'BLOCKED', 'reason': 'LOLA 240 m raster missing'}
+    from backend.astro_engine import compute_sky_positions
+    from backend.terrain_engine import compute_horizon, sun_disk_fraction
+    from datetime import timedelta
+    windows = [('2026-12-26T12:00:00Z', 60), ('2027-01-22T12:00:00Z', 48), ('2026-11-28T00:00:00Z', 72)]
+    samples, per_site = [], []
+    for label, lat, lon in validation_sites():
+        h = compute_horizon(lat, lon, radius_km=200.0, sun_height_m=4.0, earth_height_m=4.0)
+        prof = h['profiles']['sun']['nominal']
+        if h['status'] != 'complete':
+            per_site.append({'site': label, 'status': h['status']})
+            continue
+        n_site = 0
+        for start, hours in windows:
+            t0 = datetime.strptime(start, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+            utc = [(t0 + timedelta(minutes=30 * i)).strftime('%Y-%m-%dT%H:%M:%SZ') for i in range(hours * 2 + 1)]
+            for p in compute_sky_positions(lat, lon, h['geometry']['observer_dem_m'], utc, 4.0, 4.0):
+                sun = p['sun']
+                got = sun_disk_fraction(sun['az_deg'], sun['el_deg'], sun['angular_radius_deg'], prof)
+                f = got['fraction']
+                if f is None or not 0.01 < f < 0.99:
+                    continue
+                ref = _dense_reference_fraction(sun['az_deg'], sun['el_deg'], sun['angular_radius_deg'], prof)
+                samples.append({'site': label, 'utc': p['utc'], 'sun_az_deg': sun['az_deg'], 'sun_el_deg': sun['el_deg'],
+                                'default': f, 'reference': ref, 'abs_err': abs(f - ref),
+                                'reported_refinement_diff': got['numerical_diff']})
+                n_site += 1
+        per_site.append({'site': label, 'partial_samples': n_site})
+    if len(samples) < 20:
+        return {'status': 'BLOCKED', 'reason': f'only {len(samples)} partially occluded samples found (need >= 20)', 'per_site': per_site}
+    worst = max(x['abs_err'] for x in samples)
+    worst_rows = sorted(samples, key=lambda x: -x['abs_err'])[:10]
+    return {'status': 'PASS' if worst < 0.01 else 'FAIL', 'n_partial': len(samples), 'max_abs_error': worst,
+            'n_sites': sum(1 for x in per_site if x.get('partial_samples')), 'per_site': per_site,
+            'median_abs_error': float(np.median([x['abs_err'] for x in samples])), 'worst_samples': worst_rows,
+            'reference': 'Cartesian 401x401 grid inside the disc (independent of the polar quadrature)'}
 
 
 def v08_err_clone() -> dict:
@@ -333,19 +413,57 @@ def v08_err_clone() -> dict:
         return entry('BLOCKED', 'LDEM_60S_240MPP_ADJ_ERR.TIF not present; ERR sensitivity not run. DEM clones: not available (CLONE_NOT_PRECOMPUTED).')
     from backend.terrain_engine import compute_horizon
     rows = []
-    for lat, lon in SITES:
-        h = compute_horizon(lat, lon, radius_km=200.0, sun_height_m=4.0, earth_height_m=4.0, uncertainty_mode='err', k=1.0)
-        nom = np.asarray(h['profiles']['sun']['nominal'], dtype=float)
-        cau = np.asarray(h['profiles']['sun'].get('cautious', []), dtype=float)
-        opt = np.asarray(h['profiles']['sun'].get('optimistic', []), dtype=float)
-        rows.append({'site': [lat, lon], 'status': h['status'], 'observer_err_m': h['geometry']['observer_err_m'],
-                     'ordered_cautious_ge_nominal_ge_optimistic': bool(np.all(cau >= nom - 1e-9) and np.all(nom >= opt - 1e-9)) if cau.size else None,
-                     'max_band_width_deg': float(np.nanmax(cau - opt)) if cau.size else None})
-    ok = all(r['ordered_cautious_ge_nominal_ge_optimistic'] and r['status'] == 'complete'
-             and isinstance(r['observer_err_m'], float) and r['observer_err_m'] >= 0 for r in rows)
+    for label, lat, lon in validation_sites():
+        bands = {}
+        row = {'site': [lat, lon], 'label': label}
+        for k in (1.0, 2.0):
+            h = compute_horizon(lat, lon, radius_km=200.0, sun_height_m=4.0, earth_height_m=4.0, uncertainty_mode='err', k=k)
+            nom = np.asarray(h['profiles']['sun']['nominal'], dtype=float)
+            cau = np.asarray(h['profiles']['sun'].get('cautious', []), dtype=float)
+            opt = np.asarray(h['profiles']['sun'].get('optimistic', []), dtype=float)
+            bands[k] = (cau - opt) if cau.size else None
+            row[f'k{int(k)}'] = {'status': h['status'], 'observer_err_m': h['geometry']['observer_err_m'],
+                                 'excluded_layers': h.get('excluded_layers'),
+                                 'ordered_cautious_ge_nominal_ge_optimistic': bool(np.all(cau >= nom - 1e-9) and np.all(nom >= opt - 1e-9)) if cau.size else None,
+                                 'max_band_width_deg': float(np.nanmax(cau - opt)) if cau.size else None}
+        row['band_k2_ge_band_k1'] = bool(bands[1.0] is not None and bands[2.0] is not None and np.all(bands[2.0] >= bands[1.0] - 1e-9))
+        rows.append(row)
+    ok = all(r[f'k{k}']['ordered_cautious_ge_nominal_ge_optimistic'] and r[f'k{k}']['status'] == 'complete'
+             and isinstance(r[f'k{k}']['observer_err_m'], float) and r[f'k{k}']['observer_err_m'] >= 0
+             for r in rows for k in (1, 2)) and all(r['band_k2_ge_band_k1'] for r in rows)
     return entry('PASS' if ok else 'FAIL',
-                 'ERR +/-1 sigma sensitivity ran at 2 sites: complete coverage, cautious >= nominal >= optimistic, observer sigma reported. '
-                 'Band ordering/consistency only - not a statistical validation. DEM clones NOT_RUN.', rows)
+                 f'ERR +/-k sensitivity at {len(rows)} sites for k=1 and k=2: complete coverage, cautious >= nominal >= optimistic, '
+                 'band(k=2) >= band(k=1) at every azimuth, observer sigma reported. Consistency only - not a statistical '
+                 'validation. DEM clones: see CLONE-01.', rows)
+
+
+def effres01_effective_resolution() -> dict:
+    """EFFRES maps: same grid as their DEM, and valid values in each layer's principal band at every site."""
+    import rasterio
+    from pyproj import CRS
+    from backend.terrain_engine import effective_resolution_summary
+    pairs = [(n, d) for n, d in DATASETS.items() if d.get('effres') is not None]
+    present = [(n, d) for n, d in pairs if d['path'].is_file() and d['effres'].is_file()]
+    if not present:
+        return entry('BLOCKED', 'No EFFRES map present (python -m backend.download_data --include-lola-effres)')
+    grid, rows = [], []
+    for name, d in present:
+        with rasterio.open(d['path']) as dem, rasterio.open(d['effres']) as eff:
+            same_crs = CRS.from_wkt(dem.crs.to_wkt()).to_dict() == CRS.from_wkt(eff.crs.to_wkt()).to_dict()
+            grid.append({'layer': name, 'same_shape': (dem.width, dem.height) == (eff.width, eff.height),
+                         'same_transform': dem.transform == eff.transform, 'same_crs_params': same_crs})
+    names = [n for n, _ in present]
+    for label, lat, lon in validation_sites():
+        summary = effective_resolution_summary(lat, lon, names, 200.0)['layers']
+        rows.append({'site': label, 'latlon': [lat, lon], **{n: summary[n] for n in names}})
+    grid_ok = all(g['same_shape'] and g['same_transform'] and g['same_crs_params'] for g in grid)
+    values_ok = all(r[n]['status'] == 'OK' and r[n]['valid_fraction'] >= 0.99 and (r[n]['median_m'] or 0) > 0 for r in rows for n in names)
+    ok = grid_ok and values_ok
+    medians = {n: [round(r[n]['median_m'], 1) for r in rows if r[n].get('median_m') is not None] for n in names}
+    return entry('PASS' if ok else 'FAIL',
+                 f'EFFRES for {", ".join(names)}: identical grid to DEM ({grid_ok}); >= 99 % valid, positive values in each principal LOD '
+                 f'band at {len(rows)} sites ({values_ok}). Band medians (m): {medians}. Quality metadata only.',
+                 {'grid': grid, 'rows': rows})
 
 
 def v09_constraints() -> dict:
@@ -385,7 +503,7 @@ def v10_traceability() -> dict:
 
 CHECKS = [('V-01', v01_sources_and_coverage), ('V-02', v02_frames), ('V-03', v03_utc), ('V-05', v05_radius_sensitivity),
           ('V-06', v06_lod_nodata), ('V-07', v07_disk_quadrature), ('V-08', v08_err_clone), ('V-09', v09_constraints),
-          ('V-10', v10_traceability), ('SLOPE-01', slope01_cross_check)]
+          ('V-10', v10_traceability), ('SLOPE-01', slope01_cross_check), ('EFFRES-01', effres01_effective_resolution)]
 
 
 def main(argv=None) -> int:

@@ -25,6 +25,11 @@ export interface Health {
   jobs_pending: number;
   layers?: Record<string, LayerPresence>;
   clone_profiles?: string;
+  /** v1.3: real PGDA clone files per site tile and number of precomputed profile sets. */
+  clones?: {
+    sites: Record<string, { site_tile: string; present: number; expected: number; complete: boolean }>;
+    precomputed_profile_sets: number;
+  };
   limits?: {
     max_workers: number;
     max_pending: number;
@@ -160,7 +165,7 @@ export interface Scenario {
   shift_hours: number;
   start_utc: string;
   end_utc: string;
-  variants: Partial<Record<'nominal' | 'cautious', Variant>>;
+  variants: Partial<Record<'nominal' | 'cautious', Variant & { clone?: CloneSummary }>>;
   timeline: TimelinePoint[];
 }
 
@@ -187,6 +192,30 @@ export interface Mission {
   disclaimers?: string[];
   /** v1.3: 200-km reference radius rule (shorter scans never end GREEN). Absent on older results. */
   radius_policy?: RadiusPolicy;
+}
+
+export interface CloneSummary {
+  n: number;
+  pass_count: number | null;
+  pass_fraction: number | null;
+  invalid?: number;
+  fail_count_by_code?: Record<string, number>;
+  percentile?: number;
+}
+
+export interface EffresLayer {
+  status: 'OK' | 'MISSING' | 'NOT_PUBLISHED' | 'NO_VALID_PIXELS' | 'UNREADABLE' | string;
+  pixel_m: number;
+  band_km: [number, number];
+  file?: string;
+  expected_file?: string;
+  at_observer_m?: number | null;
+  median_m?: number | null;
+  p90_m?: number | null;
+  max_m?: number | null;
+  valid_fraction?: number;
+  n_samples?: number;
+  note?: string;
 }
 
 export interface RadiusPolicy {
@@ -220,11 +249,31 @@ export interface Horizon {
   layer_resolution_m?: Record<string, number>;
   /** v1.2: layers present on disk but not used (e.g. no ERR in ERR mode), with reason. */
   excluded_layers?: Record<string, string>;
+  /** v1.3: PGDA EFFRES (effective resolution, m) per used layer; quality metadata only. */
+  effective_resolution?: {
+    units: 'm';
+    note: string;
+    layers: Record<string, EffresLayer>;
+  };
   reference_radius_km: number;
   selected_dataset_id: string;
-  uncertainty_mode: 'nominal' | 'err';
+  uncertainty_mode: 'nominal' | 'err' | 'clone';
   k: number | null;
   cache_key: string;
+  /** v1.3: present only in clone mode (band = per-azimuth p05–p95 of real PGDA clone horizons). */
+  clone_ensemble?: {
+    n_clones: number;
+    site_tile: string;
+    cloned_layer: string;
+    profile_key: string;
+    created_utc: string;
+    source: string;
+    percentile: number;
+    band: string;
+    observer_dem_m_range: [number, number];
+    band_complete: boolean;
+    note: string;
+  };
   status: 'complete' | 'partial';
   notes: string[];
 }

@@ -119,6 +119,49 @@ def _constraints(metrics, slope, limits):
     return violations, unknown
 
 
+_CLONE_WORST_HIGH={'max_continuous_darkness_s':True,'mean_sun_visible_fraction':False,
+                   'dte_visible_fraction':False,'max_continuous_dte_gap_s':True}
+
+
+def _clone_variant(sky, seconds, ensemble, dark_threshold, slope, limits, percentile=95.0):
+    """Evaluate every real clone horizon; 'cautious' metric = percentile-worst clone per constraint.
+
+    Max-type metrics (darkness, DTE gap) use the p95 value, min-type metrics (Sun, DTE share) the p05
+    value. The joint share of clones passing ALL constraints is reported separately. Screening
+    statistics over 100 PGDA realisations, not a certified confidence level.
+    """
+    sun_profiles, earth_profiles = ensemble['sun'], ensemble['earth']
+    n=len(sun_profiles)
+    per_clone=[_evaluate_series(sky,seconds,sun_profiles[i],earth_profiles[i],dark_threshold) for i in range(n)]
+    invalid=sum(1 for m in per_clone if not m['valid'])
+    if invalid:
+        metrics={'valid':False,'reason':f'{invalid} of {n} clone horizons incomplete along the Sun/Earth direction',
+                 'method':'clone','n_clones':n}
+        violations, unknown=_constraints(metrics,slope,limits)
+        return {'metrics':metrics,'violations':violations,'unknown':unknown,
+                'clone':{'n':n,'pass_count':None,'pass_fraction':None,'invalid':invalid}}
+    metrics={'valid':True,'method':f'clone_p{percentile:g}','n_clones':n,'darkness_interval':None,'dte_gap_interval':None}
+    spread={}
+    for key,worst_high in _CLONE_WORST_HIGH.items():
+        arr=np.asarray([m[key] for m in per_clone],dtype=float)
+        metrics[key]=float(np.percentile(arr, percentile if worst_high else 100-percentile))
+        spread[key]={'min':float(arr.min()),'p05':float(np.percentile(arr,5)),'p50':float(np.percentile(arr,50)),
+                     'p95':float(np.percentile(arr,95)),'max':float(arr.max())}
+    metrics['time_resolution_minutes']=per_clone[0]['time_resolution_minutes']
+    violations, unknown=_constraints(metrics,slope,limits)
+    passing=sum(1 for m in per_clone if not _constraints(m,slope,limits)[0])
+    failing_by_code={}
+    for m in per_clone:
+        for v in _constraints(m,slope,limits)[0]:
+            failing_by_code[v['code']]=failing_by_code.get(v['code'],0)+1
+    for v in violations:
+        v['clone_fail_count']=failing_by_code.get(v['code'],0)
+        v['clone_n']=n
+    return {'metrics':metrics,'violations':violations,'unknown':unknown,
+            'clone':{'n':n,'pass_count':passing,'pass_fraction':passing/n,'fail_count_by_code':failing_by_code,
+                     'metric_spread':spread,'percentile':percentile}}
+
+
 def _radius_policy(radius_km:float, status:str) -> dict:
     """GREEN requires the 200-km reference scan.
 
@@ -144,7 +187,7 @@ def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:s
                     duration_hours:float, buffer_hours:float, step_minutes:int,
                     constraints:dict, shifts_hours:list[int],
                     sun_observer_height_m:float, earth_observer_height_m:float,
-                    dark_threshold:float=0.01):
+                    dark_threshold:float=0.01, clone_ensemble:dict|None=None):
     if not 0<=dark_threshold<=0.1:
         raise ValueError('Invalid dark threshold')
     if horizon['status']!='complete':
@@ -154,6 +197,8 @@ def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:s
     modes=['nominal']
     if horizon['uncertainty_mode']=='err':
         modes.append('cautious')
+    if horizon['uncertainty_mode']=='clone' and clone_ensemble is None:
+        raise MissionDataError('Clone mode requires the precomputed clone ensemble')
     slope=local_slope(latitude,longitude, constraints.get('slope_footprint_radius_m',30.0))
     scenario_results=[]
     for shift in sorted(set(shifts_hours+[0])):
@@ -165,6 +210,8 @@ def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:s
             metrics=_evaluate_series(sky,seconds,profiles['sun'][mode],profiles['earth'][mode],dark_threshold)
             violations, unknown=_constraints(metrics,slope,constraints)
             variants[mode]={'metrics':metrics,'violations':violations,'unknown':unknown}
+        if horizon['uncertainty_mode']=='clone':
+            variants['cautious']=_clone_variant(sky,seconds,clone_ensemble,dark_threshold,slope,constraints)
         scenario_results.append({'shift_hours':shift,'start_utc':utc_values[0],
                                  'end_utc':utc_values[-1],'variants':variants,
                                  # Main frontend uses this single nominal timeline for all modes.
@@ -192,7 +239,9 @@ def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:s
     radius_policy=_radius_policy(float(horizon['reference_radius_km']), status)
     status=radius_policy['status_after_policy']
     labels={'RED':'Nominal görev kısıtları sağlanmıyor',
-            'YELLOW':'Nominal uygun; ihtiyatlı arazi senaryosunda kısıt ihlali var',
+            'YELLOW':('Nominal uygun; DEM clone topluluğunun %95 kötü tarafında kısıt ihlali var'
+                      if horizon['uncertainty_mode']=='clone' else
+                      'Nominal uygun; ihtiyatlı arazi senaryosunda kısıt ihlali var'),
             'GRAY':'Veri veya belirsizlik doğrulaması yetersiz',
             'GREEN':'Tanımlı kısıtlar nominal ve ihtiyatlı senaryolarda sağlanıyor'}
     label=labels[status]

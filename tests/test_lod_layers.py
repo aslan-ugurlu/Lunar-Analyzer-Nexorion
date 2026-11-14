@@ -98,3 +98,63 @@ def test_new_cli_flags_map_to_catalogue(monkeypatch):
     monkeypatch.setattr(dd, 'download_product', lambda key, **k: called.append(key))
     dd.main(['--include-lola-80m', '--include-site-5m'])
     assert called == ['lola_80m', 'site01_5m', 'site01_5m_err', 'site01_5m_slp', 'site04_5m', 'site04_5m_err', 'site04_5m_slp']
+
+
+def test_faz7_catalogue_effres_extra_sites_and_clones():
+    assert dd.CATALOG['lola_240m_effres'][2] == 'https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_60S_240MPP_ADJ_EFFRES.TIF'
+    assert dd.CATALOG['lola_80m_effres'][2] == 'https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ_EFFRES.TIF'
+    for site in ('Site07', 'Site11', 'Site23'):
+        assert dd.CATALOG[f'{site.lower()}_5m'][2] == f'https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/{site}/{site}_final_adj_5mpp_surf.tif'
+    clones = [k for k in dd.CATALOG if '_clone_' in k]
+    assert len(clones) == 4 * 100
+    dest, name, url, _ = dd.CATALOG['site01_clone_0007']
+    assert name == 'Site01_final_adj_5mpp_0007_err.tif'
+    assert url == 'https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Clones/Site01_final_adj_5mpp_0007_err.tif'
+    assert dest == dd.CLONES / 'Site01'
+    assert 'site23_clone_0001' not in dd.CATALOG  # no clones catalogued for Site23
+
+
+def test_faz7_cli_flags(monkeypatch):
+    called = []
+    monkeypatch.setattr(dd, 'download_kernels', lambda: None)
+    monkeypatch.setattr(dd, 'download_product', lambda key, **k: called.append(key))
+    dd.main(['--include-lola-effres', '--include-site-5m-extra', '--include-site-clones', 'Site01', '--clone-range', '2-4'])
+    assert called[:9] == [f'{s}_5m{k}' for s in ('site07', 'site11', 'site23') for k in ('', '_err', '_slp')]
+    assert called[9:11] == ['lola_240m_effres', 'lola_80m_effres']
+    assert called[11:] == ['site01_clone_0002', 'site01_clone_0003', 'site01_clone_0004']
+    with pytest.raises(SystemExit):
+        dd.main(['--include-site-clones', 'Site23'])
+    with pytest.raises(dd.DownloadError):
+        dd.clone_keys('Site01', 0, 5)
+
+
+def test_effres_summary_reports_values_missing_and_not_published(tmp_path, monkeypatch):
+    """EFFRES is copied from the raster (synthetic 300 m everywhere), never modelled; absent maps are explicit."""
+    eff80 = write_tif(tmp_path / 'eff80.tif', 300.0, 80, 40000)
+    catalog = {
+        'lola_240m': {'path': tmp_path / 'x.tif', 'resolution_m': 240, 'err': None, 'effres': tmp_path / 'absent_eff240.tif'},
+        'lola_80m': {'path': tmp_path / 'y.tif', 'resolution_m': 80, 'err': None, 'effres': eff80},
+        'site01_5m': {'path': tmp_path / 'z.tif', 'resolution_m': 5, 'err': None, 'effres': None},
+    }
+    monkeypatch.setattr(te, 'DATASETS', catalog)
+    out = te.effective_resolution_summary(-89.9, 0.0, ['lola_240m', 'lola_80m', 'site01_5m'], 200.0)
+    layers = out['layers']
+    assert out['units'] == 'm'
+    assert layers['lola_80m']['status'] == 'OK'
+    assert layers['lola_80m']['band_km'] == [0.0, 30.0]
+    assert abs(layers['lola_80m']['at_observer_m'] - 300.0) < 1e-6
+    assert abs(layers['lola_80m']['median_m'] - 300.0) < 1e-6
+    assert layers['lola_240m']['status'] == 'MISSING' and layers['lola_240m']['band_km'] == [30.0, 200.0]
+    assert layers['site01_5m']['status'] == 'NOT_PUBLISHED'
+
+
+def test_err_mode_reports_only_covering_layers_as_excluded(layers, tmp_path):
+    """A far-away tile without ERR must not appear in excluded_layers (it would not be used anyway)."""
+    far = write_tif(tmp_path / 'far_site.tif', 900.0, 5, 8000, centre=(150000.0, 150000.0))
+    layers['site23_5m'] = {'path': far, 'resolution_m': 5, 'kind': 'site', 'err': tmp_path / 'absent.tif', 'effres': None}
+    ctx = te.TerrainContext(0.0, -89.8, 50.0, uncertainty=True)
+    try:
+        assert 'site23_5m' not in ctx.excluded
+        assert 'lola_80m' in ctx.excluded
+    finally:
+        ctx.close()

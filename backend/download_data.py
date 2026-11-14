@@ -62,11 +62,27 @@ CATALOG = {
     'lola_240m_err': (LOLA, LOLA_240M_ERR_NAME, LOLA_240M_ERR_URL, LOLA_PRODUCT_PAGE),
     'lola_80m': (LOLA, 'LDEM_80S_80MPP_ADJ.TIF', _P90 + 'LDEM_80S_80MPP_ADJ.TIF', LOLA_PRODUCT_PAGE),
     'lola_80m_err': (LOLA, 'LDEM_80S_80MPP_ADJ_ERR.TIF', _P90 + 'LDEM_80S_80MPP_ADJ_ERR.TIF', LOLA_PRODUCT_PAGE),
+    # Product 90 page: "*_ADJ_EFFRES.TIF - LDEM effective resolution (in meters)" (checked 2026-11-14).
+    'lola_240m_effres': (LOLA, 'LDEM_60S_240MPP_ADJ_EFFRES.TIF', _P90 + 'LDEM_60S_240MPP_ADJ_EFFRES.TIF', LOLA_PRODUCT_PAGE),
+    'lola_80m_effres': (LOLA, 'LDEM_80S_80MPP_ADJ_EFFRES.TIF', _P90 + 'LDEM_80S_80MPP_ADJ_EFFRES.TIF', LOLA_PRODUCT_PAGE),
 }
-for _site in ('Site01', 'Site04'):
+# Product 78 site tiles (README: Site07 = Peak near Shackleton, Site11 = de Gerlache rim,
+# Site23 = Malapert massif). Site23 is larger (~70.6 MB per file).
+SITE_TILES = ('Site01', 'Site04', 'Site07', 'Site11', 'Site23')
+for _site in SITE_TILES:
     for _suffix, _kind in (('surf', ''), ('toterr', '_err'), ('slp', '_slp')):
         _name = f'{_site}_final_adj_5mpp_{_suffix}.tif'
         CATALOG[f'{_site.lower()}_5m{_kind}'] = (SITES, _name, f'{_P78}{_site}/{_name}', SITE_PRODUCT_PAGE)
+# Product 78 "Clones/: 100 clones of LDEM" (README). Each clone is a full 5 m elevation GeoTIFF on the
+# same grid as `_surf` (checked on Site01 clone 0001: clone - surf std 0.44 m). File names end in
+# `_err.tif` on the server. Only sites whose listing shows 100 clones are catalogued.
+CLONE_SITES = ('Site01', 'Site04', 'Site07', 'Site11')
+CLONE_COUNT = 100
+CLONES = SITES / 'clones'
+for _site in CLONE_SITES:
+    for _i in range(1, CLONE_COUNT + 1):
+        _name = f'{_site}_final_adj_5mpp_{_i:04d}_err.tif'
+        CATALOG[f'{_site.lower()}_clone_{_i:04d}'] = (CLONES / _site, _name, f'{_P78}{_site}/Clones/{_name}', SITE_PRODUCT_PAGE)
 _CATALOG_PAIRS = {(name, url) for _, name, url, _ in CATALOG.values()}
 MOON_RADIUS_M = 1737400.0
 LOCK_STALE_SECONDS = 15 * 60       # a live download refreshes its lock at least every 30 s
@@ -537,7 +553,26 @@ FLAG_PRODUCTS = {
     'include_lola_80m': ['lola_80m'],
     'include_lola_80m_err': ['lola_80m_err'],
     'include_site_5m': ['site01_5m', 'site01_5m_err', 'site01_5m_slp', 'site04_5m', 'site04_5m_err', 'site04_5m_slp'],
+    'include_site_5m_extra': [f'{s}_5m{k}' for s in ('site07', 'site11', 'site23') for k in ('', '_err', '_slp')],
+    'include_lola_effres': ['lola_240m_effres', 'lola_80m_effres'],
 }
+
+
+def clone_keys(site: str, first: int = 1, last: int = CLONE_COUNT) -> list[str]:
+    """Catalogue keys for clones first..last of one site (validated against CLONE_SITES)."""
+    if site not in CLONE_SITES:
+        raise DownloadError(f'No catalogued clones for {site}; available: {", ".join(CLONE_SITES)}')
+    if not 1 <= first <= last <= CLONE_COUNT:
+        raise DownloadError(f'Clone range must satisfy 1 <= first <= last <= {CLONE_COUNT}')
+    return [f'{site.lower()}_clone_{i:04d}' for i in range(first, last + 1)]
+
+
+def _clone_range(text: str) -> tuple[int, int]:
+    try:
+        first, last = (int(v) for v in text.split('-', 1)) if '-' in text else (int(text), int(text))
+    except ValueError:
+        raise argparse.ArgumentTypeError('use N or N-M, e.g. 1-100') from None
+    return first, last
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -553,9 +588,19 @@ def main(argv: list[str] | None = None) -> None:
                         help='also download LDEM_80S_80MPP_ADJ_ERR.TIF (~255 MB; 80 m layer in ERR mode)')
     parser.add_argument('--include-site-5m', action='store_true',
                         help=f'also download Site01 + Site04 5 m surf/toterr/slp GeoTIFFs (6 x ~41 MB) from {SITE_PRODUCT_PAGE}')
+    parser.add_argument('--include-site-5m-extra', action='store_true',
+                        help='also download Site07, Site11 (~41 MB/file) and Site23 (~71 MB/file) surf/toterr/slp')
+    parser.add_argument('--include-lola-effres', action='store_true',
+                        help='also download the 240 m (~260 MB) and 80 m (~250 MB) EFFRES effective-resolution maps')
+    parser.add_argument('--include-site-clones', nargs='+', choices=CLONE_SITES, metavar='SITE',
+                        help=f'also download DEM clones (~41 MB each) for these sites: {", ".join(CLONE_SITES)}')
+    parser.add_argument('--clone-range', type=_clone_range, default=(1, CLONE_COUNT),
+                        help='clone numbers to download, N or N-M (default 1-100)')
     args = parser.parse_args(argv)
     download_kernels()
     requested = [key for flag, keys in FLAG_PRODUCTS.items() if getattr(args, flag) for key in keys]
+    for site in args.include_site_clones or ():
+        requested += clone_keys(site, *args.clone_range)
     for key in requested:
         if key == 'lola_240m':
             download_lola_240m()  # default arguments (backwards compatible)

@@ -37,6 +37,20 @@ function Legend({ children }: { children: ReactNode }) {
   return <legend className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">{children}</legend>;
 }
 
+/** Clone option help: real clone-file counts from /health; never claims availability it does not report. */
+function cloneHelp(health: Health | null, engineer: boolean): string {
+  const c = health?.clones;
+  const complete = c ? Object.values(c.sites).filter((s) => s.complete).map((s) => s.site_tile) : [];
+  if (!c || complete.length === 0 || c.precomputed_profile_sets === 0) {
+    return engineer
+      ? `Ön hesaplanmış clone profili yok${c ? ` (tam clone seti: ${complete.join(', ') || 'yok'}; profil seti: ${c.precomputed_profile_sets})` : ''} → CLONE_NOT_PRECOMPUTED / GRAY.`
+      : 'Bu yöntem için NASA klon verisi henüz hazır değil; seçilirse sonuç “belirsiz” olur.';
+  }
+  return engineer
+    ? `PGDA 100 DEM clone (${complete.join(', ')}); yalnız ön hesaplanmış konum/yükseklik/yarıçap için. İhtiyatlı = clone p95. Diğer konumlarda CLONE_NOT_PRECOMPUTED / GRAY.`
+    : `NASA’nın 100 farklı arazi haritası örneğiyle (${complete.join(', ')}) sınama. Yalnız önceden hazırlanmış konumlarda çalışır; diğerlerinde sonuç “belirsiz” olur.`;
+}
+
 export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse | null; health: Health | null; onQueued?: (id: string) => void }) {
   const { register, mode } = useApp();
   const engineer = mode === 'engineer';
@@ -291,7 +305,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           {([
             ['nominal', 'Nominal', 'Yalnız DEM. Tek başına GREEN üretemez (en iyi durumda GRAY).'],
             ['err', 'ERR ±k', errAvailable ? 'ERR katmanı mevcut. ±k duyarlılık senaryosu; istatistiksel güven aralığı değildir.' : 'Bu katman için ERR dosyası yok → sonuç GRAY olur.'],
-            ['clone', 'DEM clone', engineer ? 'Önceden hesaplanmış clone verisi yok → CLONE_NOT_PRECOMPUTED / GRAY.' : 'Bu yöntem için NASA klon verisi henüz hazır değil; seçilirse sonuç “belirsiz” olur.'],
+            ['clone', 'DEM clone', cloneHelp(health, engineer)],
           ] as [UncertaintyMode, string, string][]).map(([value, label, help]) => (
             <label key={value} className={`cursor-pointer rounded-lg border p-3 text-sm ${form.uncertainty_mode === value ? 'border-accent bg-accent/10' : 'border-line bg-panel-2'}`}>
               <span className="flex items-center gap-2 font-medium">

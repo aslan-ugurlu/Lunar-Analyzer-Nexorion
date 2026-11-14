@@ -87,8 +87,12 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
       {
         type: 'scatter', mode: 'lines', x: xs, y: close(sunProfile.cautious ?? []), fill: 'tonexty', fillcolor: COLORS.band,
         line: { width: 0.5, color: COLORS.band }, connectgaps: false,
-        name: `ERR ±${horizon.k ?? 'k'} duyarlılık bandı (güven aralığı değil)`,
-        hovertemplate: 'azimut %{x:.1f}°<br>ihtiyatlı ufuk %{y:.3f}°<extra>ERR +k</extra>',
+        name: horizon.uncertainty_mode === 'clone'
+          ? `DEM clone bandı p05–p95 (${horizon.clone_ensemble?.n_clones ?? '?'} PGDA clone; güven aralığı değil)`
+          : `ERR ±${horizon.k ?? 'k'} duyarlılık bandı (güven aralığı değil)`,
+        hovertemplate: horizon.uncertainty_mode === 'clone'
+          ? 'azimut %{x:.1f}°<br>clone p95 ufuk %{y:.3f}°<extra>clone p95</extra>'
+          : 'azimut %{x:.1f}°<br>ihtiyatlı ufuk %{y:.3f}°<extra>ERR +k</extra>',
       },
     );
   }

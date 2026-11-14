@@ -9,6 +9,8 @@ import io
 import json
 import math
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -94,20 +96,49 @@ def query_horizons(target_id, latitude, longitude, altitude_km, utc):
     return parsed
 
 
-def run_a04_suite(tolerance_deg=0.005):
+BASE_CASES=[
+    ('near Shackleton example',-89.54,0.,1200.,4.,'2026-12-01T12:00:00Z'),
+    ('near Connecting Ridge example',-89.45,-137.5,1500.,4.,'2026-06-15T06:00:00Z'),
+    ('near Malapert example',-86.,2.5,4500.,40.,'2027-03-21T18:00:00Z'),
+]
+# Faz 7: spread over the 2026-2035 product window, the -80..-90 latitude band, all longitude
+# quadrants (incl. the +/-180 seam), observer heights 0-5 km, a leap day and near-pole points.
+EXTENDED_CASES=[
+    ('Site01 tile centre',-89.46316,-137.48955,1945.,4.,'2026-12-26T12:00:00Z'),
+    ('Site04 tile centre',-89.76681,-171.8699,1100.,1.,'2027-01-09T21:00:00Z'),
+    ('near pole, east',-89.98,90.,500.,4.,'2028-02-29T00:00:00Z'),
+    ('lat -88, west',-88.,-60.,2500.,40.,'2028-09-14T03:30:00Z'),
+    ('lat -85, east',-85.,120.,0.,4.,'2029-11-02T17:45:00Z'),
+    ('lat -80.5, seam',-80.5,179.9,3000.,4.,'2030-04-18T09:15:00Z'),
+    ('lat -82, seam west',-82.,-179.9,800.,1.,'2031-07-07T22:00:00Z'),
+    ('lat -87, south-west',-87.,-100.,1800.,4.,'2032-12-31T23:59:00Z'),
+    ('lat -89, east',-89.,45.,5000.,40.,'2033-05-20T12:00:00Z'),
+    ('lat -84, Greenwich',-84.,0.,1500.,4.,'2034-08-08T08:08:00Z'),
+    ('lat -86.5, east',-86.5,150.,2200.,4.,'2035-12-15T06:00:00Z'),
+]
+
+
+def _query_with_retry(body,lat,lon,total_km,t,attempts=3):
+    for attempt in range(1,attempts+1):
+        try:
+            return query_horizons(body,lat,lon,total_km,t)
+        except (urllib.error.URLError,TimeoutError,ConnectionError):
+            if attempt==attempts:
+                raise
+            time.sleep(3*attempt)
+
+
+def run_a04_suite(tolerance_deg=0.005, extended=False):
     load_kernels()
     # Synthetic DEM heights: these are controlled geometry checks, not sampled lunar landmarks.
-    cases=[
-        ('near Shackleton example',-89.54,0.,1200.,4.,'2026-12-01T12:00:00Z'),
-        ('near Connecting Ridge example',-89.45,-137.5,1500.,4.,'2026-06-15T06:00:00Z'),
-        ('near Malapert example',-86.,2.5,4500.,40.,'2027-03-21T18:00:00Z'),
-    ]
+    cases=BASE_CASES+(EXTENDED_CASES if extended else [])
     rows=[]
     for name,lat,lon,dem,obs,t in cases:
         local=compute_sky_positions(lat,lon,dem,[t],obs,obs)[0]
         total_km=(dem+obs)/1000.
         for label,body in [('sun','10'),('earth','399')]:
-            remote=query_horizons(body,lat,lon,total_km,t)
+            remote=_query_with_retry(body,lat,lon,total_km,t)
+            time.sleep(0.5)  # be polite to the public Horizons API
             actual=separation(local[label]['az_deg'],local[label]['el_deg'],remote['az_deg'],remote['el_deg'])
             rows.append({'case':name,'body':label,'utc':t,'difference_deg':actual,
                          'passed':actual<=tolerance_deg,'horizons_site_metadata':remote['center_metadata']})
@@ -115,7 +146,7 @@ def run_a04_suite(tolerance_deg=0.005):
             'threshold_deg':tolerance_deg,'frame':FRAME,'aberration':'LT+S',
             'observer_assumption':'Moon mean-Earth sphere R=1737.4 km; check Horizons site metadata',
             'test_heights':'synthetic; not LOLA-derived',
-            'warning':'This tests 3 geometries; it does not establish terrain or full-year correctness',
+            'warning':f'This tests {len(cases)} geometries; it does not establish terrain or full-year correctness',
             'rows':rows}
 
 

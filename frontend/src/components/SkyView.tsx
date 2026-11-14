@@ -30,7 +30,7 @@ export function HorizonStats({ horizon }: { horizon: Horizon }) {
         [`Panel ufku (h_obs ${hSun} m)`, fmt(sun)],
         [`Anten ufku (h_obs ${hEarth} m)`, hSun === hEarth ? 'panel ile aynı yükseklik → aynı profil' : fmt(earth)],
         ['Anten − panel farkı', diff ? `maks |Δ| ${diff.maxAbs.toFixed(3)}° @ ${diff.atAz.toFixed(1)}° · ort Δ ${diff.mean.toFixed(4)}° (${diff.n} azimut)` : 'yok (aynı yükseklik)'],
-        ['ERR bandı (ihtiyatlı − iyimser)', band ? `min ${band.min.toFixed(4)}° · ort ${band.mean.toFixed(4)}° · maks ${band.max.toFixed(4)}°` : 'yok (nominal mod veya ERR katmanı yok)'],
+        [horizon.uncertainty_mode === 'clone' ? 'Clone bandı (p95 − p05)' : 'ERR bandı (ihtiyatlı − iyimser)', band ? `min ${band.min.toFixed(4)}° · ort ${band.mean.toFixed(4)}° · maks ${band.max.toFixed(4)}°` : 'yok (nominal mod veya ERR katmanı yok)'],
         ['Kapsama', `${horizon.status} · ${horizon.reference_radius_km} km · ${az.length} azimut (0.1°)`],
       ]} />
     </section>
