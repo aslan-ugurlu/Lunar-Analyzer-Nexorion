@@ -94,7 +94,11 @@ Hata/boş durumlar: backend yok (`BACKEND_OFFLINE`), `SPICE_MISSING`, `DEM_MISSI
 | Sky View | Panorama + anlık açıklama + Öğren kartı | Ufuk özeti: panel/anten profili min/maks açı ve azimutu, eksik ışın, panel–anten farkı, ERR bant genişliği |
 | Timeline | f_sun / DTE grafiği, kaymalar | Güneş/Dünya açısal yükseklik grafiği **üstte**, **JSON / CSV ham veri dışa aktarma** (yalnız API değerleri) |
 
-Kod görünürlüğü: CLAUDE.md gereği `DEM_MISSING`, `SPICE_MISSING`, `GRAY` vb. veri eksikliği/hata kodları Halk modunda da gösterilir; Halk modunda gizlenenler ham durum etiketleri, ihlal kodları, metrik/provenance tabloları ve cache anahtarıdır.
+Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **hiçbir modda silinmez**.
+- **Halk:** `DEM_MISSING`, `SPICE_MISSING`, `CLONE_NOT_PRECOMPUTED` vb. başlık olarak gösterilmez. Önce anlaşılır Türkçe başlık gelir (ör. “Arazi verisi henüz mevcut değil”), sonra açıklama ve “Ne yapabilirsiniz”. Ham kod, teknik açıklama ve komut, klavyeyle açılabilen **“Teknik detaylar”** (`<details>`) bölümündedir. Analiz listesi ve Compare gerekçeleri de sade başlığı kullanır.
+- **Mühendis:** teknik başlık + ham kod çipi + mühendis açıklaması + komut doğrudan görünür.
+- Erişilebilirlik: hata kutuları `role=alert` (uyarılar `role=status`); gönderim hatasında odak hata kutusuna taşınır. `e2e:states` her durumu iki modda ve Halk'ta “Teknik detaylar”ı **klavyeyle** açarak doğrular; hata ekranlarında axe 0 ihlal.
+- Halk modunda ayrıca gizlenenler: ham durum etiketleri, ihlal kodları, metrik/provenance tabloları ve cache anahtarı.
 
 ## Demo adımları
 
@@ -116,6 +120,7 @@ Kod görünürlüğü: CLAUDE.md gereği `DEM_MISSING`, `SPICE_MISSING`, `GRAY` 
 - Güneş görünürlüğü: sonlu disk payı `f_sun`, alan-eşit polar quadrature + iki kademeli fark raporu. **Elektrik üretimi değildir.**
 - DTE: yalnız Dünya **merkezinin** arazi ufku üstünde olması. **RF bağlantı bütçesi değildir.**
 - Karar: nominal ihlal → RED; nominal geçer ama ihtiyatlı (ERR +k) ihlal → YELLOW; veri/doğrulama eksik → GRAY; GREEN yalnız nominal + ihtiyatlı geçerse. **Nominal mod tek başına GREEN üretmez.**
+- **200 km referans kuralı (v1.3):** ufuk 200 km'den kısa tarandıysa (ör. 135 km hızlı mod) karar **en fazla YELLOW** olur (`radius_policy.code = REDUCED_HORIZON_RADIUS`, GREEN → YELLOW). Gerekçe: kısa tarama, referans arazi örneklerinin bir alt kümesi üzerinde maksimum alır; ufku yalnız alçaltabilir, yani Güneş/DTE görünürlüğü iyimserdir. Bu yüzden 135 km'de RED geçerli kalır; YELLOW/GRAY 200 km'de kötüleşebilir. Gerçek koşu (2026-11-14, ERR k=1, 2026-12-17): aynı istek 200 km → GREEN, 135 km → YELLOW (`logs/radius_policy_faz7.json`).
 - ERR ±k bir duyarlılık senaryosudur, istatistiksel güven aralığı değildir. DEM clone verisi yok → `CLONE_NOT_PRECOMPUTED`.
 - Eğim: ≤ 20 m DEM gerekir; yoksa `SLOPE_UNKNOWN` → GRAY. Eğim iniş güvenliği değildir.
 - Zaman serisi örneklenmiştir; geçiş anları adım içinde belirsizdir. 200 km tarama eksiksizlik kanıtı değildir; 0.1° örnekleme tek başına %2 doğruluk garantisi değildir.
@@ -134,6 +139,7 @@ FastAPI, `http://127.0.0.1:8000/docs`. Uzun işler `202 + analysis_id`, durum `G
 | `POST /scenarios/shift` | 202; ebeveyn ufku yeniden kullanılır |
 | `GET /validation` | **v1.1 yeni**: yalnız `python -m backend.validation` gerçek koşusunun raporu; yoksa tümü `NOT_RUN`. **v1.2**: `SLOPE-01` eklendi |
 | ufuk sonucu (`/horizon`) | **v1.2**: `layer_resolution_m`, `excluded_layers`; cache şeması 3 |
+| görev sonucu (`result.mission`) | **v1.3**: `radius_policy` {`code` `REDUCED_HORIZON_RADIUS`/`REFERENCE_RADIUS`, `radius_km`, `reference_radius_km`, `below_reference`, `status_before_policy`, `status_after_policy`, `capped`, `note`}; mühendis açıklamasında `radius_policy=` |
 
 v1.1 değişiklikleri **eklemelidir** (mevcut alanlar korunur) ve `tests/test_api_v11.py` ile test edilir. Ayrıca: kontrollü localhost CORS, iş zaman aşımı (`ANALYSIS_TIMEOUT`, 1800 s), havuz yalnız `lifespan` içinde.
 
@@ -143,13 +149,13 @@ Son gerçek koşular (2026-11-14, Windows 11):
 
 | Komut | Sonuç |
 |---|---|
-| `python -m pytest -q` | **75 passed** (sözleşme, SPICE UTC→ET, indirici 23 senaryo — HTTP Range devamı dahil, Windows spawn 7, API v1.1/v1.2, LOD/ERR katman tutarlılığı, doğrulama koşucusu, Pareto regresyonu) |
+| `python -m pytest -q` | **83 passed** (sözleşme, SPICE UTC→ET, indirici 23 senaryo — HTTP Range devamı dahil, Windows spawn 7, API v1.1/v1.2, LOD/ERR katman tutarlılığı, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
 | `python -m backend.validation` | **12 / 12 PASS** (A-04, V-01…V-10, SLOPE-01) → `data/validation/report.json` |
-| `cd frontend; npx vitest run` | **85 passed** (mod ayrımı, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
+| `cd frontend; npx vitest run` | **95 passed** (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
 | `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı |
-| `npm run e2e:states` | 8/8: gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
+| `npm run e2e:states` | 17/17 kontrol, **her durum iki modda**: Halk'ta sade başlık + kod yalnız klavyeyle açılan “Teknik detaylar”da, Mühendis'te kod doğrudan; SPICE hatasında odak taşınır; hata ekranlarında axe 0. Gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
 
 Mock kullanımı: yalnız UI/istemci sözleşme testlerinde ve indirici testlerinde (HTTP mock + `tmp_path` içinde sentetik minik GeoTIFF); her biri dosya başında işaretlidir. UI bileşen testleri, gerçek bir API yanıtının kısaltılmış kopyasını (`frontend/src/test/fixtures/real_analysis_62e783c2.json`, `_provenance` alanı) kullanır.
 

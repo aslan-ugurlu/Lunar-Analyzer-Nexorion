@@ -5,9 +5,9 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T13:20Z
+- **Zaman (UTC):** 2026-11-14T13:33Z
 - **Faz:** Faz 7 (P1-2) — (1) `(1).py` temizliği + push, (2) Halk hata UX + 200 km GREEN kuralı, (3) EFFRES/Site07-11-23/YELLOW/doğrulama kapsamı, clone modu
-- **Alt adım:** 7.1 temizlik + push
+- **Alt adım:** 7.1 + 7.2 DONE (push edildi) → kullanıcıya test raporu → 7.3 (EFFRES, Site07/11/23, YELLOW araştırması, doğrulama kapsamı) başlıyor
 - **Durum:** IN_PROGRESS (Faz 0–6 kullanıcı tarafından kabul edildi, 2026-11-14)
 
 ## Tamamlanan iş
@@ -277,3 +277,33 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 13:18Z — Push öncesi kontrol: `.gitignore` `data/`, `*.TIF`/`*.tif`, `*.bsp`, `*.bpc`, `logs/`, `node_modules/` içeriyor
   (`git check-ignore -v` örnekleri doğruladı); `git ls-files` içinde `data/`/`logs/` yok; gönderilecek aralıkta (`origin/main..HEAD`)
   yasak yol yok, en büyük blob 29.6 kB (`PROGRESS.md`).
+- 13:18Z — **Push (7.1) başarılı:** `git push origin main` → `8a37e4f..d943820  main -> main`
+  (Faz 6 `c945069`, `aef6af9` ve temizlik kaydı `d943820` GitHub'da). `git status`: `main...origin/main` eşit.
+
+#### 7.2 — Halk/Mühendis hata UX'i + 200 km referans kuralı (13:20Z–13:33Z)
+- **Kullanıcı kararı (2026-11-14):** Halk modunda kodlar ana başlık olmaz; sade Türkçe başlık + açıklama, ham kod açılır
+  “Teknik detaylar” içinde (silinmez). Mühendis modunda kodlar doğrudan görünür. Bu, Faz 6'daki “kodlar Halk'ta da görünür” kararının yerine geçer.
+- Frontend: `api/errors.ts` → `publicTitle`/`publicAction` + `headingFor()` + `KNOWN_CODES` + `REDUCED_HORIZON_RADIUS`;
+  `ui.tsx` `Notice` moda göre (Halk: `<details>` “Teknik detaylar”; `focusOnMount`); `App.tsx` degraded uyarısı `Notice`'e taşındı;
+  `AnalysisList`, `ComparePanel`, `MissionForm` (DEM/clone ipuçları, yarıçap ipucu), `ResultSummary` (yarıçap uyarısı + YELLOW hikâyesi),
+  `TelemetryPanel` (“Yarıçap kuralı” satırı), `CopySummary` (UYARI satırı). Tasarım korunmuştur (yeni sayfa/düzen yok).
+- Backend (API v1.3, ekleyici): `config.REFERENCE_HORIZON_RADIUS_KM = 200`; `decision_engine._radius_policy` →
+  r < 200 km ise GREEN → YELLOW (RED/YELLOW/GRAY değişmez), `mission.radius_policy` alanı, etiket + kamu/mühendis açıklaması.
+  Gerekçe: kısa tarama = referans örneklerinin alt kümesi üzerinde maksimum → ufuk ≤ referans → görünürlük iyimser.
+- Testler: `python -m pytest -q` **83 passed** (+8 `tests/test_radius_policy.py`, işaretli sentetik sky/slope çiftleriyle) ·
+  `npx vitest run` **95 passed** (+10 `ErrorUx.test.tsx`) · `npm run lint` 0 · `npm run build` OK (358 kB).
+- uvicorn yeni kodla yeniden başlatıldı (bellek içi analiz kayıtları sıfırlandı).
+- `npm run e2e:states` (yeniden yazıldı, iki mod) → **17/17**: Halk'ta sade başlık + kod yalnız klavyeyle açılan “Teknik detaylar”da;
+  Mühendis'te kod çipi görünür; SPICE hatasında odak hata kutusuna; axe DEM_MISSING Halk (detaylar açık) 0 / Mühendis 0.
+- **Gerçek API (200 vs 135 km)**, test konumu (−89.4512, −137.1427), ERR k=1, 2026-12-17T00:00Z, 48+12 sa:
+  200 km → **GREEN** (`REFERENCE_RADIUS`), 135 km → **YELLOW** (`REDUCED_HORIZON_RADIUS`, GREEN → YELLOW); katmanlar 240/80/5/5 m,
+  eğim maks 5.20° (`logs/radius_policy_faz7.json`).
+- **Kullanıcı test senaryosu, Site01 karo merkezi** (−89.46316, −137.48955; raster merkezi, resmi iniş noktası değil), `site01_5m`,
+  ERR k=1, eğim ≤ 10°, diğerleri form varsayılanı (`logs/user_test_site01_faz7.json`):
+  - 2026-12-26T12:00Z, 200 km → **RED** (nominal `MIN_DTE` + `MAX_DTE_GAP`; ihtiyatlıda ek `MIN_ILLUMINATION`).
+    Dünya 2026-12-27 09:00–09:30Z arasında az ≈143°'de batıyor (DTE %35.8, kesinti 38.5 sa); Güneş ort. %95.5, en düşük %80.3
+    (2026-12-28T20:30Z, az 78.85°, el +1.18°); karanlık 0 sa.
+  - 2026-12-17T00:00Z: 200 km → **GREEN**, 135 km → **YELLOW** (aynı veri).
+  - Eğim maks 9.34° / ort 5.86° (`site01_5m`, Δ 5 m, `screening_only`); gözlemci DEM 1944.83 m, σ 0.253 m; katmanlar 240/80/5/5 m, dışlanan yok.
+- `npm run e2e` (nominal, varsayılan) → geçti: axe 10/10 ekran 0, mobil 0, konsol 0. `SITES=2 konum UNCERTAINTY=err 2026-12-17` →
+  GREEN, Compare/Pareto, JSON katmanları 240/80/5/5 m, axe 0, mobil 0, konsol 0 (`logs/e2e_err_faz7/`).

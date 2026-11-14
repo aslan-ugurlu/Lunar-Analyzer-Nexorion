@@ -2,16 +2,23 @@ import { API_BASE, ApiError } from './client';
 
 export interface Explained {
   code: string;
+  /** Engineer heading (shown next to the verbatim code). */
   title: string;
+  /** Plain-language heading for Halk mode; falls back to `title`. */
+  publicTitle?: string;
   publicText: string;
   engineerText: string;
+  /** Technical action (commands); Halk mode shows it under “Teknik detaylar”. */
   action?: string;
+  /** Plain-language action a non-specialist can take (Halk mode). */
+  publicAction?: string;
   tone: 'error' | 'warning' | 'info';
 }
 
 /**
- * Every backend / job / result code the UI may meet. Codes are always shown
- * verbatim next to the explanation; nothing is hidden or softened into success.
+ * Every backend / job / result code the UI may meet. Codes are never hidden or softened into
+ * success: Mühendis mode shows them verbatim next to the explanation; Halk mode leads with a
+ * plain-language heading and keeps the verbatim code under an expandable “Teknik detaylar”.
  */
 const CATALOG: Record<string, Omit<Explained, 'code'>> = {
   BACKEND_OFFLINE: {
@@ -140,18 +147,75 @@ const CATALOG: Record<string, Omit<Explained, 'code'>> = {
     engineerText: 'SLOPE_UNKNOWN: yüksek çözünürlüklü DEM/örnek yok → GRAY katkısı.',
     tone: 'warning',
   },
+  REDUCED_HORIZON_RADIUS: {
+    title: 'Ufuk 200 km referanstan kısa tarandı (GREEN tavanı: YELLOW)',
+    publicText: 'Bu analizde ufuk hızlı modda, 200 km yerine daha kısa bir mesafeye kadar tarandı. Uzaktaki dağlar Güneş’i veya Dünya’yı ' +
+      'ek olarak kapatabileceği için sonuç olduğundan iyimser olabilir. Bu yüzden “uygun” (GREEN) kararı verilmez; en iyi sonuç “dikkat” (YELLOW) olur.',
+    engineerText: 'REDUCED_HORIZON_RADIUS: r < 200 km. Kısa tarama ufku yalnız alçaltabilir (daha az arazi örneği üzerinde maksimum) → görünürlük iyimser. ' +
+      'RED geçerli kalır; GREEN → YELLOW tavanı; YELLOW/GRAY 200 km’de kötüleşebilir.',
+    action: 'Ufuk tarama yarıçapı = 200 km ile yeniden çalıştırın.',
+    tone: 'warning',
+  },
 };
+
+/** Plain-language Halk-mode headings. The verbatim code stays available under “Teknik detaylar”. */
+const PUBLIC_TITLE: Record<string, string> = {
+  BACKEND_OFFLINE: 'Hesaplama sunucusuna şu an ulaşılamıyor',
+  SPICE_MISSING: 'Güneş ve Dünya konum verisi henüz mevcut değil',
+  DEM_MISSING: 'Arazi verisi henüz mevcut değil',
+  TERRAIN_UNAVAILABLE: 'Arazi verisi okunamadı',
+  CLONE_NOT_PRECOMPUTED: 'Bu belirsizlik yöntemi için veri henüz hazır değil',
+  WORKER_UNAVAILABLE: 'Hesaplama yarıda kesildi',
+  ANALYSIS_TIMEOUT: 'Hesaplama çok uzun sürdü ve durduruldu',
+  CALCULATION_ERROR: 'Hesaplama tamamlanamadı',
+  CANCELLED: 'Analiz iptal edildi',
+  INVALID_INPUT: 'Bazı değerler kabul edilen aralığın dışında',
+  RATE_LIMITED: 'Kısa sürede çok fazla analiz başlatıldı',
+  QUEUE_FULL: 'Sunucu şu an çok meşgul',
+  HORIZON_NOT_READY: 'Ufuk çizgisi henüz hazır değil',
+  TIMELINE_NOT_READY: 'Zaman çizelgesi henüz hazır değil',
+  ANALYSIS_NOT_READY: 'Analiz henüz tamamlanmadı',
+  ANALYSIS_NOT_FOUND: 'Bu analiz artık sunucuda yok',
+  INCOMPARABLE: 'Bu adaylar birbiriyle karşılaştırılamaz',
+  INTERNAL_ERROR: 'Sunucuda beklenmeyen bir sorun oluştu',
+  INCOMPLETE_VISIBILITY: 'Bazı saatler için arazi verisi eksik',
+  SLOPE_UNKNOWN: 'Arazi eğimi değerlendirilemedi',
+  REDUCED_HORIZON_RADIUS: 'Hızlı tarama yapıldı: kesin “uygun” kararı için tam tarama gerekli',
+};
+
+/** Actions a non-specialist can take; command-line actions stay under “Teknik detaylar”. */
+const PUBLIC_ACTION: Record<string, string> = {
+  BACKEND_OFFLINE: 'Birkaç dakika sonra sayfayı yenileyin.',
+  SPICE_MISSING: 'Veri yüklenene kadar analiz yapılamaz; “Data & Validation” sekmesinde durumu görebilirsiniz.',
+  DEM_MISSING: 'Arazi verisi mevcut olan bir katman seçin veya koordinatı seçili karonun içine alın.',
+  CLONE_NOT_PRECOMPUTED: 'Belirsizlik modunu “Nominal” veya “ERR ±k” yapıp yeniden deneyin.',
+  WORKER_UNAVAILABLE: 'Analizi yeniden başlatabilirsiniz.',
+  ANALYSIS_TIMEOUT: 'Görev süresini kısaltın veya zaman adımını büyütüp yeniden deneyin.',
+  RATE_LIMITED: 'Bir dakika bekleyip yeniden deneyin.',
+  QUEUE_FULL: 'Çalışan analizlerden biri bitince yeniden deneyin.',
+  INCOMPARABLE: 'Mission Setup’ta “aynı profille yeni aday” seçeneğini kullanın.',
+  REDUCED_HORIZON_RADIUS: 'Gelişmiş görev ayarlarında ufuk tarama yarıçapını 200 km yapıp yeniden çalıştırın.',
+};
+
+/** Every code with a catalogued explanation (used by tests to check Halk headings). */
+export const KNOWN_CODES: readonly string[] = Object.keys(CATALOG);
 
 export function explainCode(code: string): Explained {
   const entry = CATALOG[code];
-  if (entry) return { code, ...entry };
+  if (entry) return { code, ...entry, publicTitle: PUBLIC_TITLE[code] ?? entry.title, publicAction: PUBLIC_ACTION[code] };
   return {
     code,
     title: `Bilinmeyen durum: ${code}`,
+    publicTitle: 'Beklenmeyen bir durum oluştu',
     publicText: 'Beklenmeyen bir durum oluştu; sonuç gösterilmiyor.',
     engineerText: `Kod: ${code}`,
     tone: 'error',
   };
+}
+
+/** Heading for the current mode (Halk: plain language; Mühendis: technical title). */
+export function headingFor(explained: Explained, mode: 'public' | 'engineer'): string {
+  return mode === 'public' ? explained.publicTitle ?? explained.title : explained.title;
 }
 
 export function explainError(error: unknown): Explained & { details: ApiError['details']; requestId?: string } {

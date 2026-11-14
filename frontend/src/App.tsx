@@ -10,7 +10,24 @@ import { DataValidation } from './components/DataValidation';
 import { Header } from './components/Header';
 import { Tabs, TabPanel, type TabDef } from './components/Tabs';
 import { Notice, ExternalLink } from './components/ui';
-import { explainError } from './api/errors';
+import { explainCode, explainError, type Explained } from './api/errors';
+
+/** /health = degraded: no LOLA raster at all (DEM_MISSING) or SPICE kernels missing (SPICE_MISSING). */
+function degradedNotice(spicePresent: boolean): Explained {
+  const base = explainCode(spicePresent ? 'DEM_MISSING' : 'SPICE_MISSING');
+  return {
+    ...base,
+    tone: 'warning',
+    title: `Hizmet durumu: degraded — ${base.title}`,
+    publicText: spicePresent
+      ? 'Sunucuda henüz hiçbir NASA arazi haritası (LOLA DEM) yüklü değil, bu yüzden analiz başlatılamaz. Sonuç uydurulmaz.'
+      : 'Güneş ve Dünya’nın konumunu hesaplamak için gereken NASA/NAIF dosyaları sunucuda yok, bu yüzden analiz başlatılamaz.',
+    engineerText: (spicePresent
+      ? 'SPICE dosyaları mevcut, fakat hiçbir NASA LOLA arazi rasterı yüklü değil. Analiz başlatılamaz (DEM_MISSING).'
+      : 'SPICE kernel dosyaları eksik (SPICE_MISSING).') + ' Ayrıntı ve indirme komutları “Data & Validation” sekmesinde.',
+    publicAction: 'Veri durumu ve kaynaklar için “Data & Validation” sekmesine bakın.',
+  };
+}
 
 export type TabKey = 'setup' | 'sky' | 'timeline' | 'compare' | 'data';
 
@@ -46,15 +63,7 @@ function Shell() {
       <main id="main" className="mx-auto w-full max-w-7xl flex-1 space-y-4 px-4 py-4">
         {offline && <Notice explained={explainError(health.error)} />}
         {!offline && health.data?.status === 'degraded' && (
-          <div role="status" className="rounded-lg border border-caution/60 bg-caution/10 p-3 text-sm">
-            <p className="font-semibold text-caution">Hizmet durumu: degraded</p>
-            <p className="text-ink/90">
-              {health.data.spice_files_present
-                ? 'SPICE dosyaları mevcut, fakat hiçbir NASA LOLA arazi rasterı yüklü değil. Analiz başlatılamaz (DEM_MISSING).'
-                : 'SPICE kernel dosyaları eksik (SPICE_MISSING).'}{' '}
-              Ayrıntı ve indirme komutları “Data & Validation” sekmesinde.
-            </p>
-          </div>
+          <Notice explained={degradedNotice(health.data.spice_files_present)} />
         )}
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
         <TabPanel id="setup" active={tab === 'setup'}>

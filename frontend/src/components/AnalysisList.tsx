@@ -1,4 +1,4 @@
-import { explainCode } from '../api/errors';
+import { explainCode, headingFor } from '../api/errors';
 import { formatLatLon, shortId } from '../lib/format';
 import { jobDecision } from '../lib/result';
 import { formatUtc } from '../lib/utc';
@@ -16,7 +16,9 @@ const STATUS_TEXT: Record<string, string> = {
 export function JobStatusLine({ entry }: { entry: AnalysisEntry }) {
   const { mode } = useApp();
   if (entry.lost) {
-    return <span className="text-caution">Sunucuda bulunamadı (ANALYSIS_NOT_FOUND) — sunucu yeniden başlatılmış olabilir</span>;
+    return mode === 'engineer'
+      ? <span className="text-caution">Sunucuda bulunamadı (ANALYSIS_NOT_FOUND) — sunucu yeniden başlatılmış olabilir</span>
+      : <span className="text-caution">{headingFor(explainCode('ANALYSIS_NOT_FOUND'), 'public')} — sunucu yeniden başlatılmış olabilir</span>;
   }
   const status = entry.job?.status ?? 'queued';
   return (
@@ -24,14 +26,18 @@ export function JobStatusLine({ entry }: { entry: AnalysisEntry }) {
       {isActive(entry) && <Icon name="spinner" className="h-3.5 w-3.5 text-accent" />}
       <span>{STATUS_TEXT[status] ?? status}</span>
       {mode === 'engineer' && <span className="mono text-muted">({status})</span>}
-      {entry.job?.error && <span className="mono text-stop">· {entry.job.error}</span>}
-      {entry.pollErrorCode && <span className="mono text-caution">· izleme: {entry.pollErrorCode}</span>}
+      {entry.job?.error && (mode === 'engineer'
+        ? <span className="mono text-stop">· {entry.job.error}</span>
+        : <span className="text-stop">· {headingFor(explainCode(entry.job.error), 'public')}</span>)}
+      {entry.pollErrorCode && (mode === 'engineer'
+        ? <span className="mono text-caution">· izleme: {entry.pollErrorCode}</span>
+        : <span className="text-caution">· durum sorgulanamıyor ({headingFor(explainCode(entry.pollErrorCode), 'public').toLocaleLowerCase('tr')})</span>)}
     </span>
   );
 }
 
 export function AnalysisList() {
-  const { list, selectedId, select, remove } = useApp();
+  const { list, selectedId, select, remove, mode } = useApp();
   if (list.length === 0) {
     return (
       <EmptyState title="Henüz analiz yok">
@@ -56,7 +62,7 @@ export function AnalysisList() {
                 </p>
                 <p className="mono text-xs text-muted">{formatLatLon(entry.input.latitude, entry.input.longitude)} · {entry.input.dataset_id} · {formatUtc(entry.input.landing_utc)}</p>
                 <p className="text-xs"><JobStatusLine entry={entry} /></p>
-                {code && <p className="text-xs text-caution">{explainCode(code).title} <span className="mono">({code})</span></p>}
+                {code && <p className="text-xs text-caution">{mode === 'engineer' ? <>{explainCode(code).title} <span className="mono">({code})</span></> : headingFor(explainCode(code), 'public')}</p>}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">
                 {decision && <DecisionBadge status={decision} size="sm" />}

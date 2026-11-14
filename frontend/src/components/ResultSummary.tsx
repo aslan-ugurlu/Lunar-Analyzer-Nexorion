@@ -1,5 +1,5 @@
-import { explainCode, VIOLATION_TEXT } from '../api/errors';
-import type { Mission, Scenario } from '../api/types';
+import { explainCode, VIOLATION_TEXT, type Explained } from '../api/errors';
+import type { Decision, Mission, RadiusPolicy, Scenario } from '../api/types';
 import { formatHours, formatLatLon, formatNumber, formatPercent, shortId } from '../lib/format';
 import { baselineScenario, intervalUtc, validMetrics, violationInterval } from '../lib/result';
 import { baselineKpis, scenarioViolationSummary, type Kpi } from '../lib/telemetry';
@@ -56,6 +56,27 @@ function KpiCards({ mission, entry }: { mission: Mission; entry: AnalysisEntry }
   );
 }
 
+/** Notice for a horizon scanned below the 200-km reference (values copied from `radius_policy`). */
+function radiusExplained(p: RadiusPolicy, status: Decision): Explained {
+  const base = explainCode('REDUCED_HORIZON_RADIUS');
+  const facts = `r = ${p.radius_km} km < ${p.reference_radius_km} km referans; karar ${p.status_before_policy}` +
+    (p.capped ? ` → ${status} (GREEN tavanı).` : ' (değişmedi).');
+  if (status === 'RED') {
+    return {
+      ...base, tone: 'info', publicTitle: 'Hızlı tarama yapıldı (sonuç yine de geçerli)',
+      publicText: `Ufuk yalnızca ${p.radius_km} km’ye kadar tarandı. Kısıt bu hızlı taramada bile aşıldığı için sonuç tam (${p.reference_radius_km} km) taramada da geçerlidir: daha uzak arazi ufku yalnızca yükseltebilir.`,
+      engineerText: `${facts} RED geçerli kalır: daha uzun tarama ufku yalnız yükseltebilir.`,
+      publicAction: undefined,
+    };
+  }
+  return {
+    ...base,
+    publicText: p.capped ? base.publicText
+      : `Ufuk yalnızca ${p.radius_km} km’ye kadar tarandı (hızlı mod). Tam (${p.reference_radius_km} km) taramada sonuç daha kötü olabilir.`,
+    engineerText: `${facts} ${base.engineerText}`,
+  };
+}
+
 function Story({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
   const s = baselineScenario(mission);
   const m = validMetrics(s?.variants.nominal);
@@ -64,9 +85,12 @@ function Story({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
   const summary = scenarioViolationSummary(mission);
   const dark = s && m ? intervalUtc(s, m.darkness_interval) : null;
   const gap = s && m ? intervalUtc(s, m.dte_gap_interval) : null;
+  const rp = mission.radius_policy;
   const verdict = {
     GREEN: 'Tanımladığınız kısıtlar hem normal hesapta hem de arazi belirsizliği eklenmiş ihtiyatlı hesapta sağlanıyor.',
-    YELLOW: 'Normal hesapta kısıtlar sağlanıyor, ama arazi belirsizliği eklenince en az bir kısıt aşılıyor; dikkatli olunmalı.',
+    YELLOW: rp?.capped
+      ? `Kısıtlar hem normal hem ihtiyatlı hesapta sağlanıyor; ancak ufuk yalnızca ${rp.radius_km} km’ye kadar tarandı (hızlı mod). Daha uzaktaki dağlar Güneş’i veya Dünya’yı kapatabileceği için “uygun” denmiyor; ${rp.reference_radius_km} km ile yeniden çalıştırın.`
+      : 'Normal hesapta kısıtlar sağlanıyor, ama arazi belirsizliği eklenince en az bir kısıt aşılıyor; dikkatli olunmalı.',
     RED: 'Tanımladığınız kısıtlardan en az biri normal hesapta bile sağlanmıyor.',
     GRAY: 'Eldeki veri veya doğrulama, güvenilir bir “uygun / uygun değil” demeye yetmiyor.',
   }[mission.status];
@@ -223,8 +247,11 @@ export function ResultSummary({ entry }: { entry: AnalysisEntry | null }) {
         </Notice>
       )}
       {result && !result.error_code && !mission && result.reason && (
-        <Notice explained={{ code: 'GRAY', title: 'Sonuç belirsiz', publicText: result.reason, engineerText: result.reason, tone: 'warning' }} />
+        <Notice explained={{ code: 'GRAY', title: 'Sonuç belirsiz', publicTitle: 'Kesin bir sonuç üretilemedi',
+          publicText: 'Bu konum için güvenilir bir “uygun / uygun değil” kararı verilemedi; sebebi aşağıdaki teknik detaylarda.',
+          engineerText: result.reason, tone: 'warning' }} />
       )}
+      {mission?.radius_policy?.below_reference && <Notice explained={radiusExplained(mission.radius_policy, mission.status)} />}
 
       {mission && engineer && (
         <>

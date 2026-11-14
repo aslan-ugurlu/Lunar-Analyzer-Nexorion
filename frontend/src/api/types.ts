@@ -185,6 +185,19 @@ export interface Mission {
   cautious_violations?: Violation[];
   unresolved?: Unresolved[];
   disclaimers?: string[];
+  /** v1.3: 200-km reference radius rule (shorter scans never end GREEN). Absent on older results. */
+  radius_policy?: RadiusPolicy;
+}
+
+export interface RadiusPolicy {
+  code: 'REDUCED_HORIZON_RADIUS' | 'REFERENCE_RADIUS' | string;
+  radius_km: number;
+  reference_radius_km: number;
+  below_reference: boolean;
+  status_before_policy: Decision;
+  status_after_policy: Decision;
+  capped: boolean;
+  note: string;
 }
 
 export interface HorizonProfile {

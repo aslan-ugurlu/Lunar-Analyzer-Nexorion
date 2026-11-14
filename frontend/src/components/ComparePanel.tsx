@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { api } from '../api/client';
-import { explainCode, explainError, VIOLATION_TEXT } from '../api/errors';
+import { explainCode, explainError, headingFor, VIOLATION_TEXT } from '../api/errors';
 import type { CompareResponse, Decision, Priority, RankedCandidate } from '../api/types';
 import { formatHours, formatLatLon, formatPercent, shortId } from '../lib/format';
 import { missionProfileKey } from '../lib/mission';
@@ -35,8 +35,16 @@ function Reasons({ entry }: { entry: AnalysisEntry }) {
         <li key={c} className="text-stop"><Icon name="stop" className="mr-1 inline h-3.5 w-3.5" />{mode === 'public' ? VIOLATION_TEXT[c]?.publicLabel ?? c : `${c} · ${VIOLATION_TEXT[c]?.label ?? ''}`}</li>
       ))}
       {unknown.map((c) => (
-        <li key={c} className="text-caution"><Icon name="question" className="mr-1 inline h-3.5 w-3.5" />{explainCode(c).title} ({c})</li>
+        <li key={c} className="text-caution"><Icon name="question" className="mr-1 inline h-3.5 w-3.5" />{mode === 'public' ? headingFor(explainCode(c), 'public') : `${explainCode(c).title} (${c})`}</li>
       ))}
+      {mission.radius_policy?.below_reference && (
+        <li className="text-caution">
+          <Icon name="alert" className="mr-1 inline h-3.5 w-3.5" />
+          {mode === 'public'
+            ? headingFor(explainCode('REDUCED_HORIZON_RADIUS'), 'public')
+            : `REDUCED_HORIZON_RADIUS · ufuk ${mission.radius_policy.radius_km} km < ${mission.radius_policy.reference_radius_km} km${mission.radius_policy.capped ? ` (${mission.radius_policy.status_before_policy} → ${mission.status})` : ''}`}
+        </li>
+      )}
       {codes.length === 0 && unknown.length === 0 && mission.status === 'GRAY' && (
         <li className="text-muted">{mission.reason ?? (entry.input.uncertainty_mode === 'nominal' ? 'Nominal mod tek başına GREEN olamaz (ERR senaryosu gerekir).' : mission.label)}</li>
       )}

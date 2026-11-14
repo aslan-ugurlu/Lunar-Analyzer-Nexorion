@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { Decision } from '../api/types';
-import type { Explained } from '../api/errors';
+import { headingFor, type Explained } from '../api/errors';
 import { useApp } from '../state/AppState';
 
 type IconName = 'check' | 'alert' | 'stop' | 'question' | 'info' | 'sun' | 'earth' | 'external' | 'spinner' | 'copy';
@@ -36,7 +36,7 @@ export function Icon({ name, className = 'h-4 w-4' }: { name: IconName; classNam
 
 const DECISION_STYLE: Record<Decision, { cls: string; icon: IconName; word: string; publicWord: string }> = {
   GREEN: { cls: 'border-go/60 bg-go/15 text-go', icon: 'check', word: 'GREEN', publicWord: 'Uygun görünüyor' },
-  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', icon: 'alert', word: 'YELLOW', publicWord: 'Dikkat: ihtiyatlı senaryoda sorun' },
+  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', icon: 'alert', word: 'YELLOW', publicWord: 'Dikkat: ek kontrol gerekiyor' },
   RED: { cls: 'border-stop/60 bg-stop/15 text-stop', icon: 'stop', word: 'RED', publicWord: 'Kısıtlar sağlanmıyor' },
   GRAY: { cls: 'border-unknown/60 bg-unknown/10 text-unknown', icon: 'question', word: 'GRAY', publicWord: 'Belirsiz / veri yetersiz' },
 };
@@ -58,35 +58,68 @@ export function DecisionBadge({ status, size = 'md' }: { status: Decision; size?
 function decisionShort(status: Decision): string {
   return {
     GREEN: 'nominal + ihtiyatlı geçti',
-    YELLOW: 'nominal geçti, ihtiyatlı ihlal',
+    YELLOW: 'nominal geçti; ihtiyatlı ihlal veya < 200 km tarama',
     RED: 'nominal ihlal',
     GRAY: 'veri/doğrulama yetersiz',
   }[status];
 }
 
-export function Notice({ explained, children, compact = false }: { explained: Explained; children?: ReactNode; compact?: boolean }) {
+/**
+ * Error / missing-data notice.
+ * Mühendis: technical title + verbatim code chip + engineer text + command action.
+ * Halk: plain-language heading and text; the verbatim code, engineer text and command action are
+ * kept (never removed) inside a keyboard-accessible “Teknik detaylar” disclosure.
+ * `focusOnMount` moves focus to the notice (e.g. after a failed submit) for keyboard/screen-reader users.
+ */
+export function Notice({ explained, children, compact = false, focusOnMount = false }: {
+  explained: Explained; children?: ReactNode; compact?: boolean; focusOnMount?: boolean;
+}) {
   const { mode } = useApp();
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focusOnMount) ref.current?.focus();
+  }, [focusOnMount, explained.code]);
   const tone = {
     error: 'border-stop/60 bg-stop/10',
     warning: 'border-caution/60 bg-caution/10',
     info: 'border-accent/50 bg-accent/10',
   }[explained.tone];
   const icon: IconName = explained.tone === 'error' ? 'stop' : explained.tone === 'warning' ? 'alert' : 'info';
+  const engineer = mode === 'engineer';
   return (
-    <div role={explained.tone === 'error' ? 'alert' : 'status'} className={`rounded-lg border p-3 text-sm ${tone}`}>
+    <div ref={ref} tabIndex={focusOnMount ? -1 : undefined} role={explained.tone === 'error' ? 'alert' : 'status'}
+      className={`rounded-lg border p-3 text-sm ${tone}`} data-code={explained.code}>
       <div className="flex items-start gap-2">
         <Icon name={icon} className="mt-0.5 h-5 w-5 shrink-0" />
         <div className="min-w-0 space-y-1">
-          <p className="font-semibold">
-            {explained.title} <span className="chip ml-1 border-line mono text-muted">{explained.code}</span>
-          </p>
-          {!compact && <p className="text-ink/90">{mode === 'public' ? explained.publicText : explained.engineerText}</p>}
-          {!compact && explained.action && (
+          {engineer ? (
+            <p className="font-semibold">
+              {explained.title} <span className="chip ml-1 border-line mono text-muted">{explained.code}</span>
+            </p>
+          ) : (
+            <p className="font-semibold">{headingFor(explained, 'public')}</p>
+          )}
+          {!compact && <p className="text-ink/90">{engineer ? explained.engineerText : explained.publicText}</p>}
+          {engineer && !compact && explained.action && (
             <p className="text-muted">
               Yapılabilecek: <span className="mono break-all text-ink">{explained.action}</span>
             </p>
           )}
+          {!engineer && !compact && explained.publicAction && (
+            <p className="text-muted">Ne yapabilirsiniz: <span className="text-ink">{explained.publicAction}</span></p>
+          )}
           {children}
+          {!engineer && (
+            <details className="group text-xs text-muted">
+              <summary className="cursor-pointer select-none rounded font-medium text-ink/80 hover:text-ink">Teknik detaylar</summary>
+              <div className="mt-1 space-y-1 border-l-2 border-line pl-2">
+                <p>Kod: <span className="chip border-line mono text-ink">{explained.code}</span></p>
+                {explained.title !== headingFor(explained, 'public') && <p>{explained.title}</p>}
+                <p className="break-words">{explained.engineerText}</p>
+                {explained.action && <p>Teknik işlem: <span className="mono break-all text-ink">{explained.action}</span></p>}
+              </div>
+            </details>
+          )}
         </div>
       </div>
     </div>

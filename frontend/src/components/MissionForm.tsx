@@ -127,7 +127,9 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
     </Field>
   );
   const fRadius = (
-    <Field id={id('horizon_radius_km')} label="Ufuk tarama yarıçapı (km)" hint="10 … 200. 200 km referans; 135 km hızlı mod (yüksek konumlarda uzak araziyi kaçırabilir — V-05). Tarama mesafesi eksiksizlik kanıtı değildir." error={errors.horizon_radius_km}>
+    <Field id={id('horizon_radius_km')} label="Ufuk tarama yarıçapı (km)" hint={engineer
+      ? '10 … 200. 200 km referans; < 200 km (ör. 135 km hızlı mod) ufku yalnız alçaltabilir → sonuç en fazla YELLOW (REDUCED_HORIZON_RADIUS; V-05: 0.76°’ye kadar fark). Tarama mesafesi eksiksizlik kanıtı değildir.'
+      : '10 … 200. 200 km tam tarama; 135 km hızlıdır ama uzaktaki dağları kaçırabilir, bu yüzden “uygun” (GREEN) kararı yalnız 200 km ile verilir.'} error={errors.horizon_radius_km}>
       <div className="flex gap-2">
         {numberInput('horizon_radius_km', { min: 10, max: 200 })}
         {[135, 200].map((r) => (
@@ -182,15 +184,25 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           </select>
         </Field>
         {site && !site.available && (
-          <p role="status" className="rounded-md border border-caution/50 bg-caution/10 p-2 text-xs text-caution">
-            Bu katmanın dosyası sunucuda yok ({site.expected_folder}/{site.expected_file}). Analiz isteği <span className="mono">DEM_MISSING</span> ile reddedilir; sonuç uydurulmaz.
-          </p>
+          engineer ? (
+            <p role="status" className="rounded-md border border-caution/50 bg-caution/10 p-2 text-xs text-caution">
+              Bu katmanın dosyası sunucuda yok ({site.expected_folder}/{site.expected_file}). Analiz isteği <span className="mono">DEM_MISSING</span> ile reddedilir; sonuç uydurulmaz.
+            </p>
+          ) : (
+            <div role="status" className="rounded-md border border-caution/50 bg-caution/10 p-2 text-xs text-caution">
+              <p>Bu katman için arazi verisi henüz mevcut değil; bu katmanla analiz başlatılamaz (sonuç uydurulmaz). Arazi verisi mevcut olan bir katman seçin.</p>
+              <details className="mt-1 text-muted">
+                <summary className="cursor-pointer select-none rounded font-medium text-ink/80">Teknik detaylar</summary>
+                <p className="mt-1">Kod: <span className="mono text-ink">DEM_MISSING</span> · beklenen dosya: <span className="mono break-all">{site.expected_folder}/{site.expected_file}</span></p>
+              </details>
+            </div>
+          )
         )}
         {site?.available && site.footprint && !site.footprint.contains_pole && (
           <div className="rounded-md border border-line bg-panel-2 p-2 text-xs text-muted">
             <p>
               Bu DEM karosu {site.footprint.width_km.toFixed(1)} × {site.footprint.height_km.toFixed(1)} km; enlem {site.footprint.lat_range[0].toFixed(3)}° … {site.footprint.lat_range[1].toFixed(3)}°.
-              Koordinat bu karonun içinde olmalı; dışındaysa analiz <span className="mono">DEM_MISSING</span> döner.
+              Koordinat bu karonun içinde olmalı; dışındaysa {engineer ? <>analiz <span className="mono">DEM_MISSING</span> döner</> : 'bu katmanda arazi verisi olmadığı için analiz yapılamaz'}.
             </p>
             <button type="button" className="link mt-1" onClick={() => { set('latitude', String(site.footprint!.center.lat)); set('longitude', String(site.footprint!.center.lon)); }}>
               Karonun merkezini doldur ({site.footprint.center.lat.toFixed(4)}°, {site.footprint.center.lon.toFixed(4)}°)
@@ -279,7 +291,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
           {([
             ['nominal', 'Nominal', 'Yalnız DEM. Tek başına GREEN üretemez (en iyi durumda GRAY).'],
             ['err', 'ERR ±k', errAvailable ? 'ERR katmanı mevcut. ±k duyarlılık senaryosu; istatistiksel güven aralığı değildir.' : 'Bu katman için ERR dosyası yok → sonuç GRAY olur.'],
-            ['clone', 'DEM clone', 'Önceden hesaplanmış clone verisi yok → CLONE_NOT_PRECOMPUTED / GRAY.'],
+            ['clone', 'DEM clone', engineer ? 'Önceden hesaplanmış clone verisi yok → CLONE_NOT_PRECOMPUTED / GRAY.' : 'Bu yöntem için NASA klon verisi henüz hazır değil; seçilirse sonuç “belirsiz” olur.'],
           ] as [UncertaintyMode, string, string][]).map(([value, label, help]) => (
             <label key={value} className={`cursor-pointer rounded-lg border p-3 text-sm ${form.uncertainty_mode === value ? 'border-accent bg-accent/10' : 'border-line bg-panel-2'}`}>
               <span className="flex items-center gap-2 font-medium">
@@ -351,7 +363,7 @@ export function MissionForm({ sites, health, onQueued }: { sites: SitesResponse 
       </div>
 
       {serverError !== null && (
-        <Notice explained={explainError(serverError)}>
+        <Notice explained={explainError(serverError)} focusOnMount>
           {engineer && serverError instanceof ApiError && serverError.details.length > 0 && (
             <ul className="mono list-inside list-disc text-xs">
               {serverError.details.map((d, i) => <li key={i}>{d.field ?? '(gövde)'}: {d.message}</li>)}

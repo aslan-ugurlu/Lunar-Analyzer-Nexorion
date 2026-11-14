@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 from backend.astro_engine import compute_sky_positions
+from backend.config import REFERENCE_HORIZON_RADIUS_KM
 from backend.terrain_engine import sun_disk_fraction, earth_dte_visible, local_slope
 
 
@@ -118,6 +119,27 @@ def _constraints(metrics, slope, limits):
     return violations, unknown
 
 
+def _radius_policy(radius_km:float, status:str) -> dict:
+    """GREEN requires the 200-km reference scan.
+
+    A shorter scan takes the horizon maximum over a SUBSET of the reference terrain samples, so its
+    horizon can only be lower or equal: Sun/Earth visibility is optimistic. RED (nominal violation)
+    therefore remains valid, while GREEN/YELLOW could worsen at 200 km. GREEN is capped at YELLOW.
+    """
+    below=radius_km<REFERENCE_HORIZON_RADIUS_KM-1e-9
+    after='YELLOW' if (below and status=='GREEN') else status
+    if below:
+        note=(f'Horizon scanned to {radius_km:g} km < {REFERENCE_HORIZON_RADIUS_KM:g} km reference. A shorter scan can only '
+              'lower the horizon, so visibility is optimistic: RED stays valid, GREEN is capped at YELLOW and '
+              'YELLOW/GRAY may worsen at the reference radius.')
+    else:
+        note=f'Horizon scanned to the {REFERENCE_HORIZON_RADIUS_KM:g} km reference radius (not proof of complete occlusion).'
+    return {'code':'REDUCED_HORIZON_RADIUS' if below else 'REFERENCE_RADIUS',
+            'radius_km':radius_km,'reference_radius_km':REFERENCE_HORIZON_RADIUS_KM,
+            'below_reference':below,'status_before_policy':status,'status_after_policy':after,
+            'capped':after!=status,'note':note}
+
+
 def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:str,
                     duration_hours:float, buffer_hours:float, step_minutes:int,
                     constraints:dict, shifts_hours:list[int],
@@ -167,15 +189,26 @@ def analyze_mission(horizon:dict, latitude:float, longitude:float, landing_utc:s
         status='GRAY'  # nominal screen alone cannot justify verified GREEN
     else:
         status='GREEN'
+    radius_policy=_radius_policy(float(horizon['reference_radius_km']), status)
+    status=radius_policy['status_after_policy']
     labels={'RED':'Nominal görev kısıtları sağlanmıyor',
             'YELLOW':'Nominal uygun; ihtiyatlı arazi senaryosunda kısıt ihlali var',
             'GRAY':'Veri veya belirsizlik doğrulaması yetersiz',
             'GREEN':'Tanımlı kısıtlar nominal ve ihtiyatlı senaryolarda sağlanıyor'}
-    explanations={'public':labels[status]+'. Bu sonuç iniş güvenliği sertifikası değildir.',
+    label=labels[status]
+    if radius_policy['capped']:
+        label=(f'Nominal ve ihtiyatlı kontroller {radius_policy["radius_km"]:g} km hızlı taramada geçti; '
+               f'GREEN için {REFERENCE_HORIZON_RADIUS_KM:g} km referans analizi gerekli')
+    public=label+'. Bu sonuç iniş güvenliği sertifikası değildir.'
+    if radius_policy['below_reference'] and not radius_policy['capped'] and status!='RED':
+        public+=(f' Ufuk {radius_policy["radius_km"]:g} km ile tarandı; {REFERENCE_HORIZON_RADIUS_KM:g} km '
+                 'referans taramada sonuç daha kötü olabilir.')
+    explanations={'public':public,
                   'engineer':f'{status}: nominal violations={len(nominal_violations)}, '+
                               f'cautious violations={len(cautious_violations)}, unknown={len(nominal_unknown)+len(cautious_unknown)}; '+
-                              f'DEM={horizon["sources"]}; radius={horizon["reference_radius_km"]}km; method={horizon["uncertainty_mode"]}.'}
-    return {'status':status,'label':labels[status],'explanations':explanations,
+                              f'DEM={horizon["sources"]}; radius={horizon["reference_radius_km"]}km; method={horizon["uncertainty_mode"]}; '+
+                              f'radius_policy={radius_policy["code"]} (before={radius_policy["status_before_policy"]}).'}
+    return {'status':status,'label':label,'explanations':explanations,'radius_policy':radius_policy,
             'slope':slope,'scenarios':scenario_results,
             'nominal_violations':nominal_violations,'cautious_violations':cautious_violations,
             'unresolved':nominal_unknown+cautious_unknown,

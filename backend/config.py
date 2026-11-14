@@ -37,6 +37,10 @@ MAX_CACHE_MB = 1536
 # timeout the worker processes are terminated and the pool is recreated.
 ANALYSIS_TIMEOUT_S = 1800
 VALIDATION = DATA / "validation"  # reports written ONLY by real validation runs
+# Horizon scan reference radius. Online requests may use less (e.g. the 135-km fast mode), but a
+# shorter scan can only LOWER the horizon (max over fewer terrain points), i.e. Sun/Earth visibility
+# is optimistic. Such screens therefore never end GREEN (capped at YELLOW); RED stays valid.
+REFERENCE_HORIZON_RADIUS_KM = 200.0
 # Official product pages for user guidance (no automatic download from the API).
 PGDA_SOUTH_POLE_PAGE = "https://pgda.gsfc.nasa.gov/products/90"
 PGDA_SITE_PAGE = "https://pgda.gsfc.nasa.gov/products/78"

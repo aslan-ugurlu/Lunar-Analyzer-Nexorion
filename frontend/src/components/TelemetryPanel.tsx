@@ -25,6 +25,9 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
             ? [['Kullanılmayan katmanlar', Object.entries(horizon.excluded_layers).map(([k, v]) => `${k}: ${v}`).join(' | ')] as [string, string]]
             : []),
           ['Ufuk', horizon ? `${horizon.reference_radius_km} km · ${horizon.azimuth_deg.length} azimut · durum ${horizon.status}` : '—'],
+          ['Yarıçap kuralı', mission?.radius_policy
+            ? `${mission.radius_policy.code} · r ${mission.radius_policy.radius_km} km / referans ${mission.radius_policy.reference_radius_km} km · ${mission.radius_policy.status_before_policy} → ${mission.radius_policy.status_after_policy}${mission.radius_policy.capped ? ' (GREEN tavanı)' : ''}`
+            : '— (bu sonuçta alan yok)'],
           ['Belirsizlik', horizon ? `${horizon.uncertainty_mode}${horizon.k !== null ? ` · k = ${horizon.k}` : ''}${horizon.geometry.observer_err_m !== null ? ` · gözlemci σ = ${formatNumber(horizon.geometry.observer_err_m, 3, 'm')}` : ''}` : i.uncertainty_mode],
           ['Zaman', `iniş ${formatUtc(i.landing_utc, true)} · ${i.duration_hours} + ${i.buffer_hours} sa · Δt ${i.step_minutes} dk · kaymalar ${i.shifts_hours.map((s) => `+${s}`).join('/')} sa`],
           ['Eğim', slope ? (slope.slope_max_deg === null ? `bilinmiyor (${slope.status})` :
