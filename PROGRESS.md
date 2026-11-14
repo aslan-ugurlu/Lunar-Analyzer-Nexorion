@@ -360,3 +360,15 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   2027-11-17 00:00 → 2027-11-19 12:00Z; nominal kesinti 7.0 sa, ihtiyatlı 11.5 sa). Eğim ≤ 10° ile de YELLOW (maks 9.34°);
   aynı istek nominal modda GRAY. Tarayıcı (:5174) → YELLOW rozeti, mod geçişinde değişmedi, axe 0, mobil 0, konsol 0 (`logs/e2e_yellow_faz7/`).
 - 14:00Z — Düzeltme (ikinci kez): 13:57Z–14:16Z kayıtları yine tahminle ileri tarihli yazılmıştı; dosya mtime'larıyla düzeltildi. Bundan sonra her kayıttan önce `date -u` alınıyor.
+- ≈14:00Z — 240 m EFFRES indirildi (259,831,703 B, yapısal/CRS PASS). Gerçek değerler (Site01 merkezi): gözlemci 16.9 m, 30–200 km
+  bandı medyan 24.5 m / p90 43.3 m → LOLA veri yoğunluğu 240 m ızgaradan çok daha ince; bu katmanda çözünürlüğü piksel sınırlıyor.
+- 16:51Z (log mtime) — **Ağ kesintisi:** dört indirme süreci `Network unavailable (URLError)` ile durdu (makine/ağ uykuda; 16:51–20:25Z
+  arası iş yok). Durum: 80 m EFFRES yok, Site01 clone 27/100. Yarım dosya yerleşmedi (`.part`/kilit kalmadı — kontrol edildi).
+  Hata mesajı clone/site dosyaları için de ürün 90'ı öneriyordu → dosyanın kendi ürün sayfası (78/90) yazılıyor.
+- 20:25Z — Ağ geri geldi (HEAD 200). İndirmeler 60 sn bekleme ile en çok 30 denemelik döngülerle yeniden başlatıldı
+  (80 m EFFRES; clone 1–40 / 41–70 / 71–100). Sunucular :8000/:8001/:5173/:5174 ayakta.
+- 20:26Z — **A-04 genişletilmiş (gerçek Horizons, ağ):** **PASS** — 14 durum / 28 yön (2026–2035, −80.5…−89.98°, ±180° dikişi,
+  0–5 km, 29 Şubat), maks ayrım **5.77×10⁻⁷°** (eşik 0.005°) → `logs/a04_extended_faz7.json`.
+- 20:29Z — **V-08 genişletilmiş:** **PASS** — 7 konum × k=1,2: tam kapsama, sıralama, band(k=2) ≥ band(k=1) her azimutta;
+  k=1 maks bant 0.016° (−89.54/0) … 1.548° (Site23 merkezi, gözlemci σ 0.597 m); Site01 merkezi 0.739° (σ 0.253 m)
+  → `logs/v08_extended_faz7.json`. Tutarlılık kontrolüdür, istatistiksel doğrulama değil.

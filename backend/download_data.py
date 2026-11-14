@@ -408,13 +408,13 @@ def download_lola_240m(dest_dir: Path = LOLA, manifest_path: Path = DATA / 'mani
                 try:
                     response_cm = opener(request, timeout=timeout)
                 except urllib.error.HTTPError as exc:
-                    raise DownloadError(f'HTTP {exc.code} from PGDA; download manually from {LOLA_PRODUCT_PAGE}') from None
+                    raise DownloadError(f'HTTP {exc.code} from PGDA; download manually from {product_page}') from None
                 except (urllib.error.URLError, TimeoutError, OSError) as exc:
                     if have and attempts < max_attempts:
                         log(f'[WARN] connection failed ({type(exc).__name__}); retrying from byte {have}')
                         continue
                     raise DownloadError(f'Network unavailable ({type(exc).__name__}); retry later or download '
-                                        f'manually from {LOLA_PRODUCT_PAGE}') from None
+                                        f'manually from {product_page}') from None
                 with response_cm as response:
                     status = getattr(response, 'status', 200)
                     remote_etag = response.headers.get('ETag')
