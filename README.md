@@ -57,19 +57,47 @@ Ortam değişkenleri:
 
 Örnekler: [`.env.example`](.env.example), [`frontend/.env.example`](frontend/.env.example).
 
-### Netlify'da yayınlama (yalnız arayüz)
+### Bu bilgisayardan yayınlama: IIS + Cloudflare Tunnel (Windows)
 
-Depo kökündeki [`netlify.toml`](netlify.toml) Netlify'a `frontend/` klasöründe `npm run build` çalıştırmasını ve
-`frontend/dist` klasörünü yayınlamasını söyler (Node 24). Bu dosya olmadan Netlify depo kökünü yayınlar; kökte `index.html`
-olmadığı için "Page not found" görünür.
+Arayüz ve backend aynı adresten sunulur; NASA verisi (`data/`) bu bilgisayarda kalır:
 
-Netlify **yalnız statik arayüzü** barındırır. FastAPI backend'i ve NASA verileri (`data/`, Git'e eklenmez) Netlify'da
-çalışmaz. Backend ayrıca barındırılmadıkça yayındaki site hesap yapamaz ve başlıkta **Backend: Offline** gösterir. Bu durumda
-sahte sonuç üretilmez. Backend'i ayrı bir sunucuda çalıştırdıktan sonra:
+```
+Ziyaretçi ─► https://<alt-alan>.<alan-adınız> (Cloudflare, HTTPS)
+          ─► Cloudflare Tunnel (cloudflared: bu bilgisayardan dışarıya açılan bağlantı)
+          ─► IIS 127.0.0.1:80 ─┬─ /       → frontend/dist (statik arayüz)
+                               └─ /api/*  → URL Rewrite + ARR → FastAPI 127.0.0.1:8000
+```
 
-1. Netlify → *Site configuration → Environment variables*: `VITE_API_BASE_URL=https://<backend-adresi>`
-   (değişken derleme sırasında okunur; ekledikten sonra yeniden deploy edin).
-2. Backend ortamı: `LUNAR_CORS_ORIGINS=https://<site-adı>.netlify.app` (gerekirse virgülle localhost origin'leri de ekleyin; `*` reddedilir).
+Modemde port açılmaz. IIS ve backend yalnız `127.0.0.1` üzerinde dinler. Arayüz `VITE_API_BASE_URL=/api` ile derlenir,
+istekler aynı adrese gider; bu yüzden CORS ayarı gerekmez. Yönlendirme kuralları [`frontend/public/web.config`](frontend/public/web.config)
+dosyasındadır; Vite bu dosyayı `dist/` klasörüne kopyalar.
+
+1. **Bir kez, yönetici PowerShell'de:**
+   `Set-ExecutionPolicy -Scope Process Bypass -Force; & '<proje>\deploy\windows\setup-iis-admin.ps1'`
+   Betik [`setup-iis-admin.ps1`](deploy/windows/setup-iis-admin.ps1) şunları yapar:
+   - IIS özelliklerini açar.
+   - URL Rewrite 2.1 ve ARR 3.0'ı Microsoft'tan indirir; Microsoft imzasını doğrulamadan kurmaz.
+   - ARR proxy'sini açar.
+   - Yalnız `127.0.0.1:80`'e bağlı `LunarAnalyzer` sitesini kurar ve `Default Web Site`'ı durdurur.
+   - Backend için oturum açılışında başlayan `LunarAnalyzerBackend` görevini kaydeder.
+   - `cloudflared` kurar.
+2. **Arayüzü yayınlama (normal PowerShell):** `deploy\windows\publish-frontend.ps1` derler ve `C:\inetpub\lunar-analyzer` klasörüne kopyalar.
+   Git Bash'te `VITE_API_BASE_URL=/api` **yazmayın**: Git Bash `/api` değerini bir Windows yoluna çevirir ve bozuk bir derleme üretir.
+3. **Backend:** `Start-ScheduledTask -TaskName LunarAnalyzerBackend`. Sonraki oturum açılışlarında kendiliğinden başlar,
+   kapanırsa [`run-backend.ps1`](deploy/windows/run-backend.ps1) yeniden başlatır. Uvicorn `--proxy-headers` ile çalışır;
+   dakikada 5 analiz sınırı her ziyaretçinin IP'sine ayrı uygulanır. Loglar `logs/backend-service.log` ve `logs/uvicorn-prod-*.log` dosyalarındadır.
+4. **Cloudflare Tunnel** (alan adının DNS'i Cloudflare'de olmalı):
+   - Cloudflare Zero Trust → *Networks → Tunnels → Create a tunnel* (Cloudflared).
+   - Windows için gösterilen `cloudflared.exe service install <token>` komutunu yönetici PowerShell'de çalıştırın. Token gizlidir, paylaşmayın.
+   - *Public hostname* ekleyin: alt alan + alan adı, Service `HTTP`, URL `127.0.0.1:80`.
+
+Sınırlar:
+- Bilgisayar açık ve kullanıcı oturumu açık olmalı. Microsoft Store Python servis hesabıyla güvenilir çalışmadığı için backend oturum görevidir.
+- Bilgisayar ya da backend kapalıysa site **Backend: Offline** gösterir; sahte sonuç üretilmez.
+- Windows'un istemci sürümündeki IIS eşzamanlı istek sayısını sınırlar. Demo için yeterli, yoğun trafik için uygun değildir.
+- Hesaplar bu bilgisayarın işlemcisini kullanır: en fazla 2 işçi süreç, en fazla 6 iş.
+
+Durdurmak için önce `Stop-ScheduledTask -TaskName LunarAnalyzerBackend` çalıştırın, sonra 8000 portundaki `python` sürecini kapatın.
 
 ## Kullanılan NASA verileri
 
