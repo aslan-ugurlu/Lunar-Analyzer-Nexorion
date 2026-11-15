@@ -18,19 +18,19 @@ export interface ChartProps {
 
 export const BASE_LAYOUT: Partial<Layout> = {
   paper_bgcolor: 'rgba(0,0,0,0)',
-  plot_bgcolor: '#0b1224',
-  font: { color: '#e8edf7', family: 'Segoe UI, system-ui, sans-serif', size: 12 },
+  plot_bgcolor: 'rgba(3,8,24,0.62)',
+  font: { color: '#eaf0ff', family: 'Inter Variable, Segoe UI, system-ui, sans-serif', size: 12 },
   margin: { l: 56, r: 16, t: 24, b: 48 },
   legend: { orientation: 'h', y: -0.22, x: 0, font: { size: 11 } },
-  hoverlabel: { bgcolor: '#141d36', bordercolor: '#6cd0ff', font: { color: '#e8edf7' } },
+  hoverlabel: { bgcolor: '#0a1430', bordercolor: '#22e4ff', font: { color: '#eaf0ff', family: 'JetBrains Mono Variable, Consolas, monospace' } },
 };
 
-export const AXIS = { gridcolor: '#24304f', zerolinecolor: '#45557d', linecolor: '#45557d', tickcolor: '#45557d' };
+export const AXIS = { gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)', tickcolor: 'rgba(130,160,230,0.35)' };
 
 export function Chart({ data, layout, config, ariaLabel, height = 360, onClick }: ChartProps) {
   return (
-    <figure role="figure" aria-label={ariaLabel} className="w-full">
-      <Suspense fallback={<div className="flex items-center justify-center rounded-lg border border-line bg-panel-2 text-sm text-muted" style={{ height }}>Grafik kütüphanesi yükleniyor…</div>}>
+    <figure role="figure" aria-label={ariaLabel} className="w-full overflow-hidden rounded-xl border border-line bg-[rgb(3_8_24/0.35)]">
+      <Suspense fallback={<div className="flex items-center justify-center rounded-xl border border-line bg-panel-2 font-mono text-sm text-muted" style={{ height }}>Grafik kütüphanesi yükleniyor…</div>}>
         <LazyPlot
           data={data}
           layout={{ ...BASE_LAYOUT, ...layout, autosize: true, height }}

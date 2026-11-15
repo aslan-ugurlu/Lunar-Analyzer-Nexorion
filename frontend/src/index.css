@@ -1,80 +1,181 @@
 @import "tailwindcss";
 
-/* Mission-control palette. All text/background pairs below were chosen for
-   WCAG AA contrast on the panel colours (muted text ≥ 7:1 on --color-panel). */
+/*
+ * Deep Space / Glassmorphism mission-control design system (Faz 9).
+ * Tailwind v4 is configured in CSS: the tokens below generate the utilities
+ * (bg-panel, text-muted, border-line, font-display, …).
+ *
+ * Contrast: every text token was checked against the darkest and the lightest
+ * glass surface (panel rgba over the nebula glow): ink ≥ 15:1, muted ≥ 8:1,
+ * accent ≥ 9:1, status colours ≥ 7:1. White on the NASA-blue primary gradient ≥ 5:1.
+ */
 @theme {
-  --color-space: #070b16;
-  --color-panel: #0e1528;
-  --color-panel-2: #141d36;
-  --color-line: #2a3758;
-  --color-ink: #e8edf7;
-  --color-muted: #aab5ca;
-  --color-accent: #6cd0ff;
-  --color-accent-ink: #04121c;
+  --color-space: #02040b;
+  --color-void: #050a1c;
+  --color-panel: #0a1430;
+  /* Translucent inner surface (inputs, inner cards) — sits on a glass panel. */
+  --color-panel-2: rgb(20 34 74 / 0.55);
+  --color-line: rgb(130 160 230 / 0.22);
+  --color-line-strong: rgb(130 160 230 / 0.4);
+  --color-ink: #eaf0ff;
+  --color-muted: #a9b6d3;
+  --color-accent: #4cc9ff;
+  --color-accent-ink: #021018;
+  --color-nasa: #0b3d91;
+  --color-nasa-bright: #1f62e0;
+  --color-neon: #22e4ff;
+  --color-violet: #b39dff;
+  --color-term: #7cf5c4;
   --color-sun: #ffcc4d;
   --color-earth: #5aa9ff;
   --color-go: #3ddc97;
   --color-caution: #ffd166;
   --color-stop: #ff7b7b;
   --color-unknown: #b3bccd;
-  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, "SFMono-Regular", monospace;
+
+  --font-sans: "Inter Variable", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Space Grotesk Variable", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "Cascadia Mono", "Consolas", ui-monospace, "SFMono-Regular", monospace;
+
+  --shadow-glow: 0 0 0 1px rgb(76 201 255 / 0.4), 0 0 22px -6px rgb(34 228 255 / 0.55);
+  --shadow-glass: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 24px 48px -28px rgb(0 0 0 / 0.85);
+}
+
+/* Glass surface. Solid rgba background (no gradient) so automated contrast checks stay meaningful. */
+@utility glass {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* Inner glass (no blur: nested backdrop filters are expensive). */
+@utility glass-inner {
+  background-color: rgb(20 34 74 / 0.45);
+  border: 1px solid var(--color-line);
+}
+
+/* Dense terminal surface for the Mühendis (cockpit) view. */
+@utility term {
+  background-color: rgb(2 7 20 / 0.78);
+  border: 1px solid rgb(76 201 255 / 0.28);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 @layer base {
+  :root {
+    --glass-bg: rgb(12 22 52 / 0.66);
+    --glass-blur: 18px;
+    color-scheme: dark;
+  }
   html {
     background: var(--color-space);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-text-size-adjust: 100%;
+    scrollbar-color: rgb(130 160 230 / 0.35) transparent;
   }
   body {
     min-height: 100dvh;
-    background:
-      radial-gradient(1200px 600px at 85% -10%, #12224a55, transparent 60%),
-      radial-gradient(900px 500px at -10% 10%, #1b153a55, transparent 60%),
-      var(--color-space);
+    background-color: var(--color-space);
+    font-feature-settings: "cv11", "ss01";
+  }
+  /* Starfield + nebula: a fixed decorative pseudo-element (not content, never in the a11y tree). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 23px 41px, rgb(255 255 255 / 0.75), transparent 60%),
+      radial-gradient(1px 1px at 141px 97px, rgb(255 255 255 / 0.5), transparent 60%),
+      radial-gradient(1.5px 1.5px at 211px 173px, rgb(200 225 255 / 0.7), transparent 60%),
+      radial-gradient(1px 1px at 77px 211px, rgb(255 255 255 / 0.45), transparent 60%),
+      radial-gradient(1px 1px at 263px 23px, rgb(255 255 255 / 0.55), transparent 60%),
+      radial-gradient(1px 1px at 311px 257px, rgb(180 210 255 / 0.5), transparent 60%),
+      radial-gradient(1.5px 1.5px at 389px 131px, rgb(255 255 255 / 0.6), transparent 60%),
+      radial-gradient(1100px 650px at 88% -12%, rgb(11 61 145 / 0.5), transparent 62%),
+      radial-gradient(900px 600px at -12% 18%, rgb(84 50 170 / 0.22), transparent 60%),
+      radial-gradient(1200px 500px at 50% 115%, rgb(34 228 255 / 0.08), transparent 60%);
+    background-size:
+      420px 300px, 420px 300px, 420px 300px, 420px 300px, 420px 300px, 420px 300px, 420px 300px,
+      100% 100%, 100% 100%, 100% 100%;
+    background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
   }
   :focus-visible {
     outline: 3px solid var(--color-accent);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: rgb(76 201 255 / 0.35);
+    color: #fff;
   }
   input, select, textarea, button {
     font: inherit;
   }
+  /* Native <option> popups do not inherit translucent backgrounds well. */
+  option {
+    background-color: #0a1430;
+    color: var(--color-ink);
+  }
   /* Avoid iOS zoom-on-focus: inputs at least 16px on small screens. */
   @media (max-width: 640px) {
-    input, select, textarea { font-size: 16px; }
+    input, select, textarea { font-size: 16px !important; }
   }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+  /* Users who ask for less transparency get opaque surfaces. */
+  @media (prefers-reduced-transparency: reduce) {
+    :root { --glass-bg: #0c1634; --glass-blur: 0px; }
   }
 }
 
 @layer components {
   .panel {
-    @apply rounded-xl border border-line bg-panel/90 p-4 shadow-lg shadow-black/30 sm:p-5;
+    @apply glass relative rounded-2xl p-4 sm:p-5;
+  }
+  /* Thin neon highlight on the top edge of every panel (decorative). */
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 1.5rem auto 1.5rem;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(76 201 255 / 0.6), transparent);
+    pointer-events: none;
   }
   .panel-title {
-    @apply text-base font-semibold tracking-wide text-ink sm:text-lg;
+    @apply font-display text-base font-semibold tracking-tight text-ink sm:text-lg;
+  }
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium tracking-[0.18em] text-accent uppercase;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-ink;
   }
   .hint {
-    @apply mt-1 text-xs text-muted;
+    @apply mt-1 text-xs leading-relaxed text-muted;
   }
   .input {
-    @apply w-full min-w-0 rounded-md border border-line bg-panel-2 px-3 py-2 text-sm text-ink placeholder:text-muted/70
-      focus:border-accent focus:outline-none aria-[invalid=true]:border-stop;
+    @apply w-full min-w-0 rounded-lg border border-line bg-[rgb(3_8_24/0.62)] px-3 py-2 text-sm text-ink transition-colors
+      placeholder:text-muted/70 hover:border-line-strong focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none
+      aria-[invalid=true]:border-stop aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-stop/40;
   }
   .btn {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-line bg-panel-2 px-3 py-2
-      text-sm font-medium text-ink hover:border-accent disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-line bg-white/[0.04] px-3 py-2
+      text-sm font-medium text-ink transition hover:border-accent/70 hover:bg-accent/10
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line disabled:hover:bg-white/[0.04];
   }
   .btn-primary {
-    @apply border-accent bg-accent text-accent-ink hover:bg-accent/90;
+    @apply border-accent/50 bg-[linear-gradient(135deg,var(--color-nasa)_0%,var(--color-nasa-bright)_100%)] font-semibold text-white
+      shadow-[var(--shadow-glow)] hover:border-neon hover:brightness-110;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium;
@@ -85,5 +186,29 @@
   }
   .link {
     @apply text-accent underline decoration-accent/50 underline-offset-2 hover:decoration-accent;
+  }
+
+  /* ---- Mühendis cockpit: dense terminal form ---- */
+  .label-term {
+    @apply mb-0.5 block font-mono text-[11px] leading-tight text-muted;
+  }
+  .input-term {
+    @apply min-h-8 rounded-md px-2 py-1 font-mono text-xs;
+  }
+  .hint-term {
+    @apply mt-0.5 font-mono text-[10.5px] leading-snug text-muted;
+  }
+  .module {
+    @apply term rounded-xl p-3;
+  }
+  .module-title {
+    @apply mb-2 flex items-center gap-2 font-mono text-[11px] font-semibold tracking-[0.14em] text-term uppercase;
+  }
+
+  /* LED status dot used in header chips. */
+  .led {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full;
+    box-shadow: 0 0 8px currentColor;
+    background-color: currentColor;
   }
 }

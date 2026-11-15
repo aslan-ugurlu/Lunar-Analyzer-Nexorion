@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppStateProvider } from './state/AppState';
+import { AppStateProvider, useApp } from './state/AppState';
 import { useHealth, useSites } from './hooks/useBackend';
 import { MissionSetup } from './components/MissionSetup';
 import { SkyView } from './components/SkyView';
@@ -32,11 +32,11 @@ function degradedNotice(spicePresent: boolean): Explained {
 export type TabKey = 'setup' | 'sky' | 'timeline' | 'compare' | 'data';
 
 const TABS: TabDef<TabKey>[] = [
-  { key: 'setup', label: 'Mission Setup' },
-  { key: 'sky', label: 'Sky View' },
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'compare', label: 'Compare' },
-  { key: 'data', label: 'Data & Validation' },
+  { key: 'setup', label: 'Mission Setup', icon: 'rocket' },
+  { key: 'sky', label: 'Sky View', icon: 'radar' },
+  { key: 'timeline', label: 'Timeline', icon: 'chart' },
+  { key: 'compare', label: 'Compare', icon: 'compare' },
+  { key: 'data', label: 'Data & Validation', icon: 'database' },
 ];
 
 export const NASA_SOURCES = [
@@ -48,6 +48,7 @@ export const NASA_SOURCES = [
 
 function Shell() {
   const [tab, setTab] = useState<TabKey>('setup');
+  const { mode } = useApp();
   const health = useHealth();
   const offline = health.error?.code === 'BACKEND_OFFLINE';
   // Refetch /sites whenever the set of present layers changes (e.g. a DEM finished downloading).
@@ -55,7 +56,7 @@ function Shell() {
   const sites = useSites(layerKey);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col" data-mode={mode}>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-ink">
         İçeriğe atla
       </a>
@@ -82,7 +83,7 @@ function Shell() {
           <DataValidation health={health.data} healthError={health.error} sites={sites.data} />
         </TabPanel>
       </main>
-      <footer className="border-t border-line px-4 py-4 text-xs text-muted">
+      <footer className="mt-6 border-t border-line bg-[rgb(2_5_14/0.72)] px-4 py-5 text-xs text-muted backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p>Veri kaynakları ve kredi: NASA/GSFC PGDA LOLA (Barker vd. 2023), NASA/JPL NAIF SPICE. Bu araç NASA tarafından onaylanmış bir ürün değildir.</p>
           <ul className="flex flex-wrap gap-x-4 gap-y-1">

@@ -93,13 +93,13 @@ export function DataValidation({ health, healthError, sites }: { health: Health 
             </div>
             <div className="space-y-1 text-xs text-muted">
               <p>240 m referans DEM ve ERR katmanını resmi PGDA adresinden güvenli (kilitli, atomik, doğrulamalı) indirmek için proje kökünde:</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-240m-err</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-80m --include-lola-80m-err</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-5m --include-site-5m-extra</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-lola-effres</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.download_data --include-site-clones Site01   # 100 × ~41 MB</p>
-              <p className="mono break-all rounded bg-panel-2 p-2 text-ink">python -m backend.clone_engine --lat … --lon …   # clone ufuk profilleri (çevrimdışı ön hesap)</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-lola-240m</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-lola-240m-err</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-lola-80m --include-lola-80m-err</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-site-5m --include-site-5m-extra</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-lola-effres</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.download_data --include-site-clones Site01   # 100 × ~41 MB</p>
+              <p className="term mono break-all rounded-lg p-2 text-term">python -m backend.clone_engine --lat … --lon …   # clone ufuk profilleri (çevrimdışı ön hesap)</p>
               <p>80 m ve EFFRES: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/90">PGDA ürün 90</ExternalLink> · 5 m site (Site01, 04, 07, 11, 23) ve DEM clone'ları: <ExternalLink href="https://pgda.gsfc.nasa.gov/products/78">PGDA ürün 78</ExternalLink>; 20 m otomatik indirilmez. Site `_surf` dosyalarında boş pikseller enterpolasyonla doldurulmuştur (PGDA README). EFFRES yalnız veri kalitesi bilgisidir; ufku veya kararı değiştirmez.</p>
               <p>
                 DEM clone dosyaları: {health.clones ? Object.values(health.clones.sites).map((c) => `${c.site_tile} ${c.present}/${c.expected}`).join(' · ') : 'bilinmiyor'} ·

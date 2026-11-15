@@ -5,16 +5,16 @@
 > sonra buradaki iddialar gerçek dosyalar/süreçler/testlerle çapraz kontrol edilir.
 
 ## Son güncelleme
-- **Zaman (UTC):** 2026-11-14T22:20Z
-- **Faz:** Faz 8 — push (onaylı) + bilimsel sonuçların belgelenmesi; yeni büyük indirme / mimari değişiklik yok (kullanıcı kararı)
-- **Alt adım:** DONE — 14/14 doğrulama `docs/VALIDATION.md` ile belgelendi, gerçek-veri senaryoları pytest'e sabitlendi, clone kapsamı arayüzde
-- **Durum:** DONE. Sonraki aşama: arayüzün kullanıcıyla birlikte değerlendirilmesi (tasarım şimdilik değiştirilmiyor)
+- **Zaman (UTC):** 2026-11-15T00:07Z
+- **Faz:** Faz 9 — frontend görsel yenileme “Modern Uzay Görev Kontrol Paneli (Deep Space / Glassmorphism)” (kullanıcı isteği). Yalnız sunum katmanı: backend, hesaplar, API ve karar kuralları değişmedi
+- **Alt adım:** DONE — tasarım sistemi + fontlar, Halk “Görev Sihirbazı” + infografik sonuçlar + öne çıkan Dünya–Ay kartı, Mühendis kokpit/terminal formu + telemetri; testler ve e2e geçti
+- **Durum:** DONE (yerel commit). Push yapılmadı — kullanıcı onayı bekleniyor. Sonraki aşama: tasarımın kullanıcıyla birlikte değerlendirilmesi
 
 ## Çalışan sürümler (2026-11-14T22:20Z, ikisi de yalnız 127.0.0.1/localhost)
 | Port | Rol | Kod | Durum |
 |---|---|---|---|
 | `127.0.0.1:8000` | **eski backend — kullanıcı kararıyla KORUNUYOR** (yeniden başlatılmaz/kapatılmaz) | API süreci 2026-11-14T13:27:02Z'de Faz 7.2 (`4f752ad`) koduyla başladı; tek hesap işçisi 13:28:10Z'de açıldı (aynı kod). OpenAPI `1.1`. Not: yeni bir işçi açılırsa diskteki güncel kodu yükler | `/health` 200 `ready`; `clones` alanı yok, clone modu `CLONE_NOT_PRECOMPUTED` |
-| `localhost:5173` | eski frontend (Vite dev, 8000'e bağlı) | arayüz kaynağı HMR ile güncel diskteki kod; veri 8000'den | 200; Data sayfasında clone satırı "bilinmiyor" (8000'de alan yok) |
+| `localhost:5173` | eski frontend (Vite dev, 8000'e bağlı) | arayüz kaynağı HMR ile güncel diskteki kod → **Faz 9 tasarımını da gösterir** (sunucu yeniden başlatılmadı); veri 8000'den | 200; Data sayfasında clone satırı "bilinmiyor" (8000'de alan yok) |
 | `127.0.0.1:8001` | **yeni backend** (test kopyası; CORS yalnız :5174) | güncel kod (Faz 8), 22:20Z'de yeniden başlatıldı; OpenAPI `1.3` | `/health` 200 `ready`; `clone_profiles: AVAILABLE`, Site01 100/100, 2 ön hesap seti |
 | `localhost:5174` | **yeni frontend** (Vite dev, `VITE_API_BASE_URL=http://127.0.0.1:8001`) | güncel kod | 200; clone kapsamı, EFFRES, YELLOW/clone senaryoları burada denenir |
 
@@ -445,4 +445,38 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
 - 22:20Z — **Final testler:** `python -m pytest -q` **97 passed** · `npx vitest run` **97 passed** · `npm run lint` 0 · `npm run build` OK (363 kB) ·
   API sözleşme testleri 25 passed. README: `docs/VALIDATION.md` bağlantısı, sınırlamalar (clone kapsamı, CLONE-01 %8, NASA onayı değildir),
   `/health.clones.profile_sets`, test sayıları. Bu belge commit'i aynı onay kapsamında `origin/main`'e gönderiliyor (sonuç kullanıcıya raporlanır).
+
+### Faz 9 — Deep Space / Glassmorphism arayüz yenilemesi (2026-11-14/15, kullanıcı isteği)
+- 23:27Z — Başlangıç. Kapsam: yalnız `frontend/` sunum katmanı. Backend dosyalarına, `api/`, `lib/mission.ts` (istek gövdesi),
+  `lib/result.ts`, polling ve karar kurallarına dokunulmadı. Önce testlerin ve e2e betiklerinin dayandığı sözleşmeler çıkarıldı
+  (etiket metinleri, `data-kpi` / `data-decision` / `data-code`, `advanced-settings`, “Analizi başlat”, sekme adları, Dünya–Ay tablosu,
+  Mühendis'te tam 4 adet `MAX_DARKNESS`) ve yeni tasarım bunları koruyacak biçimde kuruldu.
+- **Tasarım sistemi** (`src/index.css`, Tailwind 4 `@theme` = CSS içi yapılandırma): uzay zemini + sabit dekoratif yıldız alanı
+  (`body::before`; axe kontrastı gerçek zemin rengiyle ölçmeye devam eder), `glass` / `glass-inner` buzlu cam, NASA mavisi
+  (#0B3D91 → #1F62E0) birincil düğme, neon camgöbeği vurgu, `term` / `module` terminal yüzeyleri; `prefers-reduced-transparency`
+  ve `prefers-reduced-motion` desteği. Fontlar: Space Grotesk / Inter / JetBrains Mono, `@fontsource-variable/*@5.3.0` ile **yerelden**
+  (harici font isteği yok).
+- **Halk:** 4 adımlı **Görev Sihirbazı** (`MissionForm` + `Wizard.tsx`): tüm adımlar DOM'da, yalnız biri görünür; “İleri” adımı doğrular,
+  odak adım başlığına gider; “Analizi başlat” her adımda vardır ve hatalı alanın adımına götürür; `/sites` raster kapsam merkezlerinden
+  5 m karo kısayolları (“resmi iniş adayı değildir”). Sonuçlar: karar başlığı, halka/süre çubuğu KPI kartları, **görev penceresi şeridi**
+  (API zaman çizelgesi + sunucu aralıkları; `lib/infographic.ts`), iniş kayma kutuları (sunucu ihlal listesi), hikâye; **Dünya–Ay kartı**
+  öne çıkarıldı (eksen eğiklikleri kaynaklı 23,44° / 1,5° açılarla çizili, boyutlar ölçeksiz; olgular ve kaynaklar aynı).
+- **Mühendis:** tek ekran kokpit formu (monospace `01…05` modüller, girilen konumun MOON_ME birim vektörü, canlı `POST /analyses` JSON
+  önizlemesi); sonuçta karar okuma satırı, terminal telemetri (+ iki sensörün MOON_ME x/y/z'si, `latrec` ile aynı dönüşüm), ihlal UTC
+  tablosu, ufuk özeti (+ ışın DEM kapsaması `coverage`), metrik tablosu. Plotly: yalnız zemin/ızgara/font renkleri.
+- Görsel inceleme (gerçek backend :8001, Chrome ekran görüntüleri `logs/e2e_faz9/`): bulunan ve düzeltilen 3 kusur — yapışkan başlık masaüstünde
+  ~140 px kaplıyordu (normal akışa alındı); telemetri anahtar-değer ızgarasında bölünemeyen uzun dizeler (cache anahtarı, yollar) panelden
+  taşıyordu (`minmax(0,1fr)` + `overflow-wrap:anywhere`); karar okuma hücresi kırpılıyordu.
+- E2E: `smoke.mjs`'e yalnız gezinme yardımcısı eklendi (ortam değişkenli varyantlar ERR/clone ve tarih alanları için sihirbaz adımını açar);
+  hiçbir doğrulama satırı değişmedi. `states.mjs` değişmedi.
+- 00:07Z — **Testler (gerçek koşular):** `python -m pytest -q` **97 passed** (backend değişmedi) · `npx vitest run` **113 passed**
+  (önceki 97 test değiştirilmeden + 16 yeni: sihirbaz akışı/doğrulama/odak, **Halk ve Mühendis aynı `POST /analyses` gövdesini gönderir**,
+  mod geçişinde değerler korunur, karo kısayolu, infografik geometrisi, MOON_ME dönüşümü — beklenen x/y/z Python ile bağımsız hesaplandı)
+  · `tsc -b` 0 · `eslint` 0 · `npm run build` OK (ana paket 403.6 kB, CSS 61.7 kB; Plotly ayrı lazy chunk).
+  `npm run e2e` (:5174 → :8001, gerçek veri): ERR 2027-11-14 iki konum + kayma + /compare + CSV/JSON + mod geçişi (karar değişmedi) → geçti;
+  varsayılan nominal koşu → geçti; **axe 10/10 sekme×mod taramasında 0 ihlal**, mobil 390 px taşma 0, konsol hatası 0.
+  `npm run e2e:states` (:5173 → :8000 + işaretli mock'lar): **17/17**, iki modda axe 0. Not: Faz 9 sonundaki ikinci `states` koşusunun ilk denemesi
+  `lola_20m` seçeneği 30 sn içinde listeye gelmediği için zaman aşımına uğradı (8000 ve 5173 sağlıklıydı; `/sites` listeyi döndürüyordu);
+  aynı kodla hemen tekrarlanan koşu 17/17 geçti — geçici yükleme gecikmesi olarak kaydedildi, test gevşetilmedi.
+  `npm audit`: 7 orta düzey uyarı, önceden var olan geliştirme bağımlılığı (`typescript-eslint` → `minimatch`); font paketleriyle ilgisiz.
 

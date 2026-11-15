@@ -89,6 +89,17 @@ export function observerAltitudes(horizon: Horizon): ObserverAltitude[] {
   });
 }
 
+/**
+ * Body-fixed MOON_ME_DE440_ME421 Cartesian position (km) of a point at radius r: the same spherical
+ * conversion as SPICE `latrec(r, lon, lat)` used for the observer in backend/astro_engine.py.
+ * Display only (coordinates of the request / API geometry); never fed back into a calculation.
+ */
+export function latrecKm(radiusKm: number, latDeg: number, lonDeg: number): [number, number, number] {
+  const la = (latDeg * Math.PI) / 180;
+  const lo = (lonDeg * Math.PI) / 180;
+  return [radiusKm * Math.cos(la) * Math.cos(lo), radiusKm * Math.cos(la) * Math.sin(lo), radiusKm * Math.sin(la)];
+}
+
 /* ---------------- violations with UTC intervals (engineer table) ---------------- */
 export interface ViolationRow extends Violation {
   shift: number;

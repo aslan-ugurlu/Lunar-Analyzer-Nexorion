@@ -82,6 +82,16 @@ Ortam değişkenleri:
 
 React 19 + Vite 8 + TypeScript 6 (strict) + Tailwind 4 + Plotly.js (`react-plotly.js/factory` + `plotly.js-dist-min`, ayrı lazy chunk).
 
+**Görsel tasarım (Faz 9): “Deep Space / Glassmorphism” görev kontrol paneli.** Yalnız sunum katmanı değişti; backend,
+hesaplar, API sözleşmesi ve karar kuralları aynıdır.
+- Tailwind 4 yapılandırması CSS içindedir (`frontend/src/index.css` → `@theme`): koyu uzay zemini (sabit dekoratif yıldız alanı),
+  buzlu cam kartlar (`glass` / `glass-inner`, `backdrop-blur`), NASA mavisi (#0B3D91 → #1F62E0) birincil düğmeler, neon camgöbeği vurgular,
+  mühendis görünümü için `term` / `module` terminal yüzeyleri. `prefers-reduced-transparency` → opak yüzeyler,
+  `prefers-reduced-motion` → animasyon yok. Metin renkleri koyu cam yüzeylerde WCAG AA (açıklama metni ≥ 8:1).
+- Tipografi: Space Grotesk (başlık), Inter (gövde), JetBrains Mono (telemetri) — `@fontsource-variable` ile **yerelden** sunulur
+  (üçüncü taraf font isteği yok; Türkçe karakterler latin-ext alt kümesinde).
+- Plotly grafikleri aynı veriyi aynı izlerle çizer; yalnız zemin/ızgara/font renkleri temaya uyarlandı.
+
 | Sekme | İçerik |
 |---|---|
 | Başlık | Backend Online/Offline, SPICE / LOLA DEM (mevcut çözünürlükler, ör. "240 · 80 · 5 m") / ERR / Clone durum çipleri, "Tüm zamanlar UTC", **Halk / Mühendis** anahtarı (yalnız sunumu değiştirir; karar aynı kalır — test ve E2E ile doğrulandı) |
@@ -97,9 +107,9 @@ Hata/boş durumlar: backend yok (`BACKEND_OFFLINE`), `SPICE_MISSING`, `DEM_MISSI
 
 | | Halk / Eğitimci | Mühendis |
 |---|---|---|
-| Görev formu | Ana sorular sade dille; tampon, zaman adımı, tarama yarıçapı, ERR k, karanlık eşiği, eğim ve ayak izi **"Gelişmiş görev ayarları" akordeonunda** (kapalı; özet satırı var; gizli alanda hata olursa kendiliğinden açılır) | Tüm kısıt ve sensör parametreleri açık; ufuk hesap yükü ayrıntısı |
-| Sonuç | Büyük **KPI kartları** (Güneş görünürlüğü, en uzun karanlık, Dünya görüşü, en uzun Dünya kesintisi; kısıt durumu ikon + kelime), sade **hikâye** anlatımı, "Neden bu sonuç?" listesi, Türkçe sınırlamalar, öne çıkarılmış **Dünya–Ay eğitim kartı** | En üstte **telemetri**: `MOON_ME_DE440_ME421`, DEM katmanları + çözünürlük, kullanılmayan katmanlar, gözlemci kotu tablosu (h_DEM + h_obs → r), ERR σ, cache anahtarı, eğim; **ihlal UTC aralıkları tablosu**; senaryo metrik tablosu |
-| Sky View | Panorama + anlık açıklama + Öğren kartı | Ufuk özeti: panel/anten profili min/maks açı ve azimutu, eksik ışın, panel–anten farkı, ERR bant genişliği |
+| Görev formu | **Görev Sihirbazı** (4 adım: Konum → Zaman → İhtiyaçlar → Kontrol). Erişilebilir adım çubuğu (`aria-current="step"`, durum metinle), “İleri” o adımı doğrular, adım değişince odak başlığa gider. Tüm adımlar DOM'da kalır (yalnız biri görünür); “Analizi başlat” her adımda vardır ve hatalı alanın adımına götürür. Konum adımında `/sites` raster kapsam merkezlerinden **5 m karo kısayolları** (“resmi iniş adayı değildir” notuyla). Tampon, zaman adımı, tarama yarıçapı, ERR k, karanlık eşiği, eğim ve ayak izi **"Gelişmiş görev ayarları" akordeonunda** (Kontrol adımı; kapalı; gizli alanda hata olursa açılır) | **Kokpit / terminal** formu: tek ekranda yoğun, monospace `01…05` modülleri (Konum/DEM, Zaman, Gözlemci/ufuk, Belirsizlik, Kısıtlar); girilen konumun `MOON_ME_DE440_ME421` birim vektörü; canlı `POST /analyses` gövde önizlemesi (JSON); ufuk hesap yükü ayrıntısı |
+| Sonuç | **Karar başlığı** (ikon + kelime + tek cümle), **infografik KPI kartları** (Güneş görünürlüğü ve Dünya görüşü için halka gösterge + hedef çizgisi; en uzun karanlık ve en uzun Dünya kesintisi için sınır işaretli süre çubuğu), **görev penceresi şeridi** (+0 sa: API zaman çizelgesinden f_sun alanı, geometrik DTE bantları, sunucunun en uzun karanlık/kesinti aralıkları, görev sonu/tampon, bilinmeyen örnekler taralı), **iniş kayma kutuları** (+0/+24/+48/+72; sunucu ihlal listesinden), sade hikâye, "Neden bu sonuç?", Türkçe sınırlamalar ve öne çıkarılmış **Dünya–Ay eğitim kartı** (eksen eğiklikleri kaynaklı açılarla çizili; boyutlar ölçeksiz) | **Karar okuma satırı** (karar, nominal/ihtiyatlı ihlal sayısı, belirsiz kontrol, senaryolar, ufuk, belirsizlik, kalite), **terminal telemetri**: `MOON_ME_DE440_ME421`, iki sensörün MOON_ME x/y/z konumu (`latrec` ile aynı küresel dönüşüm), DEM katmanları + çözünürlük, kullanılmayan katmanlar, gözlemci kotu tablosu (h_DEM + h_obs → r), ERR σ, cache anahtarı, eğim; **ihlal UTC aralıkları tablosu**; **ufuk özeti** (min/maks, eksik ışın, bant genişliği, ışın DEM kapsaması); senaryo metrik tablosu |
+| Sky View | Panorama + anlık açıklama + Öğren kartı | Ufuk özeti (terminal): panel/anten profili min/maks açı ve azimutu, eksik ışın, panel–anten farkı, ERR bant genişliği, ışın DEM kapsaması |
 | Timeline | f_sun / DTE grafiği, kaymalar | Güneş/Dünya açısal yükseklik grafiği **üstte**, **JSON / CSV ham veri dışa aktarma** (yalnız API değerleri) |
 
 Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **hiçbir modda silinmez**.
@@ -187,7 +197,7 @@ Son gerçek koşular (2026-11-14, Windows 11):
 | `python -m pytest -q` | **97 passed** (+4 gerçek-veri senaryosu `tests/test_realdata_scenarios.py`: ERR YELLOW 2027-11-14, nominal GRAY + 135 km tavanı, RED + eğim 2026-12-26, clone YELLOW 73/100; NASA dosyaları yoksa *skipped*) — önceki 93: (sözleşme, SPICE UTC→ET, indirici 24 senaryo — HTTP Range devamı + Windows manifest paylaşım ihlali dahil, Windows spawn 7, API v1.1–v1.3, LOD/ERR katman tutarlılığı + EFFRES özeti, clone motoru 5, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
 | `python -m backend.validation` | **14 / 14 PASS** (A-04, V-01…V-10, SLOPE-01, EFFRES-01, CLONE-01; 2026-11-14T21:48Z, ağ dahil) → `data/validation/report.json` |
-| `cd frontend; npx vitest run` | **97 passed** (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
+| `cd frontend; npx vitest run` | **113 passed** (Faz 9: +16 — sihirbaz adım/doğrulama/odak, Halk sihirbazı ile Mühendis kokpitinin **aynı `POST /analyses` gövdesini** göndermesi, mod geçişinde değerlerin korunması, karo kısayolları, infografik geometrisi, MOON_ME `latrec` dönüşümü; önceki 97 test değiştirilmeden geçer) (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
 | `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı, `UNCERTAINTY=err LANDING_DATE=2027-11-14` (Site01 merkezi) ile **YELLOW**, `UNCERTAINTY=clone` ile clone modu YELLOW + kayma |
 | `npm run e2e:states` | 17/17 kontrol, **her durum iki modda**: Halk'ta sade başlık + kod yalnız klavyeyle açılan “Teknik detaylar”da, Mühendis'te kod doğrudan; SPICE hatasında odak taşınır; hata ekranlarında axe 0. Gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |

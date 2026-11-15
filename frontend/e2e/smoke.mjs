@@ -14,6 +14,12 @@ mkdirSync(OUT, { recursive: true });
 
 const log = [];
 const note = (msg) => { log.push(`${new Date().toISOString()} ${msg}`); console.log(msg); };
+// Halk mode shows the mission form as a 4-step wizard (every step stays in the DOM, one is visible).
+// Navigation only: open the step that holds a field before filling it. No assertion depends on it.
+async function wizardStep(page, n) {
+  const step = page.getByRole('button', { name: new RegExp(`^Adım ${n}:`) });
+  if (await step.count()) await step.click();
+}
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const consoleErrors = [];
@@ -31,10 +37,13 @@ try {
   note(`public accordion present: ${await adv.count() === 1}, open: ${await adv.evaluate((d) => d.open)}`);
 
   // Optional real-data variants: UNCERTAINTY=err|clone, LANDING_DATE=YYYY-MM-DD, LANDING_TIME=HH:MM (UTC).
+  if (process.env.UNCERTAINTY) await wizardStep(page, 4);
   if (process.env.UNCERTAINTY === 'err') await page.getByRole('radio', { name: /ERR ±k/ }).check();
   if (process.env.UNCERTAINTY === 'clone') await page.getByRole('radio', { name: /DEM clone/ }).check();
+  if (process.env.LANDING_DATE || process.env.LANDING_TIME) await wizardStep(page, 2);
   if (process.env.LANDING_DATE) await page.getByLabel('İniş tarihi (UTC)').fill(process.env.LANDING_DATE);
   if (process.env.LANDING_TIME) await page.getByLabel('İniş saati (UTC, 24 saat)').fill(process.env.LANDING_TIME);
+  await wizardStep(page, 1);
   note(`mode=${process.env.UNCERTAINTY ?? 'nominal'} landing=${process.env.LANDING_DATE ?? 'default'} ${process.env.LANDING_TIME ?? ''}`);
   for (const [lat, lon] of SITES) {
     await page.getByLabel('Enlem (°, planetosentrik)').fill(String(lat));

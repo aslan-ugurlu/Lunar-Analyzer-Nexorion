@@ -3,7 +3,10 @@ import type { Decision } from '../api/types';
 import { headingFor, type Explained } from '../api/errors';
 import { useApp } from '../state/AppState';
 
-type IconName = 'check' | 'alert' | 'stop' | 'question' | 'info' | 'sun' | 'earth' | 'external' | 'spinner' | 'copy';
+export type IconName =
+  | 'check' | 'alert' | 'stop' | 'question' | 'info' | 'sun' | 'earth' | 'external' | 'spinner' | 'copy'
+  | 'pin' | 'clock' | 'target' | 'shield' | 'sliders' | 'terminal' | 'layers' | 'rocket' | 'chevron-left'
+  | 'chevron-right' | 'moon' | 'radar' | 'chart' | 'database' | 'compare' | 'satellite';
 
 export function Icon({ name, className = 'h-4 w-4' }: { name: IconName; className?: string }) {
   const common = { className, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2,
@@ -29,16 +32,48 @@ export function Icon({ name, className = 'h-4 w-4' }: { name: IconName; classNam
       return <svg {...common}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a1 1 0 0 1 1-1h10" /></svg>;
     case 'spinner':
       return <svg {...common} className={`${className} animate-spin`}><path d="M12 3a9 9 0 1 0 9 9" /></svg>;
+    case 'pin':
+      return <svg {...common}><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>;
+    case 'clock':
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
+    case 'target':
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>;
+    case 'shield':
+      return <svg {...common}><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3z" /><path d="m9 12 2 2 4-4" /></svg>;
+    case 'sliders':
+      return <svg {...common}><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>;
+    case 'terminal':
+      return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m7 9 3 3-3 3M13 15h4" /></svg>;
+    case 'layers':
+      return <svg {...common}><path d="m12 3 9 5-9 5-9-5 9-5z" /><path d="m3 13 9 5 9-5" /></svg>;
+    case 'rocket':
+      return <svg {...common}><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2" /><path d="M9 15 6 12c1-4 4.5-8.5 12-9-.5 7.5-5 11-9 12z" /><circle cx="14.5" cy="9.5" r="1.5" /></svg>;
+    case 'chevron-left':
+      return <svg {...common}><path d="m15 6-6 6 6 6" /></svg>;
+    case 'chevron-right':
+      return <svg {...common}><path d="m9 6 6 6-6 6" /></svg>;
+    case 'moon':
+      return <svg {...common}><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" /></svg>;
+    case 'radar':
+      return <svg {...common}><path d="M3 18h18" /><path d="M5 18a7 7 0 0 1 14 0" /><path d="M8.5 18a3.5 3.5 0 0 1 7 0" /><path d="m12 18 5-7" /></svg>;
+    case 'chart':
+      return <svg {...common}><path d="M3 3v18h18" /><path d="m7 15 4-5 3 3 5-7" /></svg>;
+    case 'database':
+      return <svg {...common}><ellipse cx="12" cy="5.5" rx="7.5" ry="2.5" /><path d="M4.5 5.5v13c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-13" /><path d="M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5" /></svg>;
+    case 'compare':
+      return <svg {...common}><rect x="3" y="4" width="7" height="16" rx="1.5" /><rect x="14" y="8" width="7" height="12" rx="1.5" /></svg>;
+    case 'satellite':
+      return <svg {...common}><path d="m13 7 4 4-6 6-4-4z" /><path d="m15 5 2-2 4 4-2 2M7 13l-2 2 4 4 2-2" /><path d="M16 16a3 3 0 0 0 3 3M16 19.5a6 6 0 0 0 3.5-3.5" /></svg>;
     default:
       return null;
   }
 }
 
-const DECISION_STYLE: Record<Decision, { cls: string; icon: IconName; word: string; publicWord: string }> = {
-  GREEN: { cls: 'border-go/60 bg-go/15 text-go', icon: 'check', word: 'GREEN', publicWord: 'Uygun görünüyor' },
-  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', icon: 'alert', word: 'YELLOW', publicWord: 'Dikkat: ek kontrol gerekiyor' },
-  RED: { cls: 'border-stop/60 bg-stop/15 text-stop', icon: 'stop', word: 'RED', publicWord: 'Kısıtlar sağlanmıyor' },
-  GRAY: { cls: 'border-unknown/60 bg-unknown/10 text-unknown', icon: 'question', word: 'GRAY', publicWord: 'Belirsiz / veri yetersiz' },
+export const DECISION_STYLE: Record<Decision, { cls: string; glow: string; icon: IconName; word: string; publicWord: string }> = {
+  GREEN: { cls: 'border-go/60 bg-go/15 text-go', glow: 'shadow-[0_0_18px_-6px_var(--color-go)]', icon: 'check', word: 'GREEN', publicWord: 'Uygun görünüyor' },
+  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', glow: 'shadow-[0_0_18px_-6px_var(--color-caution)]', icon: 'alert', word: 'YELLOW', publicWord: 'Dikkat: ek kontrol gerekiyor' },
+  RED: { cls: 'border-stop/60 bg-stop/15 text-stop', glow: 'shadow-[0_0_18px_-6px_var(--color-stop)]', icon: 'stop', word: 'RED', publicWord: 'Kısıtlar sağlanmıyor' },
+  GRAY: { cls: 'border-unknown/60 bg-unknown/10 text-unknown', glow: '', icon: 'question', word: 'GRAY', publicWord: 'Belirsiz / veri yetersiz' },
 };
 
 /** Decision is conveyed by icon + word + colour (never colour alone). */
@@ -47,9 +82,9 @@ export function DecisionBadge({ status, size = 'md' }: { status: Decision; size?
   const s = DECISION_STYLE[status] ?? DECISION_STYLE.GRAY;
   const sizing = size === 'lg' ? 'px-3 py-1.5 text-base' : size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm';
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border font-semibold ${s.cls} ${sizing}`} data-decision={status}>
+    <span className={`inline-flex items-center gap-1.5 rounded-lg border font-semibold ${s.cls} ${size === 'lg' ? s.glow : ''} ${sizing}`} data-decision={status}>
       <Icon name={s.icon} className={size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'} />
-      <span>{s.word}</span>
+      <span className="font-mono tracking-wide">{s.word}</span>
       <span className="font-normal opacity-90">· {mode === 'public' ? s.publicWord : decisionShort(status)}</span>
     </span>
   );
@@ -80,17 +115,17 @@ export function Notice({ explained, children, compact = false, focusOnMount = fa
     if (focusOnMount) ref.current?.focus();
   }, [focusOnMount, explained.code]);
   const tone = {
-    error: 'border-stop/60 bg-stop/10',
-    warning: 'border-caution/60 bg-caution/10',
-    info: 'border-accent/50 bg-accent/10',
+    error: 'border-stop/55 bg-[rgb(70_16_28/0.55)] [--notice:var(--color-stop)]',
+    warning: 'border-caution/55 bg-[rgb(64_48_8/0.5)] [--notice:var(--color-caution)]',
+    info: 'border-accent/45 bg-[rgb(8_40_70/0.55)] [--notice:var(--color-accent)]',
   }[explained.tone];
   const icon: IconName = explained.tone === 'error' ? 'stop' : explained.tone === 'warning' ? 'alert' : 'info';
   const engineer = mode === 'engineer';
   return (
     <div ref={ref} tabIndex={focusOnMount ? -1 : undefined} role={explained.tone === 'error' ? 'alert' : 'status'}
-      className={`rounded-lg border p-3 text-sm ${tone}`} data-code={explained.code}>
-      <div className="flex items-start gap-2">
-        <Icon name={icon} className="mt-0.5 h-5 w-5 shrink-0" />
+      className={`rounded-xl border p-3 text-sm backdrop-blur-sm ${tone}`} data-code={explained.code}>
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 shrink-0 text-[var(--notice)]"><Icon name={icon} className="h-5 w-5" /></span>
         <div className="min-w-0 space-y-1">
           {engineer ? (
             <p className="font-semibold">
@@ -126,22 +161,25 @@ export function Notice({ explained, children, compact = false, focusOnMount = fa
   );
 }
 
-export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
+export function EmptyState({ title, children, icon = 'radar' }: { title: string; children?: ReactNode; icon?: IconName }) {
   return (
-    <div className="rounded-xl border border-dashed border-line bg-panel/50 p-6 text-center">
-      <p className="font-semibold text-ink">{title}</p>
+    <div className="rounded-2xl border border-dashed border-line-strong bg-[rgb(3_8_24/0.45)] p-6 text-center">
+      <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-accent/40 text-accent">
+        <Icon name={icon} className="h-5 w-5" />
+      </span>
+      <p className="font-display font-semibold text-ink">{title}</p>
       {children && <div className="mx-auto mt-2 max-w-prose text-sm text-muted">{children}</div>}
     </div>
   );
 }
 
-export function KeyValue({ items }: { items: [string, ReactNode][] }) {
+export function KeyValue({ items, dense = false }: { items: [string, ReactNode][]; dense?: boolean }) {
   return (
-    <dl className="grid grid-cols-1 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[max-content_1fr]">
+    <dl className={`grid grid-cols-1 sm:grid-cols-[max-content_minmax(0,1fr)] ${dense ? 'gap-x-3 gap-y-1 text-xs' : 'gap-x-4 gap-y-1.5 text-sm'}`}>
       {items.map(([k, v]) => (
         <div key={k} className="contents">
-          <dt className="text-muted">{k}</dt>
-          <dd className="mono break-words text-ink">{v}</dd>
+          <dt className={dense ? 'font-mono text-term/90' : 'text-muted'}>{k}</dt>
+          <dd className="mono min-w-0 text-ink [overflow-wrap:anywhere]">{v}</dd>
         </div>
       ))}
     </dl>

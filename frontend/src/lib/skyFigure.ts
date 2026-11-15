@@ -3,8 +3,8 @@ import type { BodyPosition, Horizon, TimelinePoint } from '../api/types';
 import { countMissing, horizonAt, minMaxIndices, wrappedDisks } from './sky';
 
 export const COLORS = {
-  terrain: '#56627f',
-  terrainFill: 'rgba(86, 98, 127, 0.55)',
+  terrain: '#8592b0',
+  terrainFill: 'rgba(124, 137, 166, 0.5)',
   dteHorizon: '#5aa9ff',
   band: 'rgba(255, 209, 102, 0.28)',
   sun: '#ffcc4d',
@@ -160,10 +160,10 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
       // Cardinal labels in the panorama; automatic ticks when zoomed on a body.
       ...(zoomed ? {} : { tickvals: [0, 45, 90, 135, 180, 225, 270, 315, 360],
         ticktext: ['0 K', '45', '90 D', '135', '180 G', '225', '270 B', '315', '360 K'] }),
-      gridcolor: '#24304f', zerolinecolor: '#45557d', linecolor: '#45557d',
+      gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)',
     },
     yaxis: {
-      title: { text: 'Yükseklik (°)' }, range: yRange, gridcolor: '#24304f', zerolinecolor: '#45557d', linecolor: '#45557d',
+      title: { text: 'Yükseklik (°)' }, range: yRange, gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)',
       // Equal degrees-per-pixel when zoomed so a disc is drawn round (near the horizon cos(el) ≈ 1).
       ...(zoomed ? { scaleanchor: 'x' as const, scaleratio: 1 } : {}),
     },

@@ -58,13 +58,13 @@ export function buildTimelineFigure({ timeline, index, metrics, darkThreshold }:
     ...span(timeline, metrics?.dte_gap_interval ?? null, 'y2', 'rgba(255, 123, 123, 0.16)'),
   ];
   if (sel) {
-    shapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: plotlyUtc(sel.utc), x1: plotlyUtc(sel.utc), y0: 0, y1: 1, line: { color: '#6cd0ff', width: 2 } });
+    shapes.push({ type: 'line', xref: 'x', yref: 'paper', x0: plotlyUtc(sel.utc), x1: plotlyUtc(sel.utc), y0: 0, y1: 1, line: { color: '#22e4ff', width: 2 } });
   }
 
   const layout: Partial<Layout> = {
-    xaxis: { type: 'date', anchor: 'y2', title: { text: 'Zaman (UTC)' }, gridcolor: '#24304f', linecolor: '#45557d' },
-    yaxis: { domain: [0.56, 1], range: [-0.05, 1.05], title: { text: 'f_sun' }, gridcolor: '#24304f', zerolinecolor: '#45557d' },
-    yaxis2: { domain: [0, 0.4], range: [-0.1, 1.1], tickvals: [0, 1], ticktext: ['yok', 'var'], title: { text: 'DTE' }, gridcolor: '#24304f' },
+    xaxis: { type: 'date', anchor: 'y2', title: { text: 'Zaman (UTC)' }, gridcolor: 'rgba(130,160,230,0.14)', linecolor: 'rgba(130,160,230,0.35)' },
+    yaxis: { domain: [0.56, 1], range: [-0.05, 1.05], title: { text: 'f_sun' }, gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)' },
+    yaxis2: { domain: [0, 0.4], range: [-0.1, 1.1], tickvals: [0, 1], ticktext: ['yok', 'var'], title: { text: 'DTE' }, gridcolor: 'rgba(130,160,230,0.14)' },
     shapes,
     uirevision: 'timeline',
   };
@@ -85,9 +85,9 @@ export function buildElevationFigure(timeline: TimelinePoint[], horizon: Horizon
   return {
     data,
     layout: {
-      xaxis: { type: 'date', title: { text: 'Zaman (UTC)' }, gridcolor: '#24304f' },
-      yaxis: { title: { text: 'Yükseklik (°)' }, gridcolor: '#24304f', zerolinecolor: '#45557d' },
-      shapes: sel ? [{ type: 'line', xref: 'x', yref: 'paper', x0: plotlyUtc(sel.utc), x1: plotlyUtc(sel.utc), y0: 0, y1: 1, line: { color: '#6cd0ff', width: 2 } }] : [],
+      xaxis: { type: 'date', title: { text: 'Zaman (UTC)' }, gridcolor: 'rgba(130,160,230,0.14)' },
+      yaxis: { title: { text: 'Yükseklik (°)' }, gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)' },
+      shapes: sel ? [{ type: 'line', xref: 'x', yref: 'paper', x0: plotlyUtc(sel.utc), x1: plotlyUtc(sel.utc), y0: 0, y1: 1, line: { color: '#22e4ff', width: 2 } }] : [],
       legend: { orientation: 'h', y: -0.42, x: 0, font: { size: 11 } },
       margin: { l: 56, r: 16, t: 16, b: 96 },
       uirevision: 'elevation',

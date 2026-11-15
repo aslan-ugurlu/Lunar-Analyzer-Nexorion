@@ -1,7 +1,7 @@
 import type { EffresLayer, Horizon, Mission } from '../api/types';
 import { VIOLATION_TEXT } from '../api/errors';
 import { formatDeg, formatLatLon, formatNumber, formatViolationValue } from '../lib/format';
-import { FRAME, MOON_RADIUS_KM, observerAltitudes, violationRows } from '../lib/telemetry';
+import { bandWidth, FRAME, latrecKm, MOON_RADIUS_KM, observerAltitudes, profileDifference, profileExtremes, violationRows } from '../lib/telemetry';
 import { formatUtc } from '../lib/utc';
 import type { AnalysisEntry } from '../state/AppState';
 import { KeyValue } from './ui';
@@ -33,12 +33,14 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
   const layers = horizon ? Object.keys(horizon.sources) : [];
   const slope = mission?.slope;
   return (
-    <section className="space-y-3 rounded-lg border border-accent/40 bg-accent/5 p-3" aria-labelledby={`tel-${entry.id}`}>
-      <h4 id={`tel-${entry.id}`} className="text-sm font-semibold uppercase tracking-wider text-accent">Telemetri ve izlenebilirlik</h4>
+    <section className="term space-y-3 rounded-xl p-3" aria-labelledby={`tel-${entry.id}`}>
+      <h4 id={`tel-${entry.id}`} className="module-title !mb-0">Telemetri ve izlenebilirlik</h4>
       <KeyValue
+        dense
         items={[
           ['Frame', `${FRAME} · referans küre R = ${MOON_RADIUS_KM} km · radyal yerel düşey · azimut 0° = K, 90° = D`],
           ['Konum', `${formatLatLon(i.latitude, i.longitude)} · (${i.latitude}, ${i.longitude}) ME planetosentrik, doğu-pozitif`],
+          ...(altitudes.length > 0 ? [['MOON_ME x, y, z (km)', altitudes.map((a) => `${a.body === 'sun' ? 'panel' : 'anten'} (${latrecKm(a.radiusKm, i.latitude, i.longitude).map((v) => v.toFixed(4)).join(', ')})`).join('  |  ') + ' · latrec(r, λ, φ)'] as [string, string]] : []),
           ['DEM katmanları', horizon ? layers.map((n) => `${n} · ${horizon.layer_resolution_m?.[n] ?? '?'} m · ${horizon.sources[n]}`).join('  |  ') : 'ufuk yok'],
           ['Seçili dataset', horizon?.selected_dataset_id ?? i.dataset_id],
           ['Etkin çözünürlük (EFFRES)', horizon?.effective_resolution ? effresText(horizon.effective_resolution.layers) : '— (bu sonuçta alan yok)'],
@@ -60,14 +62,14 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
       {altitudes.length > 0 && (
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Gözlemci kotu tablosu">
           <table className="mono w-full min-w-[520px] text-left text-xs">
-            <caption className="mb-1 text-left font-sans text-xs text-muted">Gözlemci kotu: r = {MOON_RADIUS_KM} km + (h_DEM + h_obs) / 1000</caption>
-            <thead className="text-muted">
+            <caption className="mb-1 text-left text-[11px] text-muted">Gözlemci kotu: r = {MOON_RADIUS_KM} km + (h_DEM + h_obs) / 1000</caption>
+            <thead className="text-term/90">
               <tr><th className="py-1 pr-3">Sensör</th><th className="pr-3">h_DEM (m)</th><th className="pr-3">h_obs (m)</th><th className="pr-3">h_DEM + h_obs (m)</th><th>r (km)</th></tr>
             </thead>
             <tbody>
               {altitudes.map((a) => (
                 <tr key={a.body} className="border-t border-line">
-                  <td className="py-1 pr-3 font-sans">{a.body === 'sun' ? 'Güneş paneli' : 'DTE anteni'}</td>
+                  <td className="py-1 pr-3">{a.body === 'sun' ? 'Güneş paneli' : 'DTE anteni'}</td>
                   <td className="pr-3">{a.demM.toFixed(2)}</td>
                   <td className="pr-3">{a.sensorM.toFixed(2)}</td>
                   <td className="pr-3">{a.totalM.toFixed(2)}</td>
@@ -86,15 +88,15 @@ export function TelemetryPanel({ entry, horizon, mission }: { entry: AnalysisEnt
 export function ViolationTable({ mission }: { mission: Mission | undefined }) {
   const rows = violationRows(mission);
   if (rows.length === 0) {
-    return <p className="text-xs text-muted">Kısıt ihlali yok (tüm senaryo ve varyantlarda).</p>;
+    return <p className="font-mono text-xs text-go">Kısıt ihlali yok (tüm senaryo ve varyantlarda).</p>;
   }
   return (
     <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Kısıt ihlal UTC aralıkları tablosu">
       <table className="mono w-full min-w-[760px] text-left text-xs">
-        <caption className="mb-1 text-left font-sans text-xs text-muted">
+        <caption className="mb-1 text-left text-[11px] text-muted">
           Kısıt ihlalleri ve UTC aralıkları (aralık yalnız süre kısıtlarında izlenir; pay kısıtlarında “—”)
         </caption>
-        <thead className="text-muted">
+        <thead className="text-term/90">
           <tr>
             <th className="py-1 pr-2">Kod</th><th className="pr-2">Senaryo</th><th className="pr-2">Varyant</th><th className="pr-2">Gözlenen</th>
             <th className="pr-2">Sınır</th><th className="pr-2">Fark</th><th className="pr-2">Başlangıç (UTC)</th><th>Bitiş (UTC)</th>
@@ -116,5 +118,35 @@ export function ViolationTable({ mission }: { mission: Mission | undefined }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Engineer: descriptive statistics of the API horizon profiles (no re-computation). */
+export function HorizonStats({ horizon }: { horizon: Horizon }) {
+  const az = horizon.azimuth_deg;
+  const hSun = horizon.geometry.observer_height_m.sun;
+  const hEarth = horizon.geometry.observer_height_m.earth;
+  const sun = profileExtremes(az, horizon.profiles.sun.nominal);
+  const earth = profileExtremes(az, horizon.profiles.earth.nominal);
+  const diff = hSun !== hEarth ? profileDifference(az, horizon.profiles.earth.nominal, horizon.profiles.sun.nominal) : null;
+  const band = bandWidth(horizon.profiles.sun);
+  const coverage = horizon.profiles.sun.coverage ?? [];
+  // coverage[i] = valid / inspected DEM samples along ray i (terrain_engine); copied, not recomputed.
+  const covered = coverage.length ? coverage.filter((v) => v >= 0.999).length : null;
+  const minCoverage = coverage.length ? Math.min(...coverage) : null;
+  const fmt = (e: ReturnType<typeof profileExtremes>) => e
+    ? `min ${e.min.toFixed(3)}° @ ${e.minAz.toFixed(1)}° · maks ${e.max.toFixed(3)}° @ ${e.maxAz.toFixed(1)}°${e.missing ? ` · eksik ışın ${e.missing}` : ''}`
+    : 'geçerli değer yok';
+  return (
+    <section className="term space-y-2 rounded-xl p-3" aria-label="Ufuk özeti">
+      <h3 className="module-title !mb-0">Ufuk özeti (API profillerinden)</h3>
+      <KeyValue dense items={[
+        [`Panel ufku (h_obs ${hSun} m)`, fmt(sun)],
+        [`Anten ufku (h_obs ${hEarth} m)`, hSun === hEarth ? 'panel ile aynı yükseklik → aynı profil' : fmt(earth)],
+        ['Anten − panel farkı', diff ? `maks |Δ| ${diff.maxAbs.toFixed(3)}° @ ${diff.atAz.toFixed(1)}° · ort Δ ${diff.mean.toFixed(4)}° (${diff.n} azimut)` : 'yok (aynı yükseklik)'],
+        [horizon.uncertainty_mode === 'clone' ? 'Clone bandı (p95 − p05)' : 'ERR bandı (ihtiyatlı − iyimser)', band ? `min ${band.min.toFixed(4)}° · ort ${band.mean.toFixed(4)}° · maks ${band.max.toFixed(4)}°` : 'yok (nominal mod veya ERR katmanı yok)'],
+        ['Kapsama', `${horizon.status} · ${horizon.reference_radius_km} km · ${az.length} azimut (0.1°)${covered !== null && minCoverage !== null ? ` · ışın DEM kapsaması min ${minCoverage.toFixed(4)}, ≥ 0.999 olan ${covered}/${coverage.length}` : ''}`],
+      ]} />
+    </section>
   );
 }

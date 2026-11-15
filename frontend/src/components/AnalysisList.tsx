@@ -53,7 +53,7 @@ export function AnalysisList() {
         const selected = entry.id === selectedId;
         const code = entry.job?.result?.error_code;
         return (
-          <li key={entry.id} className={`rounded-lg border p-3 text-sm ${selected ? 'border-accent bg-accent/5' : 'border-line bg-panel-2'}`}>
+          <li key={entry.id} className={`rounded-xl border p-3 text-sm transition ${selected ? 'border-accent/70 bg-accent/10 shadow-[0_0_24px_-12px_var(--color-neon)]' : 'border-line bg-panel-2 hover:border-line-strong'}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 space-y-0.5">
                 <p className="font-medium text-ink">

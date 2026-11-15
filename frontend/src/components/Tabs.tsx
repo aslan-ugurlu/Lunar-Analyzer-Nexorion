@@ -1,9 +1,11 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Icon, type IconName } from './ui';
 
 export interface TabDef<K extends string> {
   key: K;
   label: string;
   hint?: string;
+  icon?: IconName;
   badge?: ReactNode;
 }
 
@@ -31,7 +33,8 @@ export function Tabs<K extends string>({ tabs, active, onChange, idPrefix = 'tab
     }
   };
   return (
-    <div role="tablist" aria-label="Uygulama bölümleri" className="flex gap-1 overflow-x-auto border-b border-line">
+    <div role="tablist" aria-label="Uygulama bölümleri"
+      className="glass flex gap-1 overflow-x-auto rounded-2xl p-1.5 [scrollbar-width:thin]">
       {tabs.map((tab, i) => {
         const selected = tab.key === active;
         return (
@@ -48,10 +51,13 @@ export function Tabs<K extends string>({ tabs, active, onChange, idPrefix = 'tab
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.key)}
             onKeyDown={(e) => onKey(e, i)}
-            className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium ${
-              selected ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'
+            className={`relative flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              selected
+                ? 'bg-[rgb(31_98_224/0.28)] text-white shadow-[inset_0_0_0_1px_rgb(76_201_255/0.55),0_0_20px_-8px_var(--color-neon)]'
+                : 'text-muted hover:bg-white/[0.05] hover:text-ink'
             }`}
           >
+            {tab.icon && <Icon name={tab.icon} className={`h-4 w-4 ${selected ? 'text-neon' : ''}`} />}
             {tab.label}
             {tab.badge}
           </button>
@@ -69,7 +75,7 @@ export function TabPanel({ id, idPrefix = 'tab', active, children }: { id: strin
       aria-labelledby={`${idPrefix}-${id}`}
       hidden={!active}
       tabIndex={0}
-      className="focus-visible:outline-offset-4"
+      className="rounded-2xl focus-visible:outline-offset-4"
     >
       {active ? children : null}
     </section>

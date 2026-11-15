@@ -38,7 +38,7 @@ export function ExportBar({ data }: { data: AnalysisData }) {
     timeline: current.scenario.timeline,
   }, null, 2);
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-panel-2 p-2 text-sm" role="group" aria-label="Ham veri dışa aktarma">
+    <div className="term flex flex-wrap items-center gap-2 rounded-xl p-2 text-xs" role="group" aria-label="Ham veri dışa aktarma">
       <span className="font-medium text-ink">Ham veri (senaryo +{current.scenario.shift_hours} sa, {current.scenario.timeline.length} örnek):</span>
       <button type="button" className="btn" onClick={() => download(`${base}.json`, json(), 'application/json')}>JSON indir</button>
       <button type="button" className="btn" onClick={() => download(`${base}.csv`, timelineToCsv(current.scenario.timeline, { ...meta, exported_utc: new Date().toISOString() }), 'text/csv')}>CSV indir</button>
@@ -133,8 +133,8 @@ function TimelinePanel({ data }: { data: AnalysisData }) {
       <div className="min-w-0 space-y-3">
         {mode === 'engineer' && <ExportBar data={data} />}
         {elev && (
-          <section className="space-y-1 rounded-lg border border-accent/40 bg-accent/5 p-2" aria-labelledby="elev-title">
-            <h3 id="elev-title" className="px-1 text-sm font-semibold text-accent">Güneş / Dünya açısal yüksekliği ve gövde azimutundaki arazi ufku</h3>
+          <section className="term space-y-1 rounded-xl p-2" aria-labelledby="elev-title">
+            <h3 id="elev-title" className="module-title px-1 !mb-1">Güneş / Dünya açısal yüksekliği ve gövde azimutundaki arazi ufku</h3>
             <Chart data={elev.data} layout={elev.layout} height={320} ariaLabel="Güneş ve Dünya yüksekliği ile o azimuttaki ufuk yüksekliği" />
             <p className="px-1 text-xs text-muted">Kesikli ufuk eğrileri görüntüleme amaçlı enterpolasyondur; f_sun disk integrasyonu ve DTE kararı sunucuda yapılır.</p>
           </section>

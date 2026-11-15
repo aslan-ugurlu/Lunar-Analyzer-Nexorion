@@ -8,8 +8,9 @@ import { isActive, useApp, type AnalysisEntry } from '../state/AppState';
 import { JobStatusLine } from './AnalysisList';
 import { SiteLinks } from './SiteLinks';
 import { CopySummary } from './CopySummary';
-import { TelemetryPanel } from './TelemetryPanel';
-import { DecisionBadge, EmptyState, Icon, Notice } from './ui';
+import { HorizonStats, TelemetryPanel } from './TelemetryPanel';
+import { DurationBar, MissionWindowStrip, RingGauge, ScenarioStrip } from './Infographics';
+import { DECISION_STYLE, DecisionBadge, EmptyState, Icon, Notice } from './ui';
 
 /* ------------------------------------------------------------------ Halk / Eğitimci */
 
@@ -33,18 +34,30 @@ function KpiCards({ mission, entry }: { mission: Mission; entry: AnalysisEntry }
         const t = KPI_TEXT[k.key];
         const state = {
           met: { cls: 'border-go/50 text-go', icon: 'check' as const, word: 'sağlanıyor' },
-          violated: { cls: 'border-stop/50 text-stop', icon: 'stop' as const, word: 'sağlanmıyor' },
+          violated: { cls: 'border-stop/55 text-stop', icon: 'stop' as const, word: 'sağlanmıyor' },
           not_set: { cls: 'border-line text-muted', icon: 'info' as const, word: 'kısıt yok' },
           unknown: { cls: 'border-unknown/50 text-unknown', icon: 'question' as const, word: 'bilinmiyor' },
         }[k.state];
         const limit = k.limit === null ? null : k.unit === 'fraction' ? formatPercent(k.limit) : `${k.limit} sa`;
+        const color = t.icon === 'sun' ? (k.key === 'darkness' ? '#b39dff' : '#ffcc4d') : '#5aa9ff';
         return (
-          <div key={k.key} role="listitem" className={`rounded-xl border bg-panel-2 p-4 ${t.icon === 'sun' ? 'border-sun/30' : 'border-earth/30'}`} data-kpi={k.key}>
+          <div key={k.key} role="listitem" data-kpi={k.key}
+            className={`glass-inner rounded-2xl p-4 ${t.icon === 'sun' ? 'border-sun/25' : 'border-earth/25'}`}>
             <p className={`flex items-center gap-2 text-sm font-semibold ${t.icon === 'sun' ? 'text-sun' : 'text-earth'}`}>
               <Icon name={t.icon} className="h-5 w-5" /> {t.title}
             </p>
-            <p className="mono mt-1 text-3xl font-bold text-ink sm:text-4xl">{kpiValue(k)}</p>
-            <p className="mt-1 text-xs text-muted">{t.sub}</p>
+            {k.unit === 'fraction' ? (
+              <div className="mt-2 flex items-center gap-3">
+                <RingGauge value={k.value} target={k.limit} color={color} />
+                <p className="mono font-display text-3xl font-bold text-ink sm:text-4xl">{kpiValue(k)}</p>
+              </div>
+            ) : (
+              <>
+                <p className="mono mt-2 font-display text-3xl font-bold text-ink sm:text-4xl">{kpiValue(k)}</p>
+                <DurationBar valueH={k.value} limitH={k.limit} color={color} />
+              </>
+            )}
+            <p className="mt-2 text-xs text-muted">{t.sub}</p>
             <p className={`chip mt-2 ${state.cls}`}>
               <Icon name={state.icon} className="h-3.5 w-3.5" />
               {limit ? `${t.limitWord} ${limit} · ` : ''}{state.word}
@@ -77,6 +90,34 @@ function radiusExplained(p: RadiusPolicy, status: Decision): Explained {
   };
 }
 
+/** One plain-language sentence per decision class (the class itself always comes from the server). */
+function verdictText(mission: Mission): string {
+  const rp = mission.radius_policy;
+  return {
+    GREEN: 'Tanımladığınız kısıtlar hem normal hesapta hem de arazi belirsizliği eklenmiş ihtiyatlı hesapta sağlanıyor.',
+    YELLOW: rp?.capped
+      ? `Kısıtlar hem normal hem ihtiyatlı hesapta sağlanıyor; ancak ufuk yalnızca ${rp.radius_km} km’ye kadar tarandı (hızlı mod). Daha uzaktaki dağlar Güneş’i veya Dünya’yı kapatabileceği için “uygun” denmiyor; ${rp.reference_radius_km} km ile yeniden çalıştırın.`
+      : 'Normal hesapta kısıtlar sağlanıyor, ama arazi belirsizliği eklenince en az bir kısıt aşılıyor; dikkatli olunmalı.',
+    RED: 'Tanımladığınız kısıtlardan en az biri normal hesapta bile sağlanmıyor.',
+    GRAY: 'Eldeki veri veya doğrulama, güvenilir bir “uygun / uygun değil” demeye yetmiyor.',
+  }[mission.status];
+}
+
+function VerdictBanner({ mission }: { mission: Mission }) {
+  const style = DECISION_STYLE[mission.status] ?? DECISION_STYLE.GRAY;
+  return (
+    <div className={`flex items-start gap-4 rounded-2xl border p-4 ${style.cls} ${style.glow}`}>
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-current bg-[rgb(3_8_24/0.55)]">
+        <Icon name={style.icon} className="h-7 w-7" />
+      </span>
+      <div className="min-w-0">
+        <p className="eyebrow !text-current">Sonuç · {style.publicWord}</p>
+        <p className="mt-1 font-display text-base leading-snug font-medium text-ink sm:text-lg">{verdictText(mission)}</p>
+      </div>
+    </div>
+  );
+}
+
 function Story({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
   const s = baselineScenario(mission);
   const m = validMetrics(s?.variants.nominal);
@@ -85,17 +126,8 @@ function Story({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
   const summary = scenarioViolationSummary(mission);
   const dark = s && m ? intervalUtc(s, m.darkness_interval) : null;
   const gap = s && m ? intervalUtc(s, m.dte_gap_interval) : null;
-  const rp = mission.radius_policy;
-  const verdict = {
-    GREEN: 'Tanımladığınız kısıtlar hem normal hesapta hem de arazi belirsizliği eklenmiş ihtiyatlı hesapta sağlanıyor.',
-    YELLOW: rp?.capped
-      ? `Kısıtlar hem normal hem ihtiyatlı hesapta sağlanıyor; ancak ufuk yalnızca ${rp.radius_km} km’ye kadar tarandı (hızlı mod). Daha uzaktaki dağlar Güneş’i veya Dünya’yı kapatabileceği için “uygun” denmiyor; ${rp.reference_radius_km} km ile yeniden çalıştırın.`
-      : 'Normal hesapta kısıtlar sağlanıyor, ama arazi belirsizliği eklenince en az bir kısıt aşılıyor; dikkatli olunmalı.',
-    RED: 'Tanımladığınız kısıtlardan en az biri normal hesapta bile sağlanmıyor.',
-    GRAY: 'Eldeki veri veya doğrulama, güvenilir bir “uygun / uygun değil” demeye yetmiyor.',
-  }[mission.status];
   return (
-    <div className="space-y-2 rounded-xl border border-line bg-panel-2 p-4 text-sm leading-relaxed text-ink">
+    <div className="glass-inner space-y-2 rounded-2xl p-4 text-sm leading-relaxed text-ink">
       <p>
         <strong>{formatLatLon(i.latitude, i.longitude)}</strong> konumunda, <strong>{formatUtc(i.landing_utc)}</strong> başlayan {hours} saatlik pencerede:
       </p>
@@ -122,7 +154,6 @@ function Story({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
             : `${summary.withViolations.length} senaryoda kısıt aşıldı (+${summary.withViolations.join(', +')} sa).`}
         </p>
       )}
-      <p className="font-medium">Sonuç: {verdict}</p>
       <p className="text-xs text-muted">Güneş görünürlüğü elektrik üretimi, Dünya görüşü radyo bağlantısı garantisi değildir. Bu sonuç bir iniş sertifikası değildir.</p>
     </div>
   );
@@ -165,12 +196,42 @@ function PublicReasons({ mission }: { mission: Mission }) {
 
 /* ------------------------------------------------------------------ Mühendis */
 
+/** Dense decision read-out; every cell is a count or field copied from the server result. */
+function CockpitStrip({ mission, entry, horizonStatus, radiusKm }: { mission: Mission; entry: AnalysisEntry; horizonStatus?: string; radiusKm?: number }) {
+  const n = mission.nominal_violations?.length ?? 0;
+  const cv = mission.cautious_violations?.length ?? 0;
+  const u = mission.unresolved?.length ?? 0;
+  const decisionCls = { GREEN: 'text-go', YELLOW: 'text-caution', RED: 'text-stop', GRAY: 'text-unknown' }[mission.status] ?? 'text-ink';
+  const cells: [string, string, string][] = [
+    ['karar', mission.status, decisionCls],
+    ['nominal ihlal', String(n), n > 0 ? 'text-stop' : 'text-go'],
+    ['ihtiyatlı ihlal', String(cv), cv > 0 ? 'text-caution' : 'text-go'],
+    ['belirsiz kontrol', String(u), u > 0 ? 'text-caution' : 'text-ink'],
+    ['senaryo', mission.scenarios.map((s) => `+${s.shift_hours}`).join('/') || '—', 'text-ink'],
+    ['ufuk', `${horizonStatus ?? '—'} · ${radiusKm ?? entry.input.horizon_radius_km} km`, horizonStatus === 'complete' ? 'text-ink' : 'text-caution'],
+    ['belirsizlik', `${entry.input.uncertainty_mode}${entry.input.uncertainty_mode === 'err' ? ` k=${entry.input.err_k}` : ''}`, 'text-ink'],
+    ['kalite', mission.quality ?? '—', 'text-ink'],
+  ];
+  return (
+    <section aria-label="Karar özeti (sunucu sonucu)">
+      <dl className="term grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-[rgb(76_201_255/0.18)] sm:grid-cols-4">
+        {cells.map(([k, v, cls]) => (
+          <div key={k} className="bg-[rgb(2_7_20/0.92)] px-2.5 py-1.5">
+            <dt className="text-[10px] tracking-[0.12em] text-muted uppercase">{k}</dt>
+            <dd className={`text-sm leading-tight font-semibold [overflow-wrap:anywhere] ${cls}`}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 function EngineerTable({ mission }: { mission: Mission }) {
   return (
-    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Senaryo metrik tablosu (yatay kaydırılabilir)">
+    <div className="term overflow-x-auto rounded-xl p-2" tabIndex={0} role="region" aria-label="Senaryo metrik tablosu (yatay kaydırılabilir)">
       <table className="w-full min-w-[640px] text-left text-xs">
         <caption className="sr-only">Senaryo ve varyant metrikleri</caption>
-        <thead className="text-muted">
+        <thead className="text-term/90">
           <tr>
             <th scope="col" className="py-1 pr-2">Senaryo</th><th scope="col" className="pr-2">Varyant</th>
             <th scope="col" className="pr-2">ort. f_sun</th><th scope="col" className="pr-2">maks. karanlık</th>
@@ -234,7 +295,7 @@ export function ResultSummary({ entry }: { entry: AnalysisEntry | null }) {
       </header>
 
       {isActive(entry) && (
-        <p role="status" className="flex items-center gap-2 rounded-md border border-accent/40 bg-accent/5 p-3 text-sm">
+        <p role="status" className="flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3 text-sm">
           <Icon name="spinner" className="h-4 w-4 text-accent" />
           {job?.status === 'running' ? 'NASA DEM üzerinde ufuk ve SPICE ile Güneş/Dünya konumları hesaplanıyor…' : 'Kuyrukta bekliyor…'} Sonuç gelene kadar değer gösterilmez.
         </p>
@@ -255,8 +316,10 @@ export function ResultSummary({ entry }: { entry: AnalysisEntry | null }) {
 
       {mission && engineer && (
         <>
+          <CockpitStrip mission={mission} entry={entry} horizonStatus={horizon?.status} radiusKm={horizon?.reference_radius_km} />
           <TelemetryPanel entry={entry} horizon={horizon} mission={mission} />
-          <p className="mono text-xs text-ink">{mission.explanations?.engineer ?? mission.reason}</p>
+          <p className="term rounded-xl p-2.5 text-xs leading-relaxed text-ink"><span className="text-term" aria-hidden>&gt; </span>{mission.explanations?.engineer ?? mission.reason}</p>
+          {horizon && <HorizonStats horizon={horizon} />}
           {mission.status === 'GRAY' && mission.reason && (
             <Notice explained={{ code: mission.quality ? `HORIZON_${mission.quality.toUpperCase()}` : 'GRAY', title: 'Sınıflandırılamadı', publicText: mission.reason, engineerText: `${mission.reason} (quality=${mission.quality ?? '—'})`, tone: 'warning' }} />
           )}
@@ -272,7 +335,10 @@ export function ResultSummary({ entry }: { entry: AnalysisEntry | null }) {
 
       {mission && !engineer && (
         <>
+          <VerdictBanner mission={mission} />
           {mission.scenarios.length > 0 && <KpiCards mission={mission} entry={entry} />}
+          {mission.scenarios.length > 0 && <MissionWindowStrip mission={mission} entry={entry} />}
+          {mission.scenarios.length > 1 && <ScenarioStrip mission={mission} />}
           {mission.scenarios.length > 0 ? <Story mission={mission} entry={entry} /> : (
             <p className="text-sm text-ink">{mission.explanations?.public ?? mission.label ?? mission.reason}</p>
           )}
