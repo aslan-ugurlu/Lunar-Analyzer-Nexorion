@@ -10,13 +10,12 @@
 - **Alt adım:** DONE — tasarım sistemi + fontlar, Halk “Görev Sihirbazı” + infografik sonuçlar + öne çıkan Dünya–Ay kartı, Mühendis kokpit/terminal formu + telemetri; testler ve e2e geçti
 - **Durum:** DONE (yerel commit). Push yapılmadı — kullanıcı onayı bekleniyor. Sonraki aşama: tasarımın kullanıcıyla birlikte değerlendirilmesi
 
-## Çalışan sürümler (2026-11-14T22:20Z, ikisi de yalnız 127.0.0.1/localhost)
+## Çalışan sürümler (2026-11-15T05:57Z, yalnız 127.0.0.1/localhost)
 | Port | Rol | Kod | Durum |
 |---|---|---|---|
-| `127.0.0.1:8000` | **eski backend — kullanıcı kararıyla KORUNUYOR** (yeniden başlatılmaz/kapatılmaz) | API süreci 2026-11-14T13:27:02Z'de Faz 7.2 (`4f752ad`) koduyla başladı; tek hesap işçisi 13:28:10Z'de açıldı (aynı kod). OpenAPI `1.1`. Not: yeni bir işçi açılırsa diskteki güncel kodu yükler | `/health` 200 `ready`; `clones` alanı yok, clone modu `CLONE_NOT_PRECOMPUTED` |
-| `localhost:5173` | eski frontend (Vite dev, 8000'e bağlı) | arayüz kaynağı HMR ile güncel diskteki kod → **Faz 9 tasarımını da gösterir** (sunucu yeniden başlatılmadı); veri 8000'den | 200; Data sayfasında clone satırı "bilinmiyor" (8000'de alan yok) |
-| `127.0.0.1:8001` | **yeni backend** (test kopyası; CORS yalnız :5174) | güncel kod (Faz 8), 22:20Z'de yeniden başlatıldı; OpenAPI `1.3` | `/health` 200 `ready`; `clone_profiles: AVAILABLE`, Site01 100/100, 2 ön hesap seti |
-| `localhost:5174` | **yeni frontend** (Vite dev, `VITE_API_BASE_URL=http://127.0.0.1:8001`) | güncel kod | 200; clone kapsamı, EFFRES, YELLOW/clone senaryoları burada denenir |
+| `127.0.0.1:8000` | backend (uvicorn, tek API süreci) | güncel kod (Faz 9 commit `e95a1a5`; backend Faz 8'den beri değişmedi), 05:55Z'de başlatıldı; OpenAPI `1.3` | `/health` 200 `ready`; SPICE var; `clone_profiles: AVAILABLE` |
+| `localhost:5173` | frontend (Vite dev, varsayılan API = 8000) | güncel kod (Faz 9 tasarımı) | 200; tarayıcı kontrolü: Görev Sihirbazı + 5 karo kısayolu, konsol hatası 0 |
+| `8001` / `5174` | çalışmıyor | — | Önceki oturum kapanınca tüm arka plan sunucuları durdu (eski Faz 7.2 kodlu 8000 süreci dahil; korunacak eski süreç kalmadı). Standart README düzeni 8000/5173 yeniden başlatıldı |
 
 ## Tamamlanan iş
 - Talimat dosyaları okundu: `CLAUDE.md`, `CLAUDE_DEVIR_TALIMATI.md` (§0–§10).
@@ -479,4 +478,4 @@ Kaynak: `python -m backend.validation` → `data/validation/report.json` (UI: Da
   `lola_20m` seçeneği 30 sn içinde listeye gelmediği için zaman aşımına uğradı (8000 ve 5173 sağlıklıydı; `/sites` listeyi döndürüyordu);
   aynı kodla hemen tekrarlanan koşu 17/17 geçti — geçici yükleme gecikmesi olarak kaydedildi, test gevşetilmedi.
   `npm audit`: 7 orta düzey uyarı, önceden var olan geliştirme bağımlılığı (`typescript-eslint` → `minimatch`); font paketleriyle ilgisiz.
-
+- 05:55Z — Kullanıcı “çalıştır” dedi. Önceki oturum sonunda 8000/8001/5173/5174 süreçlerinin hepsi durmuştu (curl 000). Güncel kodla `python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000` ve `npx vite --port 5173 --strictPort` başlatıldı: /health 200 ready, OpenAPI 1.3, Chrome'da sayfa açıldı (konsol hatası 0).
