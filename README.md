@@ -57,6 +57,20 @@ Ortam değişkenleri:
 
 Örnekler: [`.env.example`](.env.example), [`frontend/.env.example`](frontend/.env.example).
 
+### Netlify'da yayınlama (yalnız arayüz)
+
+Depo kökündeki [`netlify.toml`](netlify.toml) Netlify'a `frontend/` klasöründe `npm run build` çalıştırmasını ve
+`frontend/dist` klasörünü yayınlamasını söyler (Node 24). Bu dosya olmadan Netlify depo kökünü yayınlar; kökte `index.html`
+olmadığı için "Page not found" görünür.
+
+Netlify **yalnız statik arayüzü** barındırır. FastAPI backend'i ve NASA verileri (`data/`, Git'e eklenmez) Netlify'da
+çalışmaz. Backend ayrıca barındırılmadıkça yayındaki site hesap yapamaz ve başlıkta **Backend: Offline** gösterir. Bu durumda
+sahte sonuç üretilmez. Backend'i ayrı bir sunucuda çalıştırdıktan sonra:
+
+1. Netlify → *Site configuration → Environment variables*: `VITE_API_BASE_URL=https://<backend-adresi>`
+   (değişken derleme sırasında okunur; ekledikten sonra yeniden deploy edin).
+2. Backend ortamı: `LUNAR_CORS_ORIGINS=https://<site-adı>.netlify.app` (gerekirse virgülle localhost origin'leri de ekleyin; `*` reddedilir).
+
 ## Kullanılan NASA verileri
 
 | Dosya (`data/` altında, Git'e eklenmez) | Kaynak | Durum (2026-11-14) | Doğrulama |
