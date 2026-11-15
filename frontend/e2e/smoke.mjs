@@ -28,7 +28,7 @@ page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.getByRole('heading', { name: 'Lunar Mission Window Analyzer' }).waitFor();
+  await page.getByRole('heading', { name: 'Lunar Analyzer', exact: true }).waitFor();
   await page.getByText('Online', { exact: true }).waitFor({ timeout: 15000 });
   note('header + backend Online chip visible');
   await page.screenshot({ path: join(OUT, '01_setup_public.png'), fullPage: true });

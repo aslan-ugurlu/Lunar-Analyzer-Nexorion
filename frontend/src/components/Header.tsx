@@ -65,7 +65,7 @@ export function Header({ health, healthError }: { health: Health | null; healthE
           <Patch />
           <div className="min-w-0">
             <p className="eyebrow">NASA Space Apps 2026 · Mission Control</p>
-            <h1 className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl">Lunar Mission Window Analyzer</h1>
+            <h1 className="font-display text-lg font-bold tracking-tight text-ink sm:text-xl">Lunar Analyzer</h1>
             <p className="text-xs text-muted sm:text-sm">
               Ay güney kutbu · NASA LOLA + NAIF SPICE · Güneş görünürlüğü ve geometrik Dünya görüşü (DTE) ön eleme
             </p>
