@@ -305,4 +305,4 @@ Dünya–Ay eğitim kartı kaynakları: NASA NSSDC [Earth](https://nssdc.gsfc.na
 - Moon Trek koordinata odaklanma güvenilir değil (dış uygulama kaynaklı).
 - Rate-limit tek süreç içi; analiz kayıtları sunucu yeniden başlayınca kaybolur (UI 404'ü "kayboldu" olarak gösterir).
 
-Oturum devamlılığı ve ayrıntılı kanıt günlüğü: [`PROGRESS.md`](PROGRESS.md). Bilimsel ve güvenlik sözleşmesi: [`CLAUDE.md`](CLAUDE.md).
+Ayrıntılı bilimsel doğrulama kanıtı: [`docs/VALIDATION.md`](docs/VALIDATION.md).

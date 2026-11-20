@@ -5,7 +5,7 @@ real NASA PGDA LOLA rasters, NAIF SPICE kernels and PGDA DEM clones listed in
 docs/validation/data_versions_2026-11-14.json. They are SKIPPED when those files are absent, so a CI
 machine without NASA data reports "skipped", never a fake pass.
 
-The expected values were OBSERVED on 2026-11-14 (see PROGRESS.md / docs/VALIDATION.md). If a data
+The expected values were OBSERVED on 2026-11-14 (see docs/VALIDATION.md). If a data
 product or the code changes, a failure means "the result changed": investigate and document it; do
 not edit an expectation just to make the test pass. Screening results, not landing certification and
 not a NASA approval.

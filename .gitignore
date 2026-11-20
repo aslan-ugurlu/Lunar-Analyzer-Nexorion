@@ -29,7 +29,7 @@ data/
 *.tf
 *.part
 
-# --- Local logs (test evidence summaries live in PROGRESS.md) ---
+# --- Local logs (test evidence summaries live in docs/VALIDATION.md) ---
 logs/
 *.log
 
@@ -42,3 +42,9 @@ logs/
 frontend/e2e/_tmp_*
 playwright-report/
 test-results/
+
+# --- Local AI-assistant working notes: kept on this machine, never published ---
+CLAUDE.md
+CLAUDE_*.md
+PROGRESS.md
+.claude/

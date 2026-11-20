@@ -201,7 +201,7 @@ def _new_pool()->ProcessPoolExecutor:
     """Windows-safe pool factory. Called ONLY from lifespan or pool recycling.
 
     Never at import time / module top level / per request (spawn re-imports this
-    module in every child; see CLAUDE_HANDOFF.md §11.2).
+    module in every child; see tests/test_spawn_pool.py).
     """
     return ProcessPoolExecutor(max_workers=MAX_WORKERS,
                                mp_context=multiprocessing.get_context('spawn'))
@@ -254,7 +254,7 @@ app=FastAPI(title='Lunar Mission Window Analyzer',version='1.3',debug=False,life
 
 
 def _cors_origins()->list[str]:
-    """Explicit dev origins only. Wildcards are refused (CLAUDE.md UX rule)."""
+    """Explicit dev origins only. Wildcards are refused (no wildcard CORS in production)."""
     raw=os.environ.get('LUNAR_CORS_ORIGINS','http://localhost:5173,http://127.0.0.1:5173')
     origins=[o.strip() for o in raw.split(',') if o.strip()]
     if any('*' in o for o in origins):

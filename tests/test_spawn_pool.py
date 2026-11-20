@@ -1,4 +1,4 @@
-"""§11.2 Windows `spawn` ProcessPoolExecutor lifecycle tests (real child processes).
+"""Windows `spawn` ProcessPoolExecutor lifecycle tests (real child processes).
 
 The worker functions below are trivial test functions (crash / sleep / echo);
 they produce no scientific values. Child processes are started with `spawn`,

@@ -1,9 +1,9 @@
-"""§11.3 `--include-lola-240m` safety tests.
+"""`--include-lola-240m` safety tests.
 
 MOCK NOTICE: these tests use a mocked HTTP opener and a tiny SYNTHETIC GeoTIFF
 fixture written to pytest's tmp_path. The fixture is NOT a NASA raster, is never
 written under data/, and no scientific result is derived from it. The real PGDA
-download is verified separately (see PROGRESS.md / data/manifest.json).
+download is verified separately (see data/manifest.json and docs/VALIDATION.md).
 """
 import errno
 import io
