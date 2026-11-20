@@ -39,9 +39,31 @@ describe('mission form → AnalysisInput', () => {
   });
 
   it('enforces the sampling budget and product window', () => {
-    expect(buildRequest({ ...valid, duration_hours: '720', step_minutes: '10' }).errors.budget).toMatch(/bütçe/);
+    expect(buildRequest({ ...valid, duration_hours: '720', step_minutes: '10' }).errors.budget).toMatch(/budget/);
     expect(buildRequest({ ...valid, landing_date: '2035-12-31', landing_time: '00:00' }).errors.budget).toMatch(/2035/);
     expect(buildRequest({ ...valid, landing_date: '2025-12-31' }).errors.landing_date).toBeDefined();
+  });
+
+  it('validation messages are English by default and Turkish on request (wording unchanged)', () => {
+    const bad = { ...valid, latitude: '', longitude: '181', step_minutes: '12.5', duration_hours: '720' };
+    const en = buildRequest(bad);
+    expect(en.errors.latitude).toBe('Latitude is required');
+    expect(en.errors.longitude).toBe('Longitude must be within -180 … 180');
+    expect(en.errors.step_minutes).toBe('Time step must be a whole number');
+    const tr = buildRequest(bad, 'tr');
+    expect(tr.errors.latitude).toBe('Enlem gerekli');
+    expect(tr.errors.longitude).toBe('Boylam -180 … 180 aralığında olmalı');
+    expect(tr.errors.step_minutes).toBe('Zaman adımı tam sayı olmalı');
+    expect(buildRequest({ ...valid, duration_hours: '720', step_minutes: '10' }, 'tr').errors.budget)
+      .toBe('Örnekleme bütçesi aşıldı: 4393 nokta × 4 senaryo (sınır 6000 / toplam 12000). Adımı büyütün veya süreyi kısaltın.');
+    expect(buildRequest({ ...valid, max_darkness_hours: '', min_sun_fraction_pct: '', min_dte_fraction_pct: '', max_dte_gap_hours: '' }, 'tr')
+      .errors.constraints).toBe('En az bir görev kısıtı girin');
+  });
+
+  it('the language never changes the request body or which fields are invalid', () => {
+    expect(buildRequest(valid, 'tr')).toEqual({ ...buildRequest(valid, 'en') });
+    const bad = { ...valid, latitude: '-79', err_k: '4', shifts: [] };
+    expect(Object.keys(buildRequest(bad, 'tr').errors).sort()).toEqual(Object.keys(buildRequest(bad, 'en').errors).sort());
   });
 
   it('profile key ignores only location and dataset (same rule as /compare)', () => {

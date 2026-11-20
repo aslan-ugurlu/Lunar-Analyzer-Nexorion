@@ -4,10 +4,25 @@ import cardSource from '../EarthMoonCard.tsx?raw';
 import { EarthMoonCard, EARTH_MOON_SOURCES } from '../EarthMoonCard';
 import { MissionSetup } from '../MissionSetup';
 import { AppStateProvider } from '../../state/AppState';
+import { I18nProvider } from '../../i18n';
 
-describe('§11.5 Earth vs Moon education card', () => {
+describe('Earth vs Moon education card', () => {
   it('shows the required physical comparisons with honest notes', () => {
     render(<EarthMoonCard />); // renders without any app/analysis state
+    expect(screen.getByRole('heading', { name: 'Why does the Sun look different on Earth and on the Moon?' })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('about 24 hours')).toBeInTheDocument();
+    expect(within(table).getByText('about 29.5 Earth days')).toBeInTheDocument();
+    expect(table.textContent).toContain('about 27.3 days');
+    expect(table.textContent).toContain('saying “the Moon rotates in 29.5 days” is not correct');
+    expect(table.textContent).toContain('about 23.4°');
+    expect(table.textContent).toContain('about 1.5°');
+    expect(table.textContent).toContain('no refraction like Earth’s is expected');
+    expect(table.textContent).toContain('a single angle does not represent every point');
+  });
+
+  it('keeps the Turkish wording unchanged', () => {
+    render(<I18nProvider lang="tr"><EarthMoonCard /></I18nProvider>);
     expect(screen.getByRole('heading', { name: 'Dünya ve Ay’da Güneş neden farklı görünür?' })).toBeInTheDocument();
     const table = screen.getByRole('table');
     expect(within(table).getByText('yaklaşık 24 saat')).toBeInTheDocument();
@@ -18,11 +33,12 @@ describe('§11.5 Earth vs Moon education card', () => {
     expect(table.textContent).toContain('yaklaşık 1,5°');
     expect(table.textContent).toContain('kırılma beklenmez');
     expect(table.textContent).toContain('tek bir açı tüm noktaları temsil etmez');
+    expect(screen.getByText(/Kaynaklar \(yaklaşık değerler/)).toBeInTheDocument();
   });
 
   it('lists NASA sources as safe external links and labels values approximate', () => {
     render(<EarthMoonCard />);
-    expect(screen.getByText(/Kaynaklar \(yaklaşık değerler/)).toBeInTheDocument();
+    expect(screen.getByText(/Sources \(approximate values/)).toBeInTheDocument();
     for (const src of EARTH_MOON_SOURCES) {
       const link = screen.getByRole('link', { name: src.label });
       expect(link).toHaveAttribute('href', src.href);
@@ -32,7 +48,7 @@ describe('§11.5 Earth vs Moon education card', () => {
     }
   });
 
-  it('is independent of the decision engine (no props, no state, no API imports)', () => {
+  it('is independent of the decision engine (no props, no analysis state, no API imports)', () => {
     expect(EarthMoonCard.length).toBe(0);
     const source = cardSource;
     expect(source).not.toMatch(/from '\.\.\/(api|state|lib)\//);
@@ -43,9 +59,9 @@ describe('§11.5 Earth vs Moon education card', () => {
     const { unmount } = render(
       <AppStateProvider initialMode="public"><MissionSetup sites={null} sitesError={null} health={null} /></AppStateProvider>,
     );
-    expect(screen.getByRole('heading', { name: /Dünya ve Ay’da Güneş/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Why does the Sun look different/ })).toBeInTheDocument();
     unmount();
     render(<AppStateProvider initialMode="engineer"><MissionSetup sites={null} sitesError={null} health={null} /></AppStateProvider>);
-    expect(screen.queryByRole('heading', { name: /Dünya ve Ay’da Güneş/ })).toBeNull();
+    expect(screen.queryByRole('heading', { name: /Why does the Sun look different/ })).toBeNull();
   });
 });

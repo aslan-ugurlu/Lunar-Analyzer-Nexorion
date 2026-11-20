@@ -11,7 +11,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const BASE = process.env.APP_URL ?? 'http://localhost:5173';
+// Runs in Turkish (?lang=tr): its wording is unchanged from the original UI, so the selectors stay stable.
+const BASE = (() => {
+  const u = new URL(process.env.APP_URL ?? 'http://localhost:5173');
+  u.searchParams.set('lang', 'tr');
+  return u.toString();
+})();
 const API = 'http://127.0.0.1:8000';
 const OUT = process.argv[2] ?? '../logs/e2e';
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
@@ -93,9 +98,9 @@ try {
     await page.goto(BASE);
     results.offline_public = await checkPublicNotice(page, 'BACKEND_OFFLINE', 'Hesaplama sunucusuna şu an ulaşılamıyor');
     results.offline = (await page.getByText('Offline', { exact: true }).count()) > 0;
-    await page.getByRole('tab', { name: 'Sky View' }).click();
+    await page.getByRole('tab', { name: 'Gökyüzü Görünümü', exact: true }).click();
     results.offline_no_chart = (await page.locator('.main-svg').count()) === 0;
-    await page.getByRole('tab', { name: 'Mission Setup' }).click();
+    await page.getByRole('tab', { name: 'Görev Kurulumu', exact: true }).click();
     await toEngineer(page);
     await page.getByText('Backend çevrimdışı').first().waitFor();
     results.offline_engineer_code_visible = await engineerCodeVisible(page, 'BACKEND_OFFLINE');
@@ -141,9 +146,9 @@ try {
     await fillSite(page);
     await page.getByRole('button', { name: 'Analizi başlat' }).click();
     results.worker_unavailable_public = await checkPublicNotice(page, 'WORKER_UNAVAILABLE', 'Hesaplama yarıda kesildi');
-    await page.getByRole('tab', { name: 'Sky View' }).click();
+    await page.getByRole('tab', { name: 'Gökyüzü Görünümü', exact: true }).click();
     results.worker_failed_no_chart = (await page.locator('.main-svg').count()) === 0;
-    await page.getByRole('tab', { name: 'Mission Setup' }).click();
+    await page.getByRole('tab', { name: 'Görev Kurulumu', exact: true }).click();
     await toEngineer(page);
     await page.getByText('Hesap süreci çöktü').first().waitFor({ timeout: 15000 });
     results.worker_unavailable_engineer_code_visible = await engineerCodeVisible(page, 'WORKER_UNAVAILABLE');

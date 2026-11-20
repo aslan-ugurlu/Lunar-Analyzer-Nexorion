@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Decision } from '../api/types';
 import { headingFor, type Explained } from '../api/errors';
+import { defineStrings, pick, useStrings } from '../i18n';
 import { useApp } from '../state/AppState';
 
 export type IconName =
@@ -69,12 +70,44 @@ export function Icon({ name, className = 'h-4 w-4' }: { name: IconName; classNam
   }
 }
 
-export const DECISION_STYLE: Record<Decision, { cls: string; glow: string; icon: IconName; word: string; publicWord: string }> = {
-  GREEN: { cls: 'border-go/60 bg-go/15 text-go', glow: 'shadow-[0_0_18px_-6px_var(--color-go)]', icon: 'check', word: 'GREEN', publicWord: 'Uygun görünüyor' },
-  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', glow: 'shadow-[0_0_18px_-6px_var(--color-caution)]', icon: 'alert', word: 'YELLOW', publicWord: 'Dikkat: ek kontrol gerekiyor' },
-  RED: { cls: 'border-stop/60 bg-stop/15 text-stop', glow: 'shadow-[0_0_18px_-6px_var(--color-stop)]', icon: 'stop', word: 'RED', publicWord: 'Kısıtlar sağlanmıyor' },
-  GRAY: { cls: 'border-unknown/60 bg-unknown/10 text-unknown', glow: '', icon: 'question', word: 'GRAY', publicWord: 'Belirsiz / veri yetersiz' },
+/** Visual style per decision. `word` is the verbatim decision code and is never translated. */
+export const DECISION_STYLE: Record<Decision, { cls: string; glow: string; icon: IconName; word: string }> = {
+  GREEN: { cls: 'border-go/60 bg-go/15 text-go', glow: 'shadow-[0_0_18px_-6px_var(--color-go)]', icon: 'check', word: 'GREEN' },
+  YELLOW: { cls: 'border-caution/60 bg-caution/15 text-caution', glow: 'shadow-[0_0_18px_-6px_var(--color-caution)]', icon: 'alert', word: 'YELLOW' },
+  RED: { cls: 'border-stop/60 bg-stop/15 text-stop', glow: 'shadow-[0_0_18px_-6px_var(--color-stop)]', icon: 'stop', word: 'RED' },
+  GRAY: { cls: 'border-unknown/60 bg-unknown/10 text-unknown', glow: '', icon: 'question', word: 'GRAY' },
 };
+
+const DECISION_WORDS = defineStrings<{ public: Record<Decision, string>; short: Record<Decision, string> }>({
+  en: {
+    public: { GREEN: 'Looks suitable', YELLOW: 'Caution: extra checks needed', RED: 'Constraints not met', GRAY: 'Uncertain / not enough data' },
+    short: {
+      GREEN: 'nominal + conservative passed',
+      YELLOW: 'nominal passed; conservative violation or < 200 km scan',
+      RED: 'nominal violation',
+      GRAY: 'insufficient data/validation',
+    },
+  },
+  tr: {
+    public: { GREEN: 'Uygun görünüyor', YELLOW: 'Dikkat: ek kontrol gerekiyor', RED: 'Kısıtlar sağlanmıyor', GRAY: 'Belirsiz / veri yetersiz' },
+    short: {
+      GREEN: 'nominal + ihtiyatlı geçti',
+      YELLOW: 'nominal geçti; ihtiyatlı ihlal veya < 200 km tarama',
+      RED: 'nominal ihlal',
+      GRAY: 'veri/doğrulama yetersiz',
+    },
+  },
+});
+
+/** Plain-language decision wording (Public mode) in the current language. */
+export function decisionPublicWord(status: Decision): string {
+  return pick(DECISION_WORDS).public[status] ?? pick(DECISION_WORDS).public.GRAY;
+}
+
+/** Short technical decision wording (Engineer mode) in the current language. */
+export function decisionShort(status: Decision): string {
+  return pick(DECISION_WORDS).short[status] ?? pick(DECISION_WORDS).short.GRAY;
+}
 
 /** Decision is conveyed by icon + word + colour (never colour alone). */
 export function DecisionBadge({ status, size = 'md' }: { status: Decision; size?: 'sm' | 'md' | 'lg' }) {
@@ -85,31 +118,42 @@ export function DecisionBadge({ status, size = 'md' }: { status: Decision; size?
     <span className={`inline-flex items-center gap-1.5 rounded-lg border font-semibold ${s.cls} ${size === 'lg' ? s.glow : ''} ${sizing}`} data-decision={status}>
       <Icon name={s.icon} className={size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'} />
       <span className="font-mono tracking-wide">{s.word}</span>
-      <span className="font-normal opacity-90">· {mode === 'public' ? s.publicWord : decisionShort(status)}</span>
+      <span className="font-normal opacity-90">· {mode === 'public' ? decisionPublicWord(status) : decisionShort(status)}</span>
     </span>
   );
 }
 
-function decisionShort(status: Decision): string {
-  return {
-    GREEN: 'nominal + ihtiyatlı geçti',
-    YELLOW: 'nominal geçti; ihtiyatlı ihlal veya < 200 km tarama',
-    RED: 'nominal ihlal',
-    GRAY: 'veri/doğrulama yetersiz',
-  }[status];
-}
+const UI_STR = defineStrings({
+  en: {
+    action: 'What to do:',
+    publicAction: 'What you can do:',
+    technicalDetails: 'Technical details',
+    code: 'Code:',
+    technicalAction: 'Technical step:',
+    newTab: '(opens in a new tab)',
+  },
+  tr: {
+    action: 'Yapılabilecek:',
+    publicAction: 'Ne yapabilirsiniz:',
+    technicalDetails: 'Teknik detaylar',
+    code: 'Kod:',
+    technicalAction: 'Teknik işlem:',
+    newTab: '(yeni sekmede açılır)',
+  },
+});
 
 /**
  * Error / missing-data notice.
- * Mühendis: technical title + verbatim code chip + engineer text + command action.
- * Halk: plain-language heading and text; the verbatim code, engineer text and command action are
- * kept (never removed) inside a keyboard-accessible “Teknik detaylar” disclosure.
+ * Engineer: technical title + verbatim code chip + engineer text + command action.
+ * Public: plain-language heading and text; the verbatim code, engineer text and command action are
+ * kept (never removed) inside a keyboard-accessible “Technical details” disclosure.
  * `focusOnMount` moves focus to the notice (e.g. after a failed submit) for keyboard/screen-reader users.
  */
 export function Notice({ explained, children, compact = false, focusOnMount = false }: {
   explained: Explained; children?: ReactNode; compact?: boolean; focusOnMount?: boolean;
 }) {
   const { mode } = useApp();
+  const s = useStrings(UI_STR);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (focusOnMount) ref.current?.focus();
@@ -137,21 +181,21 @@ export function Notice({ explained, children, compact = false, focusOnMount = fa
           {!compact && <p className="text-ink/90">{engineer ? explained.engineerText : explained.publicText}</p>}
           {engineer && !compact && explained.action && (
             <p className="text-muted">
-              Yapılabilecek: <span className="mono break-all text-ink">{explained.action}</span>
+              {s.action} <span className="mono break-all text-ink">{explained.action}</span>
             </p>
           )}
           {!engineer && !compact && explained.publicAction && (
-            <p className="text-muted">Ne yapabilirsiniz: <span className="text-ink">{explained.publicAction}</span></p>
+            <p className="text-muted">{s.publicAction} <span className="text-ink">{explained.publicAction}</span></p>
           )}
           {children}
           {!engineer && (
             <details className="group text-xs text-muted">
-              <summary className="cursor-pointer select-none rounded font-medium text-ink/80 hover:text-ink">Teknik detaylar</summary>
+              <summary className="cursor-pointer select-none rounded font-medium text-ink/80 hover:text-ink">{s.technicalDetails}</summary>
               <div className="mt-1 space-y-1 border-l-2 border-line pl-2">
-                <p>Kod: <span className="chip border-line mono text-ink">{explained.code}</span></p>
+                <p>{s.code} <span className="chip border-line mono text-ink">{explained.code}</span></p>
                 {explained.title !== headingFor(explained, 'public') && <p>{explained.title}</p>}
                 <p className="break-words">{explained.engineerText}</p>
-                {explained.action && <p>Teknik işlem: <span className="mono break-all text-ink">{explained.action}</span></p>}
+                {explained.action && <p>{s.technicalAction} <span className="mono break-all text-ink">{explained.action}</span></p>}
               </div>
             </details>
           )}
@@ -187,11 +231,12 @@ export function KeyValue({ items, dense = false }: { items: [string, ReactNode][
 }
 
 export function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  const s = useStrings(UI_STR);
   return (
     <a className="link inline-flex items-center gap-1" href={href} target="_blank" rel="noopener noreferrer">
       {children}
       <Icon name="external" className="h-3.5 w-3.5" />
-      <span className="sr-only">(yeni sekmede açılır)</span>
+      <span className="sr-only">{s.newTab}</span>
     </a>
   );
 }

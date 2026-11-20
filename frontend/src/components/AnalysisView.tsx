@@ -9,6 +9,52 @@ import { formatUtc } from '../lib/utc';
 import { useCursor } from '../state/Cursor';
 import { isActive, useApp, type AnalysisEntry } from '../state/AppState';
 import { EmptyState, Icon, Notice } from './ui';
+import { defineStrings, useStrings } from '../i18n';
+
+const STR = defineStrings({
+  en: {
+    shownAnalysis: 'Analysis shown',
+    choose: '— select —',
+    slip: ' · slip',
+    queued: 'queued',
+    noAnalysisTitle: 'No analysis to show',
+    noAnalysis: 'First start an analysis with real NASA data in the Mission Setup tab and select it from the list. Without data no chart is drawn; no sample/fake curve is shown.',
+    computing: (id: string, status: string) => `Analysis ${id} is still being computed (${status}). Charts are drawn when the result arrives.`,
+    noHorizon: 'This analysis could not produce a terrain horizon; no chart is drawn.',
+    fetching: 'Fetching the horizon and timeline…',
+    noChartDataTitle: 'No chart data for this analysis',
+    noChartData: 'The server returned no horizon or timeline (e.g. partial horizon → GRAY). No values are invented.',
+    emptyTimelineTitle: 'Timeline empty',
+    emptyTimeline: 'No time samples for this scenario (e.g. GRAY because of a partial horizon).',
+    slipLegend: 'Landing slip scenario',
+    hours: 'h',
+    timeLabel: (i: number, n: number) => `Time (UTC) — sample ${i} / ${n}`,
+    previous: 'Previous time step',
+    next: 'Next time step',
+    hint: (start: string, end: string) => `You can also navigate with the arrow keys, Home/End and PageUp/PageDown. Scenario: ${start} → ${end}.`,
+  },
+  tr: {
+    shownAnalysis: 'Gösterilen analiz',
+    choose: '— seçin —',
+    slip: ' · kayma',
+    queued: 'kuyrukta',
+    noAnalysisTitle: 'Gösterilecek analiz yok',
+    noAnalysis: 'Önce Görev Kurulumu sekmesinde gerçek NASA verisiyle bir analiz başlatın ve listeden seçin. Veri yoksa grafik çizilmez; örnek/sahte eğri gösterilmez.',
+    computing: (id: string, status: string) => `Analiz ${id} henüz hesaplanıyor (${status}). Grafikler sonuç gelince çizilir.`,
+    noHorizon: 'Bu analiz arazi ufku üretemedi; grafik çizilmez.',
+    fetching: 'Ufuk ve zaman çizelgesi alınıyor…',
+    noChartDataTitle: 'Bu analiz için grafik verisi yok',
+    noChartData: 'Sunucu ufuk veya zaman çizelgesi döndürmedi (ör. kısmi ufuk → GRAY). Değer uydurulmaz.',
+    emptyTimelineTitle: 'Zaman çizelgesi boş',
+    emptyTimeline: 'Bu senaryo için zaman örneği yok (ör. kısmi ufuk nedeniyle GRAY).',
+    slipLegend: 'İniş kayma senaryosu',
+    hours: 'sa',
+    timeLabel: (i: number, n: number) => `Zaman (UTC) — örnek ${i} / ${n}`,
+    previous: 'Önceki zaman adımı',
+    next: 'Sonraki zaman adımı',
+    hint: (start: string, end: string) => `Ok tuşları, Home/End ve PageUp/PageDown ile de gezinebilirsiniz. Senaryo: ${start} → ${end}.`,
+  },
+});
 
 export interface AnalysisData {
   entry: AnalysisEntry;
@@ -39,17 +85,18 @@ export function useAnalysisData(entry: AnalysisEntry | null): AnalysisData | nul
 
 export function AnalysisPicker() {
   const { list, selectedId, select } = useApp();
+  const s = useStrings(STR);
   const id = useId();
   if (list.length === 0) return null;
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-      <label htmlFor={id} className="text-sm font-medium text-ink">Gösterilen analiz</label>
+      <label htmlFor={id} className="text-sm font-medium text-ink">{s.shownAnalysis}</label>
       <select id={id} className="input sm:max-w-xl" value={selectedId ?? ''} onChange={(e) => select(e.target.value || null)}>
-        <option value="">— seçin —</option>
+        <option value="">{s.choose}</option>
         {list.map((e) => (
           <option key={e.id} value={e.id}>
             {shortId(e.id)} · {formatLatLon(e.input.latitude, e.input.longitude)} · {formatUtc(e.input.landing_utc)}
-            {e.kind === 'shift' ? ' · kayma' : ''} · {jobDecision(e.job) ?? e.job?.status ?? 'kuyrukta'}
+            {e.kind === 'shift' ? s.slip : ''} · {jobDecision(e.job) ?? e.job?.status ?? s.queued}
           </option>
         ))}
       </select>
@@ -59,18 +106,15 @@ export function AnalysisPicker() {
 
 /** Shared empty / loading / error states for Sky View and Timeline. */
 export function AnalysisGate({ data, need, children }: { data: AnalysisData | null; need: 'horizon' | 'timeline' | 'both'; children: ReactNode }) {
+  const s = useStrings(STR);
   if (!data) {
-    return (
-      <EmptyState title="Gösterilecek analiz yok">
-        Önce Mission Setup sekmesinde gerçek NASA verisiyle bir analiz başlatın ve listeden seçin. Veri yoksa grafik çizilmez; örnek/sahte eğri gösterilmez.
-      </EmptyState>
-    );
+    return <EmptyState title={s.noAnalysisTitle}>{s.noAnalysis}</EmptyState>;
   }
   const { entry } = data;
   if (isActive(entry)) {
     return (
       <p role="status" className="flex items-center gap-2 rounded-md border border-accent/40 bg-accent/5 p-3 text-sm">
-        <Icon name="spinner" className="h-4 w-4 text-accent" /> Analiz {shortId(entry.id)} henüz hesaplanıyor ({entry.job?.status ?? 'queued'}). Grafikler sonuç gelince çizilir.
+        <Icon name="spinner" className="h-4 w-4 text-accent" /> {s.computing(shortId(entry.id), entry.job?.status ?? 'queued')}
       </p>
     );
   }
@@ -82,7 +126,7 @@ export function AnalysisGate({ data, need, children }: { data: AnalysisData | nu
   if (result.error_code && !result.horizon) {
     return (
       <Notice explained={explainCode(result.error_code)}>
-        <p className="text-xs text-muted">Bu analiz arazi ufku üretemedi; grafik çizilmez.{result.reason ? ` (${result.reason})` : ''}</p>
+        <p className="text-xs text-muted">{s.noHorizon}{result.reason ? ` (${result.reason})` : ''}</p>
       </Notice>
     );
   }
@@ -91,10 +135,10 @@ export function AnalysisGate({ data, need, children }: { data: AnalysisData | nu
   const missing = (need !== 'timeline' && !data.horizon) || (need !== 'horizon' && !data.timeline);
   if (missing) {
     return data.loading ? (
-      <p role="status" className="flex items-center gap-2 text-sm text-muted"><Icon name="spinner" /> Ufuk ve zaman çizelgesi alınıyor…</p>
+      <p role="status" className="flex items-center gap-2 text-sm text-muted"><Icon name="spinner" /> {s.fetching}</p>
     ) : (
-      <EmptyState title="Bu analiz için grafik verisi yok">
-        {result.mission?.reason ?? 'Sunucu ufuk veya zaman çizelgesi döndürmedi (ör. kısmi ufuk → GRAY). Değer uydurulmaz.'}
+      <EmptyState title={s.noChartDataTitle}>
+        {result.mission?.reason ?? s.noChartData}
       </EmptyState>
     );
   }
@@ -104,13 +148,14 @@ export function AnalysisGate({ data, need, children }: { data: AnalysisData | nu
 /** Scenario selector + accessible time scrubber bound to the shared cursor. */
 export function Scrubber({ data }: { data: AnalysisData }) {
   const cursor = useCursor();
+  const t = useStrings(STR);
   const sliderId = useId();
   const scenarios = data.timeline?.scenarios ?? [];
   const shifts = scenarios.map((s) => s.shift_hours);
   const shift = cursor.shiftFor(data.entry.id, shifts);
   const scenario = scenarios.find((s) => s.shift_hours === shift) ?? scenarios[0];
   if (!scenario || scenario.timeline.length === 0) {
-    return <EmptyState title="Zaman çizelgesi boş">Bu senaryo için zaman örneği yok (ör. kısmi ufuk nedeniyle GRAY).</EmptyState>;
+    return <EmptyState title={t.emptyTimelineTitle}>{t.emptyTimeline}</EmptyState>;
   }
   const n = scenario.timeline.length;
   const index = cursor.indexFor(data.entry.id, scenario.shift_hours, n);
@@ -120,21 +165,21 @@ export function Scrubber({ data }: { data: AnalysisData }) {
   return (
     <div className="space-y-3 rounded-lg border border-line bg-panel-2 p-3">
       <fieldset>
-        <legend className="mb-1 text-sm font-medium text-ink">İniş kayma senaryosu</legend>
+        <legend className="mb-1 text-sm font-medium text-ink">{t.slipLegend}</legend>
         <div className="flex flex-wrap gap-2">
           {scenarios.map((s) => (
             <label key={s.shift_hours} className={`chip cursor-pointer px-3 py-1.5 text-sm ${s.shift_hours === scenario.shift_hours ? 'border-accent bg-accent/15 text-accent' : 'border-line text-ink'}`}>
               <input type="radio" className="sr-only" name={`${sliderId}-shift`} checked={s.shift_hours === scenario.shift_hours}
                 onChange={() => cursor.setShift(data.entry.id, s.shift_hours)} />
-              +{s.shift_hours} sa
+              +{s.shift_hours} {t.hours}
             </label>
           ))}
         </div>
       </fieldset>
       <div>
-        <label htmlFor={sliderId} className="label">Zaman (UTC) — örnek {index + 1} / {n}</label>
+        <label htmlFor={sliderId} className="label">{t.timeLabel(index + 1, n)}</label>
         <div className="flex items-center gap-2">
-          <button type="button" className="btn px-2" onClick={() => set(index - 1)} disabled={index === 0} aria-label="Önceki zaman adımı">◀</button>
+          <button type="button" className="btn px-2" onClick={() => set(index - 1)} disabled={index === 0} aria-label={t.previous}>◀</button>
           <input
             id={sliderId}
             type="range"
@@ -146,10 +191,10 @@ export function Scrubber({ data }: { data: AnalysisData }) {
             aria-valuetext={point ? formatUtc(point.utc) : undefined}
             className="h-2 w-full cursor-pointer accent-[var(--color-accent)]"
           />
-          <button type="button" className="btn px-2" onClick={() => set(index + 1)} disabled={index === n - 1} aria-label="Sonraki zaman adımı">▶</button>
+          <button type="button" className="btn px-2" onClick={() => set(index + 1)} disabled={index === n - 1} aria-label={t.next}>▶</button>
         </div>
         <p className="mono mt-1 text-sm text-ink" aria-live="polite">{point ? formatUtc(point.utc, true) : '—'}</p>
-        <p className="hint">Ok tuşları, Home/End ve PageUp/PageDown ile de gezinebilirsiniz. Senaryo: {formatUtc(scenario.start_utc)} → {formatUtc(scenario.end_utc)}.</p>
+        <p className="hint">{t.hint(formatUtc(scenario.start_utc), formatUtc(scenario.end_utc))}</p>
       </div>
     </div>
   );

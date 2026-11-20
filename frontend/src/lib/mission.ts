@@ -1,5 +1,55 @@
 import type { AnalysisInput, Constraints, UncertaintyMode } from '../api/types';
 import { PRODUCT_END_MS, utcPartsToMs, msToIsoZ } from './utc';
+import { defineStrings, getLang, type Lang } from '../i18n';
+
+/** Validation messages in the interface language. They never affect the request that is built. */
+const MSG = defineStrings({
+  en: {
+    required: (label: string) => `${label} is required`,
+    notNumber: (label: string) => `${label} must be a number`,
+    range: (label: string, min: number, max: number) => `${label} must be within ${min} … ${max}`,
+    integer: (label: string) => `${label} must be a whole number`,
+    labels: {
+      latitude: 'Latitude', longitude: 'Longitude', buffer: 'Buffer time', step: 'Time step', radius: 'Horizon radius',
+      sunHeight: 'Solar panel height', earthHeight: 'DTE antenna height', errK: 'ERR k', dark: 'Darkness threshold',
+      maxDark: 'Maximum darkness', minSun: 'Minimum Sun visibility (%)', minDte: 'Minimum DTE (%)', maxGap: 'Maximum DTE outage',
+      maxSlope: 'Maximum slope', footprint: 'Slope footprint radius',
+    },
+    invalidUtc: 'Enter a valid UTC date and time',
+    utcRange: 'Supported range 2026-01-01 … 2035-12-31 UTC',
+    duration: 'Mission duration must be greater than 0 and ≤ 720 hours',
+    shiftsNone: 'Select at least one scenario',
+    shiftsMax: 'At most 5 slip scenarios',
+    shiftsRange: 'Slips must be whole hours from 0 … 168',
+    constraints: 'Enter at least one mission constraint',
+    budget: (points: number, scenarios: number) =>
+      `Sampling budget exceeded: ${points} points × ${scenarios} scenarios (limit 6000 / total 12000). Use a larger step or a shorter duration.`,
+    pastEnd: 'Mission end extends beyond 2035-12-31 UTC',
+  },
+  tr: {
+    required: (label: string) => `${label} gerekli`,
+    notNumber: (label: string) => `${label} sayı olmalı`,
+    range: (label: string, min: number, max: number) => `${label} ${min} … ${max} aralığında olmalı`,
+    integer: (label: string) => `${label} tam sayı olmalı`,
+    labels: {
+      latitude: 'Enlem', longitude: 'Boylam', buffer: 'Tampon süre', step: 'Zaman adımı', radius: 'Ufuk yarıçapı',
+      sunHeight: 'Güneş paneli yüksekliği', earthHeight: 'DTE anten yüksekliği', errK: 'ERR k', dark: 'Karanlık eşiği',
+      maxDark: 'Azami karanlık', minSun: 'Asgari Güneş görünürlüğü (%)', minDte: 'Asgari DTE (%)', maxGap: 'Azami DTE kesintisi',
+      maxSlope: 'Azami eğim', footprint: 'Eğim ayak izi yarıçapı',
+    },
+    invalidUtc: 'Geçerli bir UTC tarih ve saat girin',
+    utcRange: 'Desteklenen aralık 2026-01-01 … 2035-12-31 UTC',
+    duration: 'Görev süresi 0’dan büyük ve ≤ 720 saat olmalı',
+    shiftsNone: 'En az bir senaryo seçin',
+    shiftsMax: 'En fazla 5 kayma senaryosu',
+    shiftsRange: 'Kaymalar 0 … 168 tam saat olmalı',
+    constraints: 'En az bir görev kısıtı girin',
+    budget: (points: number, scenarios: number) =>
+      `Örnekleme bütçesi aşıldı: ${points} nokta × ${scenarios} senaryo (sınır 6000 / toplam 12000). Adımı büyütün veya süreyi kısaltın.`,
+    pastEnd: 'Görev sonu 2035-12-31 UTC sonrasına taşıyor',
+  },
+});
+type Msg = (typeof MSG)['en'];
 
 /** Limits mirrored from backend/main.py AnalysisInput / Constraints (keep in sync). */
 export const LIMITS = {
@@ -79,15 +129,15 @@ function num(value: string): number | null {
   return Number.isFinite(n) ? n : NaN;
 }
 
-function check(errors: FieldErrors, key: keyof FieldErrors, value: number | null, min: number, max: number,
+function check(t: Msg, errors: FieldErrors, key: keyof FieldErrors, value: number | null, min: number, max: number,
                label: string, required = true, integer = false) {
   if (value === null) {
-    if (required) errors[key] = `${label} gerekli`;
+    if (required) errors[key] = t.required(label);
     return;
   }
-  if (Number.isNaN(value)) errors[key] = `${label} sayı olmalı`;
-  else if (value < min || value > max) errors[key] = `${label} ${min} … ${max} aralığında olmalı`;
-  else if (integer && !Number.isInteger(value)) errors[key] = `${label} tam sayı olmalı`;
+  if (Number.isNaN(value)) errors[key] = t.notNumber(label);
+  else if (value < min || value > max) errors[key] = t.range(label, min, max);
+  else if (integer && !Number.isInteger(value)) errors[key] = t.integer(label);
 }
 
 export interface BuiltRequest {
@@ -97,37 +147,42 @@ export interface BuiltRequest {
   scenarioCount: number;
 }
 
-/** Validates the form against backend limits and builds the exact request body. */
-export function buildRequest(form: MissionForm): BuiltRequest {
+/**
+ * Validates the form against backend limits and builds the exact request body.
+ * `lang` only selects the wording of the validation messages; the body is identical in every language.
+ */
+export function buildRequest(form: MissionForm, lang: Lang = getLang()): BuiltRequest {
+  const t = MSG[lang];
+  const L = t.labels;
   const errors: FieldErrors = {};
   const lat = num(form.latitude);
   const lon = num(form.longitude);
-  check(errors, 'latitude', lat, LIMITS.latitude.min, LIMITS.latitude.max, 'Enlem');
-  check(errors, 'longitude', lon, LIMITS.longitude.min, LIMITS.longitude.max, 'Boylam');
+  check(t, errors, 'latitude', lat, LIMITS.latitude.min, LIMITS.latitude.max, L.latitude);
+  check(t, errors, 'longitude', lon, LIMITS.longitude.min, LIMITS.longitude.max, L.longitude);
   const startMs = utcPartsToMs(form.landing_date, form.landing_time);
-  if (startMs === null) errors.landing_date = 'Geçerli bir UTC tarih ve saat girin';
-  else if (startMs < Date.UTC(2026, 0, 1) || startMs >= PRODUCT_END_MS) errors.landing_date = 'Desteklenen aralık 2026-01-01 … 2035-12-31 UTC';
+  if (startMs === null) errors.landing_date = t.invalidUtc;
+  else if (startMs < Date.UTC(2026, 0, 1) || startMs >= PRODUCT_END_MS) errors.landing_date = t.utcRange;
   const duration = num(form.duration_hours);
-  if (duration === null || Number.isNaN(duration) || duration <= 0 || duration > 720) errors.duration_hours = 'Görev süresi 0’dan büyük ve ≤ 720 saat olmalı';
+  if (duration === null || Number.isNaN(duration) || duration <= 0 || duration > 720) errors.duration_hours = t.duration;
   const buffer = num(form.buffer_hours);
-  check(errors, 'buffer_hours', buffer, 0, 168, 'Tampon süre');
+  check(t, errors, 'buffer_hours', buffer, 0, 168, L.buffer);
   const step = num(form.step_minutes);
-  check(errors, 'step_minutes', step, 10, 120, 'Zaman adımı', true, true);
+  check(t, errors, 'step_minutes', step, 10, 120, L.step, true, true);
   const radius = num(form.horizon_radius_km);
-  check(errors, 'horizon_radius_km', radius, 10, 200, 'Ufuk yarıçapı');
+  check(t, errors, 'horizon_radius_km', radius, 10, 200, L.radius);
   const sunH = num(form.sun_observer_height_m);
   const earthH = num(form.earth_observer_height_m);
-  check(errors, 'sun_observer_height_m', sunH, 0, 100, 'Güneş paneli yüksekliği');
-  check(errors, 'earth_observer_height_m', earthH, 0, 100, 'DTE anten yüksekliği');
+  check(t, errors, 'sun_observer_height_m', sunH, 0, 100, L.sunHeight);
+  check(t, errors, 'earth_observer_height_m', earthH, 0, 100, L.earthHeight);
   const k = num(form.err_k);
-  check(errors, 'err_k', k, 0, 3, 'ERR k');
+  check(t, errors, 'err_k', k, 0, 3, L.errK);
   const dark = num(form.dark_fraction_threshold);
-  check(errors, 'dark_fraction_threshold', dark, 0, 0.1, 'Karanlık eşiği');
+  check(t, errors, 'dark_fraction_threshold', dark, 0, 0.1, L.dark);
 
   const shifts = [...new Set(form.shifts)].sort((a, b) => a - b);
-  if (shifts.length === 0) errors.shifts = 'En az bir senaryo seçin';
-  else if (shifts.length > 5) errors.shifts = 'En fazla 5 kayma senaryosu';
-  else if (shifts.some((s) => !Number.isInteger(s) || s < 0 || s > 168)) errors.shifts = 'Kaymalar 0 … 168 tam saat olmalı';
+  if (shifts.length === 0) errors.shifts = t.shiftsNone;
+  else if (shifts.length > 5) errors.shifts = t.shiftsMax;
+  else if (shifts.some((s) => !Number.isInteger(s) || s < 0 || s > 168)) errors.shifts = t.shiftsRange;
 
   const maxDark = num(form.max_darkness_hours);
   const minSun = num(form.min_sun_fraction_pct);
@@ -135,14 +190,14 @@ export function buildRequest(form: MissionForm): BuiltRequest {
   const maxGap = num(form.max_dte_gap_hours);
   const maxSlope = num(form.max_slope_deg);
   const footprint = num(form.slope_footprint_radius_m);
-  check(errors, 'max_darkness_hours', maxDark, 0, 720, 'Azami karanlık', false);
-  check(errors, 'min_sun_fraction_pct', minSun, 0, 100, 'Asgari Güneş görünürlüğü (%)', false);
-  check(errors, 'min_dte_fraction_pct', minDte, 0, 100, 'Asgari DTE (%)', false);
-  check(errors, 'max_dte_gap_hours', maxGap, 0, 720, 'Azami DTE kesintisi', false);
-  check(errors, 'max_slope_deg', maxSlope, 0, 90, 'Azami eğim', false);
-  check(errors, 'slope_footprint_radius_m', footprint, 5, 200, 'Eğim ayak izi yarıçapı');
+  check(t, errors, 'max_darkness_hours', maxDark, 0, 720, L.maxDark, false);
+  check(t, errors, 'min_sun_fraction_pct', minSun, 0, 100, L.minSun, false);
+  check(t, errors, 'min_dte_fraction_pct', minDte, 0, 100, L.minDte, false);
+  check(t, errors, 'max_dte_gap_hours', maxGap, 0, 720, L.maxGap, false);
+  check(t, errors, 'max_slope_deg', maxSlope, 0, 90, L.maxSlope, false);
+  check(t, errors, 'slope_footprint_radius_m', footprint, 5, 200, L.footprint);
   if ([maxDark, minSun, minDte, maxGap, maxSlope].every((v) => v === null)) {
-    errors.constraints = 'En az bir görev kısıtı girin';
+    errors.constraints = t.constraints;
   }
 
   let points: number | null = null;
@@ -150,11 +205,11 @@ export function buildRequest(form: MissionForm): BuiltRequest {
   if (duration !== null && buffer !== null && step !== null && !errors.duration_hours && !errors.buffer_hours && !errors.step_minutes) {
     points = Math.ceil(((duration + buffer) * 60) / step) + 1;
     if (points > LIMITS.max_points || points * scenarioCount > LIMITS.max_points_total) {
-      errors.budget = `Örnekleme bütçesi aşıldı: ${points} nokta × ${scenarioCount} senaryo (sınır 6000 / toplam 12000). Adımı büyütün veya süreyi kısaltın.`;
+      errors.budget = t.budget(points, scenarioCount);
     }
     if (startMs !== null && !errors.landing_date) {
       const end = startMs + (duration + buffer + Math.max(...shifts, 0)) * 3600_000;
-      if (end >= PRODUCT_END_MS) errors.budget = 'Görev sonu 2035-12-31 UTC sonrasına taşıyor';
+      if (end >= PRODUCT_END_MS) errors.budget = t.pastEnd;
     }
   }
 

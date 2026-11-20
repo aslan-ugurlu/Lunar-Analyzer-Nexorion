@@ -1,6 +1,6 @@
 /**
- * §11.4 external deep links. Schemas verified 2026-11-14 by reading each app's own
- * JavaScript and loading the links in headless Chrome (see README "Deep-link doğrulaması").
+ * External map deep links. Schemas verified 2026-11-14 by reading each app's own
+ * JavaScript and loading the links in headless Chrome (see the README deep-link check).
  *
  * LROC QuickMap: `?proj=27&center=<lon>,<lat>&resolution=<m/px>`
  *   proj 27 = "Stereographic (South Pole)" IAU2000:30120 (+a=b=1737400, lat_0=-90, lon_0=0);
@@ -14,6 +14,8 @@
  *   4/4 loads, the other in 2/7; the rest opened the pole overview) -> labelled so.
  *   Moon Trek does not document which lunar frame its coordinates use.
  */
+
+import { defineStrings, pick } from '../i18n';
 
 const MOON_RADIUS_M = 1737400;
 
@@ -54,14 +56,31 @@ export function moonTrekUrl(lat: number, lon: number): string | null {
   return `https://trek.nasa.gov/moon/#v=0.1&x=${fixed(x, 1)}&y=${fixed(y, 1)}&z=8&p=${projection}&d=&b=moon`;
 }
 
+const LINK_STR = defineStrings({
+  en: {
+    quickMap: 'Open in LROC QuickMap',
+    quickMapCaveat: 'South-pole stereographic view, centred on this coordinate (20 m/pixel).',
+    moonTrek: 'Open in NASA Moon Trek',
+    moonTrekCaveat: 'Opens the south-pole view; centring on the coordinate is not guaranteed on every load (sometimes the general polar view opens).',
+  },
+  tr: {
+    quickMap: 'LROC QuickMap’te Aç',
+    quickMapCaveat: 'Güney kutbu stereografik görünüm, bu koordinata ortalanır (20 m/piksel).',
+    moonTrek: 'NASA Moon Trek’te Aç',
+    moonTrekCaveat: 'Güney kutbu görünümü açılır; koordinata odaklanma her açılışta garanti değil (bazen kutup genel görünümü açılır).',
+  },
+});
+
+/** Map links for a coordinate; labels and caveats follow the interface language. */
 export function siteLinks(lat: number, lon: number): SiteLink[] {
+  const s = pick(LINK_STR);
   const links: SiteLink[] = [];
   const qm = quickMapUrl(lat, lon);
   if (qm) {
     links.push({
       href: qm,
-      label: 'LROC QuickMap’te Aç',
-      caveat: 'Güney kutbu stereografik görünüm, bu koordinata ortalanır (20 m/piksel).',
+      label: s.quickMap,
+      caveat: s.quickMapCaveat,
       centering: 'VERIFIED',
     });
   }
@@ -69,8 +88,8 @@ export function siteLinks(lat: number, lon: number): SiteLink[] {
   if (trek) {
     links.push({
       href: trek,
-      label: 'NASA Moon Trek’te Aç',
-      caveat: 'Güney kutbu görünümü açılır; koordinata odaklanma her açılışta garanti değil (bazen kutup genel görünümü açılır).',
+      label: s.moonTrek,
+      caveat: s.moonTrekCaveat,
       centering: 'UNRELIABLE',
     });
   }

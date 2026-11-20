@@ -7,6 +7,20 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BASE = process.env.APP_URL ?? 'http://localhost:5173';
+// The main flow runs in Turkish (?lang=tr), whose wording is unchanged from the original UI, so the
+// selectors below stay stable; the English default interface is checked at the end (same decision,
+// English tab names, axe on every tab in both modes).
+const TABS = {
+  tr: { setup: 'Görev Kurulumu', sky: 'Gökyüzü Görünümü', timeline: 'Zaman Çizelgesi', compare: 'Karşılaştır', data: 'Veri ve Doğrulama' },
+  en: { setup: 'Mission Setup', sky: 'Sky View', timeline: 'Timeline', compare: 'Compare', data: 'Data & Validation' },
+};
+const MODES = { tr: ['Halk', 'Mühendis'], en: ['Public', 'Engineer'] };
+const tab = (page, key, lang = 'tr') => page.getByRole('tab', { name: TABS[lang][key], exact: true });
+function withLang(url, lang) {
+  const u = new URL(url);
+  u.searchParams.set('lang', lang);
+  return u.toString();
+}
 const OUT = process.argv[2] ?? '../logs/e2e';
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const SITES = (process.env.SITES ?? '-89.54,0').split(';').map((s) => s.split(',').map(Number));
@@ -27,7 +41,7 @@ page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text(
 page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
 try {
-  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.goto(withLang(BASE, 'tr'), { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Lunar Analyzer', exact: true }).waitFor();
   await page.getByText('Online', { exact: true }).waitFor({ timeout: 15000 });
   note('header + backend Online chip visible');
@@ -58,7 +72,7 @@ try {
   note(`decision badge shown: ${decision}`);
   await page.screenshot({ path: join(OUT, '02_result_public.png'), fullPage: true });
 
-  await page.getByRole('tab', { name: 'Sky View' }).click();
+  await tab(page, 'sky').click();
   await page.locator('.main-svg').first().waitFor({ timeout: 30000 });
   await page.waitForTimeout(800);
   note(`sky view traces: ${await page.locator('.scatterlayer .trace').count()}`);
@@ -67,7 +81,7 @@ try {
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(OUT, '04_skyview_sun_zoom.png'), fullPage: false });
 
-  await page.getByRole('tab', { name: 'Timeline' }).click();
+  await tab(page, 'timeline').click();
   await page.locator('.main-svg').first().waitFor({ timeout: 30000 });
   const slider = page.getByRole('slider').first();
   await slider.focus();
@@ -103,16 +117,16 @@ try {
   await jsonDl.saveAs(jsonPath);
   const exported = JSON.parse((await import('node:fs')).readFileSync(jsonPath, 'utf-8'));
   note(`json export: timeline=${exported.timeline.length} frame=${exported.meta.frame} layers=${exported.meta.dem_layers}`);
-  await page.getByRole('tab', { name: 'Sky View' }).click();
+  await tab(page, 'sky').click();
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(OUT, '07_skyview_engineer.png'), fullPage: true });
-  await page.getByRole('tab', { name: 'Mission Setup' }).click();
+  await tab(page, 'setup').click();
   const decisionEngineer = await page.locator('[data-decision]').first().getAttribute('data-decision');
   note(`decision after mode switch: ${decisionEngineer} (badges on timeline tab: ${decision2})`);
   if (decisionEngineer !== decision) throw new Error('Decision changed when switching mode!');
 
   // Real /compare between the two site analyses (same mission profile).
-  await page.getByRole('tab', { name: 'Compare' }).click();
+  await tab(page, 'compare').click();
   // The two site analyses share one mission profile; the shift child (different shifts) must not be mixed in.
   const siteBoxes = page.locator('label', { hasNotText: 'kayma' }).locator('input[type=checkbox]');
   const boxes = await siteBoxes.count();
@@ -126,26 +140,37 @@ try {
   } else {
     note(`compare skipped: only ${boxes} comparable analyses`);
   }
-  await page.getByRole('tab', { name: 'Data & Validation' }).click();
+  await tab(page, 'data').click();
   await page.getByRole('heading', { name: /Bilimsel doğrulama/ }).waitFor();
   await page.waitForTimeout(800);
   await page.screenshot({ path: join(OUT, '10_data_validation.png'), fullPage: true });
 
-  // Automated accessibility scan (axe-core) on every tab in both modes.
+  // Automated accessibility scan (axe-core) on every tab in both modes and both languages.
+  // Switching to English (EN) must keep the same decision: language changes wording only.
   await page.addScriptTag({ path: fileURLToPath(new URL('../node_modules/axe-core/axe.min.js', import.meta.url)) });
   const axeSummary = [];
-  for (const mode of ['Halk', 'Mühendis']) {
-    await page.getByRole('button', { name: mode }).click();
-    for (const tab of ['Mission Setup', 'Sky View', 'Timeline', 'Compare', 'Data & Validation']) {
-      await page.getByRole('tab', { name: tab }).click();
-      await page.waitForTimeout(700);
-      const res = await page.evaluate(async () => {
-        const r = await window.axe.run(document, { resultTypes: ['violations'] });
-        return r.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, sample: v.nodes[0]?.target?.join(' ') }));
-      });
-      axeSummary.push({ mode, tab, violations: res });
-      const serious = res.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-      note(`axe ${mode}/${tab}: ${res.length} rule(s) violated, serious/critical: ${serious.map((v) => `${v.id}×${v.nodes}`).join(', ') || 'none'}`);
+  for (const lang of ['tr', 'en']) {
+    await page.getByRole('button', { name: lang === 'en' ? 'EN English' : 'TR Türkçe', exact: true }).click();
+    const htmlLang = await page.evaluate(() => document.documentElement.lang);
+    if (htmlLang !== lang) throw new Error(`html lang is ${htmlLang}, expected ${lang}`);
+    await tab(page, 'setup', lang).click();
+    const decisionLang = await page.locator('[data-decision]').first().getAttribute('data-decision');
+    note(`language ${lang}: html lang=${htmlLang}, decision ${decisionLang}`);
+    if (decisionLang !== decision) throw new Error(`Decision changed when switching language to ${lang}!`);
+    if (lang === 'en') await page.screenshot({ path: join(OUT, '11_setup_english.png'), fullPage: true });
+    for (const mode of MODES[lang]) {
+      await page.getByRole('button', { name: mode, exact: true }).click();
+      for (const key of Object.keys(TABS[lang])) {
+        await tab(page, key, lang).click();
+        await page.waitForTimeout(700);
+        const res = await page.evaluate(async () => {
+          const r = await window.axe.run(document, { resultTypes: ['violations'] });
+          return r.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, sample: v.nodes[0]?.target?.join(' ') }));
+        });
+        axeSummary.push({ lang, mode, tab: TABS[lang][key], violations: res });
+        const serious = res.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+        note(`axe ${lang}/${mode}/${TABS[lang][key]}: ${res.length} rule(s) violated, serious/critical: ${serious.map((v) => `${v.id}×${v.nodes}`).join(', ') || 'none'}`);
+      }
     }
   }
   writeFileSync(join(OUT, 'axe.json'), JSON.stringify(axeSummary, null, 2), 'utf-8');

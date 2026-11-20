@@ -1,4 +1,18 @@
 import { Icon, type IconName } from './ui';
+import { defineStrings, useStrings } from '../i18n';
+
+const STR = defineStrings({
+  en: {
+    nav: 'Mission wizard steps',
+    step: (n: number) => `Step ${n}:`,
+    state: { current: 'current step', done: 'completed', error: 'a field needs fixing', todo: 'not opened yet' } as Record<StepState, string>,
+  },
+  tr: {
+    nav: 'Görev sihirbazı adımları',
+    step: (n: number) => `Adım ${n}:`,
+    state: { current: 'şu anki adım', done: 'tamamlandı', error: 'düzeltilmesi gereken alan var', todo: 'henüz açılmadı' },
+  },
+});
 
 export interface WizardStepDef<K extends string> {
   key: K;
@@ -19,10 +33,11 @@ export function Stepper<K extends string>({ steps, active, states, onSelect }: {
   states: Record<K, StepState>;
   onSelect: (key: K) => void;
 }) {
-  const activeIndex = steps.findIndex((s) => s.key === active);
+  const s = useStrings(STR);
+  const activeIndex = steps.findIndex((st) => st.key === active);
   const progress = steps.length > 1 ? (activeIndex / (steps.length - 1)) * 100 : 100;
   return (
-    <nav aria-label="Görev sihirbazı adımları">
+    <nav aria-label={s.nav}>
       <div className="relative">
         <div className="absolute top-5 right-6 left-6 h-px bg-line" aria-hidden />
         <div className="absolute top-5 left-6 h-px bg-gradient-to-r from-nasa-bright to-neon transition-[width] duration-500"
@@ -38,7 +53,7 @@ export function Stepper<K extends string>({ steps, active, states, onSelect }: {
                 : state === 'done'
                   ? 'border-go/60 bg-go/10 text-go'
                   : 'border-line-strong bg-[rgb(3_8_24/0.8)] text-muted';
-            const srState = { current: 'şu anki adım', done: 'tamamlandı', error: 'düzeltilmesi gereken alan var', todo: 'henüz açılmadı' }[state];
+            const srState = s.state[state];
             return (
               <li key={step.key} className="flex justify-center">
                 <button
@@ -51,7 +66,7 @@ export function Stepper<K extends string>({ steps, active, states, onSelect }: {
                     {state === 'done' && !current ? <Icon name="check" className="h-5 w-5" /> : state === 'error' && !current ? <Icon name="alert" className="h-4.5 w-4.5" /> : i + 1}
                   </span>
                   <span className={`text-xs font-medium leading-tight sm:text-sm ${current ? 'text-ink' : 'text-muted group-hover:text-ink'}`}>
-                    <span className="sr-only">Adım {i + 1}:</span>{' '}
+                    <span className="sr-only">{s.step(i + 1)}</span>{' '}
                     <span className={current ? '' : 'sr-only sm:not-sr-only'}>{step.title}</span>{' '}
                     <span className="sr-only">({srState})</span>
                   </span>

@@ -1,5 +1,6 @@
 /**
- * Presentation-only summaries of API data for Halk / Mühendis views.
+ * Presentation-only summaries of API data for the Public / Engineer views.
+ * Export metadata and CSV column names are machine-readable and stay in English in every interface language.
  * Nothing here alters or re-scores a scientific result: every number is either
  * copied from the API or a direct descriptive statistic of API arrays.
  */

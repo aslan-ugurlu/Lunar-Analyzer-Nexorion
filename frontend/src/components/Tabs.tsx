@@ -10,11 +10,13 @@ export interface TabDef<K extends string> {
 }
 
 /** WAI-ARIA tabs: roving tabindex, Arrow/Home/End keys, manual activation on focus move. */
-export function Tabs<K extends string>({ tabs, active, onChange, idPrefix = 'tab' }: {
+export function Tabs<K extends string>({ tabs, active, onChange, idPrefix = 'tab', ariaLabel }: {
   tabs: TabDef<K>[];
   active: K;
   onChange: (key: K) => void;
   idPrefix?: string;
+  /** Accessible name of the tab list (in the interface language). */
+  ariaLabel: string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const onKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -33,7 +35,7 @@ export function Tabs<K extends string>({ tabs, active, onChange, idPrefix = 'tab
     }
   };
   return (
-    <div role="tablist" aria-label="Uygulama bölümleri"
+    <div role="tablist" aria-label={ariaLabel}
       className="glass flex gap-1 overflow-x-auto rounded-2xl p-1.5 [scrollbar-width:thin]">
       {tabs.map((tab, i) => {
         const selected = tab.key === active;

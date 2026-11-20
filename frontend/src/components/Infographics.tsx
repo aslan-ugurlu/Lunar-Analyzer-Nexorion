@@ -1,11 +1,73 @@
 import { useId } from 'react';
 import type { Mission } from '../api/types';
-import { formatHours, formatPercent } from '../lib/format';
+import { formatHours, formatPercent, unknownText } from '../lib/format';
 import { durationScale, hourTicks, scenarioOutcomes, stripGeometry, type ScenarioOutcome, type Span } from '../lib/infographic';
 import { baselineScenario, validMetrics } from '../lib/result';
 import { formatUtc, parseUtc } from '../lib/utc';
 import type { AnalysisEntry } from '../state/AppState';
 import { Icon, type IconName } from './ui';
+import { defineStrings, useStrings } from '../i18n';
+
+const STR = defineStrings({
+  en: {
+    outcome: {
+      violated: 'Constraint exceeded',
+      cautious: 'Exceeded in the conservative calculation',
+      pass: 'Constraints met',
+      nominal_only: 'No exceedance (nominal calculation only)',
+      unknown: 'Uncertain',
+    } as Record<ScenarioOutcome, string>,
+    hours: 'h',
+    slipsLabel: 'Landing slip scenarios',
+    slipsTitle: 'What if the landing is delayed?',
+    slipsNote: 'Each box summarises the constraint exceedances the server found if the landing is delayed by that many hours.',
+    windowDesc: (shift: number, start: string, end: string) => `Mission window, +${shift} hour scenario, from ${start} to ${end}. `,
+    metricsDesc: (sun: string, dark: string, earth: string, gap: string) =>
+      `On average ${sun} of the Sun disk is visible; the longest darkness is ${dark}. ` +
+      `Earth is visible ${earth} of the time; the longest outage is ${gap}.`,
+    noMetrics: 'No valid metrics.',
+    stripLabel: 'Mission window time strip',
+    stripTitle: 'Mission window: when are the Sun and Earth visible?',
+    scenario: (shift: number) => `+${shift} h scenario`,
+    sun: 'Sun',
+    earth: 'Earth',
+    legendSun: 'Visible share of the Sun disk (height = 0–100%)',
+    legendEarth: 'Earth above the horizon',
+    legendDark: 'Longest darkness',
+    legendGap: 'Longest Earth outage',
+    legendMissionEnd: 'Mission end (buffer after it)',
+    legendUnknown: 'Unknown (terrain data missing)',
+  },
+  tr: {
+    outcome: {
+      violated: 'Kısıt aşıldı',
+      cautious: 'İhtiyatlı hesapta aşıldı',
+      pass: 'Kısıtlar sağlandı',
+      nominal_only: 'Aşım yok (yalnız nominal hesap)',
+      unknown: 'Belirsiz',
+    },
+    hours: 'sa',
+    slipsLabel: 'İniş kayma senaryoları',
+    slipsTitle: 'İniş gecikirse ne olur?',
+    slipsNote: 'Her kutu, inişin o kadar saat gecikmesi hâlinde sunucunun bulduğu kısıt aşımlarını özetler.',
+    windowDesc: (shift: number, start: string, end: string) => `Görev penceresi, +${shift} saat senaryosu, ${start} ile ${end} arası. `,
+    metricsDesc: (sun: string, dark: string, earth: string, gap: string) =>
+      `Güneş diski ortalama ${sun} görünür, en uzun karanlık ${dark}. ` +
+      `Dünya zamanın ${earth} kadarında görünür, en uzun kesinti ${gap}.`,
+    noMetrics: 'Geçerli metrik yok.',
+    stripLabel: 'Görev penceresi zaman şeridi',
+    stripTitle: 'Görev penceresi: Güneş ve Dünya ne zaman görünüyor?',
+    scenario: (shift: number) => `+${shift} sa senaryosu`,
+    sun: 'Güneş',
+    earth: 'Dünya',
+    legendSun: 'Güneş diskinin görünen payı (yükseklik = %0–100)',
+    legendEarth: 'Dünya ufkun üstünde',
+    legendDark: 'En uzun karanlık',
+    legendGap: 'En uzun Dünya kesintisi',
+    legendMissionEnd: 'Görev sonu (sonrası tampon)',
+    legendUnknown: 'Bilinmiyor (arazi verisi eksik)',
+  },
+});
 
 /* ------------------------------------------------------------------ gauges */
 
@@ -60,33 +122,34 @@ export function DurationBar({ valueH, limitH, color }: { valueH: number | null; 
 
 /* ------------------------------------------------------------------ scenario strip */
 
-const OUTCOME: Record<ScenarioOutcome, { icon: IconName; text: string; cls: string }> = {
-  violated: { icon: 'stop', text: 'Kısıt aşıldı', cls: 'border-stop/55 bg-stop/10 text-stop' },
-  cautious: { icon: 'alert', text: 'İhtiyatlı hesapta aşıldı', cls: 'border-caution/55 bg-caution/10 text-caution' },
-  pass: { icon: 'check', text: 'Kısıtlar sağlandı', cls: 'border-go/50 bg-go/10 text-go' },
-  nominal_only: { icon: 'info', text: 'Aşım yok (yalnız nominal hesap)', cls: 'border-line-strong bg-panel-2 text-muted' },
-  unknown: { icon: 'question', text: 'Belirsiz', cls: 'border-unknown/50 bg-unknown/10 text-unknown' },
+const OUTCOME: Record<ScenarioOutcome, { icon: IconName; cls: string }> = {
+  violated: { icon: 'stop', cls: 'border-stop/55 bg-stop/10 text-stop' },
+  cautious: { icon: 'alert', cls: 'border-caution/55 bg-caution/10 text-caution' },
+  pass: { icon: 'check', cls: 'border-go/50 bg-go/10 text-go' },
+  nominal_only: { icon: 'info', cls: 'border-line-strong bg-panel-2 text-muted' },
+  unknown: { icon: 'question', cls: 'border-unknown/50 bg-unknown/10 text-unknown' },
 };
 
 /** +0/+24/+48/+72 h landing-slip scenarios, each with icon + words (never colour alone). */
 export function ScenarioStrip({ mission }: { mission: Mission }) {
+  const s = useStrings(STR);
   const outcomes = scenarioOutcomes(mission);
   if (outcomes.length === 0) return null;
   return (
-    <section aria-label="İniş kayma senaryoları" className="space-y-2">
-      <h4 className="text-sm font-semibold text-ink">İniş gecikirse ne olur?</h4>
+    <section aria-label={s.slipsLabel} className="space-y-2">
+      <h4 className="text-sm font-semibold text-ink">{s.slipsTitle}</h4>
       <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {outcomes.map(({ shift, outcome }) => {
           const o = OUTCOME[outcome];
           return (
             <li key={shift} className={`rounded-xl border p-2.5 ${o.cls}`}>
-              <p className="font-mono text-lg font-semibold text-ink">+{shift} sa</p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium"><Icon name={o.icon} className="h-4 w-4 shrink-0" />{o.text}</p>
+              <p className="font-mono text-lg font-semibold text-ink">+{shift} {s.hours}</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium"><Icon name={o.icon} className="h-4 w-4 shrink-0" />{s.outcome[outcome]}</p>
             </li>
           );
         })}
       </ol>
-      <p className="text-xs text-muted">Her kutu, inişin o kadar saat gecikmesi hâlinde sunucunun bulduğu kısıt aşımlarını özetler.</p>
+      <p className="text-xs text-muted">{s.slipsNote}</p>
     </section>
   );
 }
@@ -103,6 +166,7 @@ const pct = (s: Span) => ({ x: s[0] * W, w: Math.max(1, (s[1] - s[0]) * W) });
  */
 export function MissionWindowStrip({ mission, entry }: { mission: Mission; entry: AnalysisEntry }) {
   const uid = `mw${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const t = useStrings(STR);
   const scenario = baselineScenario(mission);
   if (!scenario || scenario.timeline.length < 2) return null;
   const m = validMetrics(scenario.variants.nominal);
@@ -110,21 +174,21 @@ export function MissionWindowStrip({ mission, entry }: { mission: Mission; entry
   const totalH = (parseUtc(scenario.end_utc) - parseUtc(scenario.start_utc)) / 3_600_000;
   const ticks = totalH > 0 ? hourTicks(totalH) : [];
   const missionEnd = entry.input.buffer_hours > 0 && totalH > 0 ? entry.input.duration_hours / totalH : null;
-  const earthSeen = m ? formatPercent(m.dte_visible_fraction) : 'bilinmiyor';
-  const description = `Görev penceresi, +${scenario.shift_hours} saat senaryosu, ${formatUtc(scenario.start_utc)} ile ${formatUtc(scenario.end_utc)} arası. ` +
-    (m ? `Güneş diski ortalama ${formatPercent(m.mean_sun_visible_fraction)} görünür, en uzun karanlık ${formatHours(m.max_continuous_darkness_s)}. ` +
-      `Dünya zamanın ${earthSeen} kadarında görünür, en uzun kesinti ${formatHours(m.max_continuous_dte_gap_s)}.` : 'Geçerli metrik yok.');
+  const earthSeen = m ? formatPercent(m.dte_visible_fraction) : unknownText();
+  const description = t.windowDesc(scenario.shift_hours, formatUtc(scenario.start_utc), formatUtc(scenario.end_utc)) +
+    (m ? t.metricsDesc(formatPercent(m.mean_sun_visible_fraction), formatHours(m.max_continuous_darkness_s), earthSeen,
+      formatHours(m.max_continuous_dte_gap_s)) : t.noMetrics);
 
   return (
-    <section aria-label="Görev penceresi zaman şeridi" className="space-y-2">
+    <section aria-label={t.stripLabel} className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="text-sm font-semibold text-ink">Görev penceresi: Güneş ve Dünya ne zaman görünüyor?</h4>
-        <span className="font-mono text-xs text-muted">+{scenario.shift_hours} sa senaryosu</span>
+        <h4 className="text-sm font-semibold text-ink">{t.stripTitle}</h4>
+        <span className="font-mono text-xs text-muted">{t.scenario(scenario.shift_hours)}</span>
       </div>
       <div className="rounded-xl border border-line bg-[rgb(3_8_24/0.55)] p-3">
         <p className="sr-only">{description}</p>
         <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5" aria-hidden>
-          <span className="flex items-center gap-1 text-xs text-sun"><Icon name="sun" className="h-3.5 w-3.5" />Güneş</span>
+          <span className="flex items-center gap-1 text-xs text-sun"><Icon name="sun" className="h-3.5 w-3.5" />{t.sun}</span>
           <svg viewBox={`0 0 ${W} 40`} preserveAspectRatio="none" className="h-10 w-full overflow-visible">
             <defs>
               <pattern id={`${uid}-hatch`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -142,7 +206,7 @@ export function MissionWindowStrip({ mission, entry }: { mission: Mission; entry
             {g.darkness && <rect y="0" height="40" x={pct(g.darkness).x} width={pct(g.darkness).w} fill="none" stroke="#b39dff" strokeWidth="2" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />}
             {missionEnd !== null && <line x1={missionEnd * W} x2={missionEnd * W} y1="-4" y2="44" stroke="#eaf0ff" strokeOpacity="0.8" strokeWidth="1.5" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />}
           </svg>
-          <span className="flex items-center gap-1 text-xs text-earth"><Icon name="earth" className="h-3.5 w-3.5" />Dünya</span>
+          <span className="flex items-center gap-1 text-xs text-earth"><Icon name="earth" className="h-3.5 w-3.5" />{t.earth}</span>
           <svg viewBox={`0 0 ${W} 18`} preserveAspectRatio="none" className="h-5 w-full overflow-visible">
             <rect x="0" y="0" width={W} height="18" fill="rgb(130 160 230 / 0.08)" />
             {g.earth.map((r, i) => r.value === true
@@ -165,13 +229,13 @@ export function MissionWindowStrip({ mission, entry }: { mission: Mission; entry
           <span>{formatUtc(scenario.end_utc)}</span>
         </div>
         <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-sun/80" aria-hidden />Güneş diskinin görünen payı (yükseklik = %0–100)</li>
-          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-earth/85" aria-hidden />Dünya ufkun üstünde</li>
-          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm border border-dashed border-violet" aria-hidden />En uzun karanlık</li>
-          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm border border-dashed border-stop" aria-hidden />En uzun Dünya kesintisi</li>
-          {missionEnd !== null && <li className="flex items-center gap-1.5"><span className="h-3 w-px bg-ink" aria-hidden />Görev sonu (sonrası tampon)</li>}
+          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-sun/80" aria-hidden />{t.legendSun}</li>
+          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-earth/85" aria-hidden />{t.legendEarth}</li>
+          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm border border-dashed border-violet" aria-hidden />{t.legendDark}</li>
+          <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm border border-dashed border-stop" aria-hidden />{t.legendGap}</li>
+          {missionEnd !== null && <li className="flex items-center gap-1.5"><span className="h-3 w-px bg-ink" aria-hidden />{t.legendMissionEnd}</li>}
           {(g.unknownSun.length > 0 || g.earth.some((r) => r.value === null)) && (
-            <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-[repeating-linear-gradient(45deg,#b3bccd_0_2px,transparent_2px_5px)]" aria-hidden />Bilinmiyor (arazi verisi eksik)</li>
+            <li className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm bg-[repeating-linear-gradient(45deg,#b3bccd_0_2px,transparent_2px_5px)]" aria-hidden />{t.legendUnknown}</li>
           )}
         </ul>
       </div>

@@ -7,15 +7,22 @@ import { EarthMoonCard } from './EarthMoonCard';
 import { MissionForm } from './MissionForm';
 import { ResultSummary } from './ResultSummary';
 import { Icon, Notice } from './ui';
+import { defineStrings, useStrings } from '../i18n';
+
+const STR = defineStrings({
+  en: { analyses: 'Analyses (this session)', selected: 'Selected analysis result' },
+  tr: { analyses: 'Analizler (bu oturum)', selected: 'Seçili analiz sonucu' },
+});
 
 /**
- * Halk: wizard on the left; results (infographics) and the featured Earth-vs-Moon card on the right.
- * Mühendis: compact cockpit form on the left; dense telemetry results get the wider column.
+ * Public: wizard on the left; results (infographics) and the featured Earth-vs-Moon card on the right.
+ * Engineer: compact cockpit form on the left; dense telemetry results get the wider column.
  * Both modes render the same form state and the same server result; only the layout differs.
  */
 export function MissionSetup({ sites, sitesError, health }: { sites: SitesResponse | null; sitesError: ApiError | null; health: Health | null }) {
   const { selected, mode } = useApp();
   const engineer = mode === 'engineer';
+  const s = useStrings(STR);
   return (
     <div className={`grid grid-cols-1 gap-4 ${engineer
       ? 'xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]'
@@ -28,11 +35,11 @@ export function MissionSetup({ sites, sitesError, health }: { sites: SitesRespon
         <section className="panel space-y-3" aria-labelledby="analyses-title">
           <div className="flex items-center gap-2">
             <Icon name={engineer ? 'terminal' : 'satellite'} className="h-4 w-4 text-accent" />
-            <h2 id="analyses-title" className="panel-title">Analizler (bu oturum)</h2>
+            <h2 id="analyses-title" className="panel-title">{s.analyses}</h2>
           </div>
           <AnalysisList />
         </section>
-        <section className="panel" aria-label="Seçili analiz sonucu">
+        <section className="panel" aria-label={s.selected}>
           <ResultSummary entry={selected} />
         </section>
         {!engineer && (

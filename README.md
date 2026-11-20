@@ -136,7 +136,7 @@ hesaplar, API sözleşmesi ve karar kuralları aynıdır.
 
 | Sekme | İçerik |
 |---|---|
-| Başlık | Backend Online/Offline, SPICE / LOLA DEM (mevcut çözünürlükler, ör. "240 · 80 · 5 m") / ERR / Clone durum çipleri, "Tüm zamanlar UTC", **Halk / Mühendis** anahtarı (yalnız sunumu değiştirir; karar aynı kalır — test ve E2E ile doğrulandı) |
+| Başlık | Backend Online/Offline, SPICE / LOLA DEM (mevcut çözünürlükler, ör. "240 · 80 · 5 m") / ERR / Clone durum çipleri, "Tüm zamanlar UTC", **Halk / Mühendis** anahtarı (yalnız sunumu değiştirir; karar aynı kalır — test ve E2E ile doğrulandı), **EN / TR** dil seçici |
 | **Mission Setup** | `/sites` katmanları ("indirilmeli" etiketi), enlem −90…−80 / boylam −180…180, ayrı UTC tarih+saat (tarayıcı saat dilimi kullanılmaz, ISO `Z` önizlemesi), görev/tampon/adım, 135/200 km, panel ve DTE anten yükseklikleri (1/4/40 m), nominal/err/clone, kısıtlar, örnekleme bütçesi; 202 + 2 sn polling; sonuç özeti, ihlal UTC aralıkları, provenance, kopyalanabilir özet; Halk modunda Dünya–Ay eğitim kartı |
 | **Sky View** | 0–360° panorama (0 = Kuzey, 90 = Doğu), gerçek `/horizon` profili, Güneş/Dünya disklerinin **gerçek açısal boyutu** (0/360 sarma), ERR bandı yalnız API verirse, eksik ışınlar işaretli, ayrı anten ufku, gövdeye yakınlaştırma, güney kutbu azimut/meridyen notu |
 | **Timeline** | `scenarios[].timeline` ile f_sun ve geometrik DTE, en uzun karanlık/kesinti vurgusu, tıklama + klavye kaydırıcı (Sky View ile eşzamanlı), +0/+24/+48/+72 senaryoları, `/scenarios/shift` ile yeni kaymalar (ebeveyn korunur), mühendis modunda yükseklik-ufuk grafiği |
@@ -159,6 +159,21 @@ Hata ve veri eksikliği UX'i (Faz 7, kullanıcı kararı 2026-11-14): kodlar **h
 - **Mühendis:** teknik başlık + ham kod çipi + mühendis açıklaması + komut doğrudan görünür.
 - Erişilebilirlik: hata kutuları `role=alert` (uyarılar `role=status`); gönderim hatasında odak hata kutusuna taşınır. `e2e:states` her durumu iki modda ve Halk'ta “Teknik detaylar”ı **klavyeyle** açarak doğrular; hata ekranlarında axe 0 ihlal.
 - Halk modunda ayrıca gizlenenler: ham durum etiketleri, ihlal kodları, metrik/provenance tabloları ve cache anahtarı.
+
+### Arayüz dili: English / Türkçe
+
+- Ana arayüz **İngilizcedir**; üst çubuktaki **EN | TR** düğmesi tüm arayüzü Türkçeye çevirir (sekme adları, form, sonuçlar,
+  hata kutuları, Plotly eksen/iz adları, kopyalanan özet). Seçim tarayıcıda hatırlanır (`localStorage`); bağlantıya `?lang=tr`
+  veya `?lang=en` eklenerek de seçilebilir. `<html lang>` seçilen dile göre güncellenir.
+- Dil, Halk/Mühendis modu gibi **yalnız sunumu** değiştirir: API isteği, karar (GREEN/YELLOW/RED/GRAY) ve sayısal değerler aynıdır.
+  Birimler dile uyar (`12.5 h` / `12.5 sa`, `40%` / `%40`, `S/W` / `G/B`); ondalık ayırıcı her iki dilde noktadır.
+- Kodlar çevrilmez (`DEM_MISSING`, `MAX_DARKNESS`, karar kelimeleri). Backend'in Türkçe `mission.label` /
+  `explanations.public` metni arayüzde gösterilmez; aynı cümle `status` + `radius_policy` + belirsizlik modundan iki dilde
+  yeniden kurulur (`frontend/src/lib/decisionText.ts`; Türkçe çıktının backend metniyle birebir aynı olduğu testle doğrulanır).
+  Backend'in İngilizce teknik mesajları (ör. `reason`, doğrulama raporu alanları) kanıt olarak olduğu gibi gösterilir.
+- CSV/JSON dışa aktarma sütun adları dil seçiminden bağımsız ve sabittir.
+- Yapı: `frontend/src/i18n.tsx` (`defineStrings` ile her bileşenin yanında `en`/`tr` metinleri; `tr` nesnesi `en` ile aynı
+  anahtarlara sahip olmak zorundadır, TypeScript bunu derlemede denetler).
 
 ## Demo adımları
 
@@ -239,9 +254,9 @@ Son gerçek koşular (2026-11-14, Windows 11):
 | `python -m pytest -q` | **97 passed** (+4 gerçek-veri senaryosu `tests/test_realdata_scenarios.py`: ERR YELLOW 2027-11-14, nominal GRAY + 135 km tavanı, RED + eğim 2026-12-26, clone YELLOW 73/100; NASA dosyaları yoksa *skipped*) — önceki 93: (sözleşme, SPICE UTC→ET, indirici 24 senaryo — HTTP Range devamı + Windows manifest paylaşım ihlali dahil, Windows spawn 7, API v1.1–v1.3, LOD/ERR katman tutarlılığı + EFFRES özeti, clone motoru 5, doğrulama koşucusu, Pareto regresyonu, 200 km referans kuralı 8) |
 | `python -m backend.verify_horizons` | `all_passed: true` — 6 Güneş/Dünya yönü, maks ayrım 4.14×10⁻⁷° (eşik 0.005°) |
 | `python -m backend.validation` | **14 / 14 PASS** (A-04, V-01…V-10, SLOPE-01, EFFRES-01, CLONE-01; 2026-11-14T21:48Z, ağ dahil) → `data/validation/report.json` |
-| `cd frontend; npx vitest run` | **113 passed** (Faz 9: +16 — sihirbaz adım/doğrulama/odak, Halk sihirbazı ile Mühendis kokpitinin **aynı `POST /analyses` gövdesini** göndermesi, mod geçişinde değerlerin korunması, karo kısayolları, infografik geometrisi, MOON_ME `latrec` dönüşümü; önceki 97 test değiştirilmeden geçer) (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
+| `cd frontend; npx vitest run` | **156 passed** (EN/TR arayüz: +43 — her bileşen İngilizce ve Türkçe; dil değişince karar, sayılar, `POST /analyses` gövdesi ve CSV dışa aktarımı aynı kalır; Türkçe karar cümlesi backend `label`/`explanations.public` ile birebir aynı; Türkçe metinler önceki sürümle aynı) (Faz 9: +16 — sihirbaz adım/doğrulama/odak, Halk sihirbazı ile Mühendis kokpitinin **aynı `POST /analyses` gövdesini** göndermesi, mod geçişinde değerlerin korunması, karo kısayolları, infografik geometrisi, MOON_ME `latrec` dönüşümü; önceki 97 test değiştirilmeden geçer) (mod ayrımı, Halk/Mühendis hata UX'i, 135 km tavanı gösterimi, EFFRES metni, clone varyantı tablosu, telemetri, CSV dışa aktarma dahil) (UTC, istemci hataları, form sınırları, deep-link URL sözleşmesi, polling, gerçek-sonuç fikstürüyle bileşen ve grafik sözleşmeleri, Dünya–Ay kartı) |
 | `npm run build` / `npm run lint` | başarılı / 0 sorun |
-| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 10 tarama 0 ihlal**, konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı, `UNCERTAINTY=err LANDING_DATE=2027-11-14` (Site01 merkezi) ile **YELLOW**, `UNCERTAINTY=clone` ile clone modu YELLOW + kayma |
+| `npm run e2e` | gerçek backend + sistem Chrome (playwright-core): 2 konum, kayma, /compare, Halk↔Mühendis, mobil 390 px (taşma 0), **axe-core 0 ihlal** (2026-11-20 koşusu: TR + EN × Halk/Mühendis × 5 sekme = 20 tarama; ana akış `?lang=tr` ile, sonra EN'e geçişte karar aynı), konsol hatası 0; ayrıca `UNCERTAINTY=err LANDING_DATE=2026-12-17` ile GREEN + Pareto akışı, `UNCERTAINTY=err LANDING_DATE=2027-11-14` (Site01 merkezi) ile **YELLOW**, `UNCERTAINTY=clone` ile clone modu YELLOW + kayma |
 | `npm run e2e:states` | 17/17 kontrol, **her durum iki modda**: Halk'ta sade başlık + kod yalnız klavyeyle açılan “Teknik detaylar”da, Mühendis'te kod doğrudan; SPICE hatasında odak taşınır; hata ekranlarında axe 0. Gerçek `DEM_MISSING` (indirilmemiş `lola_20m`); işaretli mock ile çevrimdışı, `SPICE_MISSING`, `QUEUE_FULL`, `WORKER_UNAVAILABLE` + 409; geçersiz girdi istemcide engellenir |
 
 Mock kullanımı: yalnız UI/istemci sözleşme testlerinde ve indirici testlerinde (HTTP mock + `tmp_path` içinde sentetik minik GeoTIFF); her biri dosya başında işaretlidir. UI bileşen testleri, gerçek bir API yanıtının kısaltılmış kopyasını (`frontend/src/test/fixtures/real_analysis_62e783c2.json`, `_provenance` alanı) kullanır.

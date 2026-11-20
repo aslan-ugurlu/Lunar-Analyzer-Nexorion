@@ -5,6 +5,7 @@ import real from '../../test/fixtures/real_analysis_62e783c2.json';
 import type { AnalysisInput, JobRecord, Mission } from '../../api/types';
 import { AppStateProvider, useApp, type AnalysisEntry } from '../../state/AppState';
 import { ResultSummary } from '../ResultSummary';
+import { I18nProvider } from '../../i18n';
 
 // SYNTHETIC UI DOUBLE (labelled): the real fixture with a clone-style cautious variant whose metrics
 // lack the per-sample series and the integration-difference field (as a v1.3 clone variant may).
@@ -30,7 +31,12 @@ function Seeded() {
 describe('clone variant in the engineer table', () => {
   it('renders without crashing and shows method + clone pass count; missing fields show "—"', () => {
     render(<AppStateProvider initialMode="engineer"><Seeded /></AppStateProvider>);
-    expect(screen.getAllByText(/clone_p95 · 73\/100 clone geçti/).length).toBe(mission.scenarios.length);
+    expect(screen.getAllByText(/clone_p95 · 73\/100 clones passed/).length).toBe(mission.scenarios.length);
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('Turkish: same method and pass count with the Turkish wording', () => {
+    render(<I18nProvider lang="tr"><AppStateProvider initialMode="engineer"><Seeded /></AppStateProvider></I18nProvider>);
+    expect(screen.getAllByText(/clone_p95 · 73\/100 clone geçti/).length).toBe(mission.scenarios.length);
   });
 });

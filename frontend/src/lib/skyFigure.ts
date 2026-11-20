@@ -1,6 +1,55 @@
 import type { Data, Layout, Shape } from 'plotly.js';
 import type { BodyPosition, Horizon, TimelinePoint } from '../api/types';
 import { countMissing, horizonAt, minMaxIndices, wrappedDisks } from './sky';
+import { defineStrings, pick, type Lang } from '../i18n';
+
+/** Trace names, hover templates and axis titles; Plotly placeholders (%{x:.1f}, <extra>) stay intact. */
+const STR = defineStrings({
+  en: {
+    sun: 'Sun',
+    earth: 'Earth',
+    disk: (body: string) => `${body} disk (true angular size)`,
+    terrainPanel: (heightM: number) => `Terrain horizon · panel ${heightM} m (nominal)`,
+    hoverPanel: 'azimuth %{x:.1f}°<br>horizon %{y:.3f}°<extra>panel horizon</extra>',
+    cloneBand: (n: number | string) => `DEM clone band p05–p95 (${n} PGDA clones; not a confidence interval)`,
+    errBand: (k: number | string) => `ERR ±${k} sensitivity band (not a confidence interval)`,
+    hoverClone: 'azimuth %{x:.1f}°<br>clone p95 horizon %{y:.3f}°<extra>clone p95</extra>',
+    hoverErr: 'azimuth %{x:.1f}°<br>conservative horizon %{y:.3f}°<extra>ERR +k</extra>',
+    terrainDte: (heightM: number) => `Terrain horizon · DTE antenna ${heightM} m`,
+    hoverAntenna: 'azimuth %{x:.1f}°<br>horizon %{y:.3f}°<extra>antenna horizon</extra>',
+    missingRay: 'Missing DEM ray (no value → GRAY)',
+    hoverMissing: 'azimuth %{x:.1f}°: data missing<extra></extra>',
+    sunTrack: 'Sun centre track (scenario)',
+    earthTrack: 'Earth centre track (scenario)',
+    marker: 'Position marker (enlarged)',
+    hoverMarker: '%{text}<br>azimuth %{x:.3f}°<br>elevation %{y:.3f}°<extra></extra>',
+    xTitle: 'Azimuth (°) — 0 = North, 90 = East, clockwise',
+    ticks: ['0 N', '45', '90 E', '135', '180 S', '225', '270 W', '315', '360 N'],
+    yTitle: 'Elevation (°)',
+  },
+  tr: {
+    sun: 'Güneş',
+    earth: 'Dünya',
+    disk: (body: string) => `${body} diski (gerçek açısal boyut)`,
+    terrainPanel: (heightM: number) => `Arazi ufku · panel ${heightM} m (nominal)`,
+    hoverPanel: 'azimut %{x:.1f}°<br>ufuk %{y:.3f}°<extra>panel ufku</extra>',
+    cloneBand: (n: number | string) => `DEM clone bandı p05–p95 (${n} PGDA clone; güven aralığı değil)`,
+    errBand: (k: number | string) => `ERR ±${k} duyarlılık bandı (güven aralığı değil)`,
+    hoverClone: 'azimut %{x:.1f}°<br>clone p95 ufuk %{y:.3f}°<extra>clone p95</extra>',
+    hoverErr: 'azimut %{x:.1f}°<br>ihtiyatlı ufuk %{y:.3f}°<extra>ERR +k</extra>',
+    terrainDte: (heightM: number) => `Arazi ufku · DTE anten ${heightM} m`,
+    hoverAntenna: 'azimut %{x:.1f}°<br>ufuk %{y:.3f}°<extra>anten ufku</extra>',
+    missingRay: 'Eksik DEM ışını (değer yok → GRAY)',
+    hoverMissing: 'azimut %{x:.1f}°: veri eksik<extra></extra>',
+    sunTrack: 'Güneş merkezi izi (senaryo)',
+    earthTrack: 'Dünya merkezi izi (senaryo)',
+    marker: 'Konum işaretçisi (büyütülmüş)',
+    hoverMarker: '%{text}<br>azimut %{x:.3f}°<br>yükseklik %{y:.3f}°<extra></extra>',
+    xTitle: 'Azimut (°) — 0 = Kuzey, 90 = Doğu, saat yönünde',
+    ticks: ['0 K', '45', '90 D', '135', '180 G', '225', '270 B', '315', '360 K'],
+    yTitle: 'Yükseklik (°)',
+  },
+});
 
 export const COLORS = {
   terrain: '#8592b0',
@@ -30,7 +79,7 @@ export function pathWithWrapGaps(points: { az: number; el: number }[]): { x: (nu
   return { x, y };
 }
 
-function diskTraces(body: BodyPosition, name: string, color: string): Partial<Data>[] {
+function diskTraces(body: BodyPosition, group: string, label: string, color: string): Partial<Data>[] {
   return wrappedDisks(body.az_deg, body.el_deg, body.angular_radius_deg).map((poly, i) => ({
     type: 'scatter',
     mode: 'lines',
@@ -39,8 +88,8 @@ function diskTraces(body: BodyPosition, name: string, color: string): Partial<Da
     fill: 'toself',
     fillcolor: color,
     line: { color, width: 1 },
-    name: `${name} diski (gerçek açısal boyut)`,
-    legendgroup: name,
+    name: label,
+    legendgroup: group,
     showlegend: i === 0,
     hoverinfo: 'skip',
   }));
@@ -52,9 +101,12 @@ export interface SkyFigureInput {
   index: number;
   zoom: SkyZoom;
   showPaths: boolean;
+  /** Language of names/titles (default: current interface language). Plotted values never depend on it. */
+  lang?: Lang;
 }
 
-export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: SkyFigureInput): { data: Partial<Data>[]; layout: Partial<Layout>; missing: { sun: number; earth: number }; hasErrBand: boolean } {
+export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths, lang }: SkyFigureInput): { data: Partial<Data>[]; layout: Partial<Layout>; missing: { sun: number; earth: number }; hasErrBand: boolean } {
+  const s = pick(STR, lang);
   const az = horizon.azimuth_deg;
   const sunProfile = horizon.profiles.sun;
   const earthProfile = horizon.profiles.earth;
@@ -74,9 +126,9 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
   const data: Partial<Data>[] = [
     { type: 'scatter', mode: 'lines', x: [0, 360], y: [yMin, yMin], line: { width: 0 }, hoverinfo: 'skip', showlegend: false },
     {
-      type: 'scatter', mode: 'lines', x: xs, y: close(sunProfile.nominal), name: `Arazi ufku · panel ${horizon.geometry.observer_height_m.sun} m (nominal)`,
+      type: 'scatter', mode: 'lines', x: xs, y: close(sunProfile.nominal), name: s.terrainPanel(horizon.geometry.observer_height_m.sun),
       line: { color: COLORS.terrain, width: 1.5 }, fill: 'tonexty', fillcolor: COLORS.terrainFill, connectgaps: false,
-      hovertemplate: 'azimut %{x:.1f}°<br>ufuk %{y:.3f}°<extra>panel ufku</extra>',
+      hovertemplate: s.hoverPanel,
     },
   ];
 
@@ -88,11 +140,9 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
         type: 'scatter', mode: 'lines', x: xs, y: close(sunProfile.cautious ?? []), fill: 'tonexty', fillcolor: COLORS.band,
         line: { width: 0.5, color: COLORS.band }, connectgaps: false,
         name: horizon.uncertainty_mode === 'clone'
-          ? `DEM clone bandı p05–p95 (${horizon.clone_ensemble?.n_clones ?? '?'} PGDA clone; güven aralığı değil)`
-          : `ERR ±${horizon.k ?? 'k'} duyarlılık bandı (güven aralığı değil)`,
-        hovertemplate: horizon.uncertainty_mode === 'clone'
-          ? 'azimut %{x:.1f}°<br>clone p95 ufuk %{y:.3f}°<extra>clone p95</extra>'
-          : 'azimut %{x:.1f}°<br>ihtiyatlı ufuk %{y:.3f}°<extra>ERR +k</extra>',
+          ? s.cloneBand(horizon.clone_ensemble?.n_clones ?? '?')
+          : s.errBand(horizon.k ?? 'k'),
+        hovertemplate: horizon.uncertainty_mode === 'clone' ? s.hoverClone : s.hoverErr,
       },
     );
   }
@@ -100,8 +150,8 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
   if (separateDte) {
     data.push({
       type: 'scatter', mode: 'lines', x: xs, y: close(earthProfile.nominal), connectgaps: false,
-      name: `Arazi ufku · DTE anten ${horizon.geometry.observer_height_m.earth} m`, line: { color: COLORS.dteHorizon, width: 1.2, dash: 'dash' },
-      hovertemplate: 'azimut %{x:.1f}°<br>ufuk %{y:.3f}°<extra>anten ufku</extra>',
+      name: s.terrainDte(horizon.geometry.observer_height_m.earth), line: { color: COLORS.dteHorizon, width: 1.2, dash: 'dash' },
+      hovertemplate: s.hoverAntenna,
     });
   }
 
@@ -109,8 +159,8 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
   if (missingIdx.length > 0) {
     data.push({
       type: 'scatter', mode: 'markers', x: missingIdx.map((i) => az[i] ?? 0), y: missingIdx.map(() => yMin + 0.3),
-      marker: { color: COLORS.missing, symbol: 'x', size: 6 }, name: 'Eksik DEM ışını (değer yok → GRAY)',
-      hovertemplate: 'azimut %{x:.1f}°: veri eksik<extra></extra>',
+      marker: { color: COLORS.missing, symbol: 'x', size: 6 }, name: s.missingRay,
+      hovertemplate: s.hoverMissing,
     });
   }
 
@@ -119,19 +169,19 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
     const sunPath = pathWithWrapGaps(idx.map((i) => ({ az: timeline[i]!.sun.az_deg, el: timeline[i]!.sun.el_deg })));
     const earthPath = pathWithWrapGaps(idx.map((i) => ({ az: timeline[i]!.earth.az_deg, el: timeline[i]!.earth.el_deg })));
     data.push(
-      { type: 'scatter', mode: 'lines', ...sunPath, name: 'Güneş merkezi izi (senaryo)', line: { color: COLORS.sun, width: 1, dash: 'dot' }, hoverinfo: 'skip' },
-      { type: 'scatter', mode: 'lines', ...earthPath, name: 'Dünya merkezi izi (senaryo)', line: { color: COLORS.earth, width: 1, dash: 'dot' }, hoverinfo: 'skip' },
+      { type: 'scatter', mode: 'lines', ...sunPath, name: s.sunTrack, line: { color: COLORS.sun, width: 1, dash: 'dot' }, hoverinfo: 'skip' },
+      { type: 'scatter', mode: 'lines', ...earthPath, name: s.earthTrack, line: { color: COLORS.earth, width: 1, dash: 'dot' }, hoverinfo: 'skip' },
     );
   }
 
   if (point) {
-    data.push(...diskTraces(point.sun, 'Güneş', COLORS.sun), ...diskTraces(point.earth, 'Dünya', COLORS.earth));
+    data.push(...diskTraces(point.sun, 'sun', s.disk(s.sun), COLORS.sun), ...diskTraces(point.earth, 'earth', s.disk(s.earth), COLORS.earth));
     // Enlarged locator rings so the true-size discs remain findable in the 360° view.
     data.push({
       type: 'scatter', mode: 'markers', x: [point.sun.az_deg, point.earth.az_deg], y: [point.sun.el_deg, point.earth.el_deg],
       marker: { size: 16, symbol: 'circle-open', color: [COLORS.sun, COLORS.earth], line: { width: 2 } },
-      text: ['Güneş', 'Dünya'], name: 'Konum işaretçisi (büyütülmüş)',
-      hovertemplate: '%{text}<br>azimut %{x:.3f}°<br>yükseklik %{y:.3f}°<extra></extra>',
+      text: [s.sun, s.earth], name: s.marker,
+      hovertemplate: s.hoverMarker,
     });
   }
 
@@ -155,15 +205,15 @@ export function buildSkyFigure({ horizon, timeline, index, zoom, showPaths }: Sk
 
   const layout: Partial<Layout> = {
     xaxis: {
-      title: { text: 'Azimut (°) — 0 = Kuzey, 90 = Doğu, saat yönünde' },
+      title: { text: s.xTitle },
       range: xRange,
       // Cardinal labels in the panorama; automatic ticks when zoomed on a body.
       ...(zoomed ? {} : { tickvals: [0, 45, 90, 135, 180, 225, 270, 315, 360],
-        ticktext: ['0 K', '45', '90 D', '135', '180 G', '225', '270 B', '315', '360 K'] }),
+        ticktext: s.ticks }),
       gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)',
     },
     yaxis: {
-      title: { text: 'Yükseklik (°)' }, range: yRange, gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)',
+      title: { text: s.yTitle }, range: yRange, gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)',
       // Equal degrees-per-pixel when zoomed so a disc is drawn round (near the horizon cos(el) ≈ 1).
       ...(zoomed ? { scaleanchor: 'x' as const, scaleratio: 1 } : {}),
     },

@@ -1,5 +1,11 @@
 import { lazy, Suspense, type ComponentProps } from 'react';
 import type { Data, Layout, Config } from 'plotly.js';
+import { defineStrings, useStrings } from '../i18n';
+
+const STR = defineStrings({
+  en: { loading: 'Loading the chart library…' },
+  tr: { loading: 'Grafik kütüphanesi yükleniyor…' },
+});
 
 /** plotly.js (~4.6 MB) is code-split and loaded only when a chart is shown. */
 const LazyPlot = lazy(async () => {
@@ -28,9 +34,10 @@ export const BASE_LAYOUT: Partial<Layout> = {
 export const AXIS = { gridcolor: 'rgba(130,160,230,0.14)', zerolinecolor: 'rgba(130,160,230,0.35)', linecolor: 'rgba(130,160,230,0.35)', tickcolor: 'rgba(130,160,230,0.35)' };
 
 export function Chart({ data, layout, config, ariaLabel, height = 360, onClick }: ChartProps) {
+  const s = useStrings(STR);
   return (
     <figure role="figure" aria-label={ariaLabel} className="w-full overflow-hidden rounded-xl border border-line bg-[rgb(3_8_24/0.35)]">
-      <Suspense fallback={<div className="flex items-center justify-center rounded-xl border border-line bg-panel-2 font-mono text-sm text-muted" style={{ height }}>Grafik kütüphanesi yükleniyor…</div>}>
+      <Suspense fallback={<div className="flex items-center justify-center rounded-xl border border-line bg-panel-2 font-mono text-sm text-muted" style={{ height }}>{s.loading}</div>}>
         <LazyPlot
           data={data}
           layout={{ ...BASE_LAYOUT, ...layout, autosize: true, height }}

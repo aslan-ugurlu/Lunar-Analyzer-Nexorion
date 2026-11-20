@@ -12,6 +12,23 @@ import type {
   ValidationResponse,
 } from './types';
 
+import { defineStrings, pick } from '../i18n';
+
+const CLIENT_STR = defineStrings({
+  en: {
+    aborted: 'Request cancelled',
+    offline: (base: string) => `Could not reach the backend (${base})`,
+    unexpectedHttp: (status: number) => `Unexpected HTTP ${status} response`,
+    notJson: 'The server did not return JSON',
+  },
+  tr: {
+    aborted: 'İstek iptal edildi',
+    offline: (base: string) => `Backend'e ulaşılamadı (${base})`,
+    unexpectedHttp: (status: number) => `Beklenmeyen HTTP ${status} yanıtı`,
+    notJson: 'Sunucu JSON döndürmedi',
+  },
+});
+
 const RAW_BASE: string = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000';
 export const API_BASE = RAW_BASE.replace(/\/+$/, '');
 
@@ -65,8 +82,8 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
       headers: { Accept: 'application/json', ...(init?.body ? { 'Content-Type': 'application/json' } : {}) },
     });
   } catch {
-    if (outer?.aborted) throw new ApiError(0, 'ABORTED', 'İstek iptal edildi');
-    throw new ApiError(0, 'BACKEND_OFFLINE', `Backend'e ulaşılamadı (${API_BASE})`);
+    if (outer?.aborted) throw new ApiError(0, 'ABORTED', pick(CLIENT_STR).aborted);
+    throw new ApiError(0, 'BACKEND_OFFLINE', pick(CLIENT_STR).offline(API_BASE));
   } finally {
     clearTimeout(timeout);
     outer?.removeEventListener('abort', onAbort);
@@ -86,9 +103,9 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
       const details = (e.details ?? []).map((d) => ({ field: d.field ?? null, message: String(d.message) }));
       throw new ApiError(response.status, e.code, e.message, details, e.request_id);
     }
-    throw new ApiError(response.status, `HTTP_${response.status}`, `Beklenmeyen HTTP ${response.status} yanıtı`);
+    throw new ApiError(response.status, `HTTP_${response.status}`, pick(CLIENT_STR).unexpectedHttp(response.status));
   }
-  if (body === null) throw new ApiError(response.status, 'BAD_RESPONSE', 'Sunucu JSON döndürmedi');
+  if (body === null) throw new ApiError(response.status, 'BAD_RESPONSE', pick(CLIENT_STR).notJson);
   return body as T;
 }
 

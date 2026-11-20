@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { render } from '@testing-library/react';
 import real from '../../test/fixtures/real_analysis_62e783c2.json';
+import { I18nProvider } from '../../i18n';
 import type { AnalysisInput, Horizon, JobRecord } from '../../api/types';
 import {
   bandWidth, baselineKpis, CSV_COLUMNS, exportMeta, observerAltitudes, profileDifference, profileExtremes,
@@ -83,5 +86,14 @@ describe('raw CSV export', () => {
     expect(Number(first[2])).toBe(s0.timeline[0]!.sun.el_deg);
     expect(first[10]).toBe(String(s0.timeline[0]!.dte_visible));
     expect(csv).toContain('# frame: MOON_ME_DE440_ME421');
+  });
+
+  it('is machine-readable and identical whatever the interface language', () => {
+    const s0 = mission.scenarios[0]!;
+    const en = timelineToCsv(s0.timeline, exportMeta(job.id, job._request, s0, horizon));
+    render(createElement(I18nProvider, { lang: 'tr', children: createElement('span') }));
+    const tr = timelineToCsv(s0.timeline, exportMeta(job.id, job._request, s0, horizon));
+    expect(tr).toBe(en);
+    expect(tr).toContain('# note: Screening data; not a landing certification.');
   });
 });

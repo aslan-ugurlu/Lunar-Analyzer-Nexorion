@@ -1,7 +1,9 @@
 /**
- * Halk wizard / Mühendis cockpit (Faz 9 redesign). The redesign is presentation only:
- * both layouts edit the same form state and POST the identical request body.
- * The /analyses responses below are a MOCKED transport (labelled), never scientific values.
+ * Public wizard / Engineer cockpit. The two layouts are presentation only: both edit the same form
+ * state and POST the identical request body, in English and in Turkish.
+ * The Turkish suites keep the original Turkish wording (it must stay unchanged); the English suite
+ * covers the default interface. The /analyses responses below are a MOCKED transport (labelled),
+ * never scientific values.
  */
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -14,6 +16,7 @@ import { AppStateProvider, useApp, type Mode } from '../../state/AppState';
 import { MissionForm, WIZARD_STEPS } from '../MissionForm';
 import { ResultSummary } from '../ResultSummary';
 import { Header } from '../Header';
+import { I18nProvider, type Lang } from '../../i18n';
 
 afterEach(() => __setFetchForTests(null));
 
@@ -31,12 +34,16 @@ function mockTransport() {
   return posted;
 }
 
-const renderForm = (mode: Mode, sites: SitesResponse | null = null) =>
-  render(<AppStateProvider initialMode={mode}><Header health={null} healthError={null} /><MissionForm sites={sites} health={null} /></AppStateProvider>);
+const renderForm = (mode: Mode, sites: SitesResponse | null = null, lang: Lang = 'tr') =>
+  render(
+    <I18nProvider lang={lang}>
+      <AppStateProvider initialMode={mode}><Header health={null} healthError={null} /><MissionForm sites={sites} health={null} /></AppStateProvider>
+    </I18nProvider>,
+  );
 
 const visibleStep = () => document.querySelector('section[data-step]:not([hidden])')?.getAttribute('data-step');
 
-describe('Halk: Görev Sihirbazı', () => {
+describe('Halk: Görev Sihirbazı (Turkish)', () => {
   it('shows one step at a time with an accessible stepper; every field stays in the form', () => {
     renderForm('public');
     expect(screen.getByRole('heading', { name: 'Görev Sihirbazı' })).toBeInTheDocument();
@@ -99,15 +106,20 @@ describe('Halk: Görev Sihirbazı', () => {
   });
 });
 
-describe('Mode never changes the request (presentation only)', () => {
-  async function submitIn(mode: Mode) {
+const LABELS = {
+  en: { lat: 'Latitude (°, planetocentric)', lon: 'Longitude (°, east-positive)', start: 'Start analysis', queued: /Analysis queued \(HTTP 202\)/ },
+  tr: { lat: 'Enlem (°, planetosentrik)', lon: 'Boylam (°, doğu-pozitif)', start: 'Analizi başlat', queued: /Analiz kuyruğa alındı \(HTTP 202\)/ },
+};
+
+describe('Mode and language never change the request (presentation only)', () => {
+  async function submitIn(mode: Mode, lang: Lang = 'tr') {
     const user = userEvent.setup();
     const posted = mockTransport();
-    const { unmount } = renderForm(mode);
-    await user.type(screen.getByLabelText('Enlem (°, planetosentrik)'), '-89.4512');
-    await user.type(screen.getByLabelText('Boylam (°, doğu-pozitif)'), '-137.1427');
-    await user.click(screen.getByRole('button', { name: 'Analizi başlat' }));
-    await screen.findByText(/Analiz kuyruğa alındı \(HTTP 202\)/);
+    const { unmount } = renderForm(mode, null, lang);
+    await user.type(screen.getByLabelText(LABELS[lang].lat), '-89.4512');
+    await user.type(screen.getByLabelText(LABELS[lang].lon), '-137.1427');
+    await user.click(screen.getByRole('button', { name: LABELS[lang].start }));
+    await screen.findByText(LABELS[lang].queued);
     unmount();
     return posted[0];
   }
@@ -117,6 +129,12 @@ describe('Mode never changes the request (presentation only)', () => {
     const eng = await submitIn('engineer');
     expect(pub).toEqual(eng);
     expect(pub).toMatchObject({ latitude: -89.4512, longitude: -137.1427, landing_utc: '2026-12-01T12:00:00Z', uncertainty_mode: 'nominal' });
+  });
+
+  it('English and Turkish POST the identical /analyses body in both modes', async () => {
+    const trPublic = await submitIn('public', 'tr');
+    expect(await submitIn('public', 'en')).toEqual(trPublic);
+    expect(await submitIn('engineer', 'en')).toEqual(trPublic);
   });
 
   it('switching Halk → Mühendis keeps every typed value', async () => {
@@ -134,7 +152,7 @@ describe('Mode never changes the request (presentation only)', () => {
   });
 });
 
-describe('Mühendis cockpit', () => {
+describe('Mühendis cockpit (Turkish)', () => {
   it('shows the MOON_ME unit vector of the typed site and the live request body', async () => {
     const user = userEvent.setup();
     renderForm('engineer');
@@ -155,9 +173,9 @@ function Seeded() {
   return selected ? <ResultSummary entry={{ ...selected, job }} /> : null;
 }
 
-describe('Result infographics and cockpit read-out (real result)', () => {
+describe('Result infographics and cockpit read-out (real result, Turkish)', () => {
   it('Halk: verdict banner, ring/bar KPIs, mission-window strip and slip scenarios from API values', () => {
-    render(<AppStateProvider initialMode="public"><Seeded /></AppStateProvider>);
+    render(<I18nProvider lang="tr"><AppStateProvider initialMode="public"><Seeded /></AppStateProvider></I18nProvider>);
     expect(screen.getByText('Tanımladığınız kısıtlardan en az biri normal hesapta bile sağlanmıyor.')).toBeInTheDocument();
     const strip = screen.getByRole('region', { name: 'Görev penceresi zaman şeridi' });
     expect(strip.textContent).toContain('2026-12-01 12:00 UTC');
@@ -167,12 +185,51 @@ describe('Result infographics and cockpit read-out (real result)', () => {
   });
 
   it('Mühendis: decision read-out, MOON_ME x/y/z of both sensors and horizon statistics', () => {
-    render(<AppStateProvider initialMode="engineer"><Seeded /></AppStateProvider>);
+    render(<I18nProvider lang="tr"><AppStateProvider initialMode="engineer"><Seeded /></AppStateProvider></I18nProvider>);
     const readout = screen.getByRole('region', { name: 'Karar özeti (sunucu sonucu)' });
     expect(readout.textContent).toContain('kararRED');
     expect(readout.textContent).toContain('nominal ihlal16'); // server list: 4 constraints × 4 slip scenarios
     // r = 1737.4 + (h_DEM −754.0757 m + h_obs 4 m)/1000 km at (−89.54°, 0°); expected value computed independently (Python).
     expect(screen.getByText(/panel \(13\.9426, 0\.0000, -1736\.5940\)/)).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Ufuk özeti' }).textContent).toContain('ışın DEM kapsaması');
+  });
+});
+
+describe('Public wizard and Engineer cockpit (English default)', () => {
+  it('shows the wizard with an accessible English stepper', () => {
+    renderForm('public', null, 'en');
+    expect(screen.getByRole('heading', { name: 'Mission Wizard' })).toBeInTheDocument();
+    const steps = within(screen.getByRole('navigation')).getAllByRole('button');
+    expect(steps).toHaveLength(WIZARD_STEPS.length);
+    expect(steps[0]).toHaveAccessibleName(/^Step 1: Location/);
+    expect(screen.getByLabelText('Landing date (UTC)')).not.toBeVisible();
+    expect(screen.getByLabelText(LABELS.en.lat)).toBeVisible();
+  });
+
+  it('“Next” validates the step with an English message', async () => {
+    const user = userEvent.setup();
+    renderForm('public', null, 'en');
+    await user.click(screen.getByRole('button', { name: /^Next: Time/ }));
+    expect(visibleStep()).toBe('site');
+    expect(screen.getByText('Latitude is required')).toBeInTheDocument();
+  });
+
+  it('switching EN → TR keeps every typed value and the visible step', async () => {
+    const user = userEvent.setup();
+    renderForm('public', null, 'en');
+    await user.type(screen.getByLabelText(LABELS.en.lat), '-89.9');
+    await user.click(screen.getByRole('button', { name: 'TR Türkçe' }));
+    expect(screen.getByLabelText(LABELS.tr.lat)).toHaveValue(-89.9);
+    expect(visibleStep()).toBe('site');
+  });
+
+  it('Engineer cockpit: MOON_ME unit vector and live request body', async () => {
+    const user = userEvent.setup();
+    renderForm('engineer', null, 'en');
+    expect(screen.getByRole('heading', { name: 'Mission definition — all parameters' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(LABELS.en.lat), '-90');
+    await user.type(screen.getByLabelText(LABELS.en.lon), '0');
+    expect(screen.getByText(/û = \(0\.00000, 0\.00000, -1\.00000\)/)).toBeInTheDocument();
+    expect(screen.getByText('body valid')).toBeInTheDocument();
   });
 });
